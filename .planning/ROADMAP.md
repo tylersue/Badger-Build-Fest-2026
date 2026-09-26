@@ -48,7 +48,7 @@ Before parallel implementation, record the four owners in the project board and 
   2. A "Viewing as" switcher in the sidebar footer swaps between the seeded expert and hirer (name, avatar, wallet), survives a reload, and the expert profile page shows seeded values that can be edited.
   3. Each identity starts with $50 (5,000 credits) visible in the shell; mock Subscribe and Buy pack add credits instantly and repeatably with ledger rows; the wallet and earnings pages show seeded history.
   4. A deployed app and local setup work with the agreed database schema, seed data, and typed contracts for interview knowledge, retrieval, persona prompts, chat stream, wallet check (pre-call reservation, hard stop at zero), usage settlement, and per-category model and regulated-category config; every stub returns canned placeholder data.
-**Plans**: TBD
+**Plans**: None — built directly on 2026-09-26 as a frontend-only app (see STATE.md "Phase 1 pivot"); unfinished plan drafts and the dropped Supabase schema are in `.planning/phases/01-shell-wallet-shared-contracts/drafts/`
 **UI hint**: yes
 **Context**: `.planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md`
 
@@ -103,7 +103,7 @@ Before parallel implementation, record the four owners in the project board and 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Shell, Wallet & Shared Contracts | 0/TBD | Not started | - |
+| 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Built locally, awaiting deploy + PR | - |
 | 2. Interview-First Agent Building | 0/TBD | Not started | - |
 | 3. Publish, Discover & Use | 0/TBD | Not started | - |
 | 4. Trust, Insights & Launch Readiness | 0/TBD | Not started | - |
