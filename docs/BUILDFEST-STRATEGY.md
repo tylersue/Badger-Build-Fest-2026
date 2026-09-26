@@ -8,9 +8,9 @@ Updated 2026-09-26 from the event brief supplied by the team. The track is confi
 
 **Challenge 1: The Art of the Break — current preference.** Stress-testing the promise that answers come from the expert's material directly improves the product and creates the required Break Card.
 
-**Challenge 2: Open Venture — current preference.** Present the broader expert marketplace as a venture: the underserved expert and hirer, interview-first differentiation, market signal, team fit, and a credible path beyond the event. Use completed observations and the [customer research](CUSTOMER-RESEARCH.md) as distinct kinds of evidence.
+**Challenge 2: Badgers Building for Badgers — current preference.** Demonstrate a concrete UW student task: a student uploads a resume and receives advice grounded in a consenting mentor's own interview answers or rubric. This matches the campus career/admissions beachhead in [customer research](CUSTOMER-RESEARCH.md#4-beachhead-decision).
 
-The campus career/admissions use case remains the product beachhead and a useful demo, even if the team does not enter Badgers Building for Badgers. Use a willing source expert and describe their experience accurately. Access to a UW staff coach has not been established; participation does not imply university endorsement.
+Use a willing source expert and describe their experience accurately. Access to a UW staff coach has not been established; participation does not imply university endorsement. Show a student completing a useful task, since the challenge calls for a meaningful benefit to a fellow Badger.
 
 ## Second-challenge comparison
 
@@ -18,15 +18,15 @@ These are judgments about fit and added work under the supplied criteria, not pr
 
 | Option | Fit with this product | Evidence or additional work needed | Recommendation |
 |--------|-----------------------|-----------------------------------|----------------|
-| Open Venture | Strong fit for the broader expert marketplace and the existing business research | Direct customer evidence, truthful founder-market fit, differentiation, and a credible continuation plan | Current team preference |
-| Badgers Building for Badgers | Strong fit for the campus career-advice entry point | One real mentor's material, a working student task, and observed student feedback | Alternative if the campus demonstration is stronger than the venture evidence |
+| Badgers Building for Badgers | Strong fit for the campus career-advice entry point | One real mentor's material, a working student task, and observed student feedback | Current team preference |
+| Open Venture | Strong fit for the broader expert marketplace and the existing business research | Direct customer evidence, truthful founder-market fit, differentiation, and a credible continuation plan | Alternative if venture evidence becomes stronger than the campus demonstration |
 | Databricks Real-World Workflows | Current stack is Next.js/Supabase; sponsor requires an agentic system on Databricks for a specified problem | Obtain the full problem brief and deliver that workflow on Databricks | Substantial additional dependency; using a tool alone would not establish eligibility |
 | Veterinary cost-of-care | Could be a specialized expert agent, but a general advice marketplace does not yet address the specific conversation | Veterinary source material and a working care-cost explanation/shared-decision workflow | Consider only with a real domain partner and that use case |
 | Women's health | An expert agent could serve an unmet need, but the current prototype scope has not selected one | A specific underserved experience, relevant expertise, and evidence the workflow helps | Consider only with a real domain partner and that use case |
 
-Open Venture can be entered without revenue. The current repo's market research is secondary evidence; its expert interviews, user tests, and conversion targets are mostly future work. Collect direct observations if possible and report them separately from targets. Mock credit purchases and expert credits are not paid traction or real revenue.
+Open Venture remains a credible alternative. The current repo's market research is secondary evidence; its expert interviews, user tests, and conversion targets are mostly future work. If the team switches to Open Venture, collect direct observations and report them separately from targets. Mock credit purchases and expert credits are not paid traction or real revenue.
 
-The current pair is Open Venture and Art of the Break. Reconsider Badgers Building for Badgers only if the team chooses it in place of one of those two challenges.
+The current pair is Badgers Building for Badgers and Art of the Break. If the team cannot show a real student benefit, reconsider Open Venture as the second challenge based on the evidence actually gathered.
 
 ## Art of the Break experiment
 
@@ -64,9 +64,9 @@ This is a proposed outline, not an organizer-provided template. Use the official
 | 0:40–1:00 | Publish and open the listing from another account | The two-sided loop works |
 | 1:00–1:30 | Student uploads a synthetic resume, receives feedback, and opens a supporting citation | Useful assistance and traceable evidence |
 | 1:30–1:45 | An unsupported question produces a refusal and contact link | The product has an observable knowledge boundary |
-| 1:45–2:00 | An actual stress-test result and one observed customer signal, with the venture path in the written response | Learning from failure and early market evidence |
+| 1:45–2:00 | An actual stress-test result and one student's observed outcome | Learning from failure and campus usefulness |
 
-Show completed behavior. Clearly label mocked funding and any preloaded demonstration data. Use actual test counts or omit numbers; do not borrow projected metrics from the customer-research pitch. Support Open Venture with a specific market signal, honest founder-market fit, differentiation, and next steps in the written responses.
+Show completed behavior. Clearly label mocked funding and any preloaded demonstration data. Use actual test counts or omit numbers; do not borrow projected metrics from the customer-research pitch. In the challenge responses, name the student task, who tried it, what happened, and why the agent's expert-grounded answer helped.
 
 ## Submission requirements from the supplied brief
 
@@ -85,6 +85,6 @@ Show completed behavior. Clearly label mocked funding and any preloaded demonstr
 | Capture the real mentor's knowledge and record the builder flow | Platform → Builder | Consent/source provenance, usable expert agent, video segment |
 | Prepare sources, attack fixtures, and citation evidence | Knowledge | Versioned knowledge set, retrieved-source logs, failure judgments |
 | Run the experiment and implement the mitigation | Runtime | Before/after runs, working student chat and upload path |
-| Gather market signal and assemble submission materials | Marketplace → Credits | Interview or usage evidence, venture responses, video |
+| Observe student use and assemble submission materials | Marketplace → Credits | Student task outcome, challenge responses, video |
 
 The runtime owner implements the mitigation; another lane reviews the measured outcomes. Start fixtures and logging alongside the first usable agent. The Break Card must be ready for challenge submission, so it cannot be deferred solely to Phase 4 hardening. The challenge choice and timeline do not mark any of the 58 v1 product requirements complete or remove them from scope.

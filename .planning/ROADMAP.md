@@ -94,7 +94,7 @@ Before parallel implementation, record the four owners in the project board and 
 
 ## Planning Notes
 
-- Applied AI & Automation is the confirmed track. Open Venture and Art of the Break are the team's tentative challenge pair. Prepare stress-test fixtures during Phase 1 and collect real before/after evidence as soon as the agent runs in Phases 2–3. Gather direct customer or expert evidence for the venture responses; the submission Break Card cannot wait solely for Phase 4. Challenge registration and timing remain to be confirmed.
+- Applied AI & Automation is the confirmed track. Badgers Building for Badgers and Art of the Break are the team's tentative challenge pair. Prepare stress-test fixtures during Phase 1 and collect real before/after evidence as soon as the agent runs in Phases 2–3. Show an actual UW student completing a campus career task; the submission Break Card cannot wait solely for Phase 4. Challenge registration and timing remain to be confirmed.
 - Phase 1 must decide and freeze the wallet and service contracts before parallel implementation. The margin share is a configurable constant (15% default); validate it and size the free grant against a complete interview build during Phase 1 planning.
 - Phase 2 planning needs focused research on interview turn-taking, answer segmentation, and persona drafting. Hirer-uploaded files need a prompt-injection threat model before Phase 3 delivery.
 - Health/PT and tax/finance require fixed regulated-category treatment. Confirm the category policy for career/admissions during Phase 1 planning. Safety checks and grounded refusal are part of the first published-chat release, then verified more deeply in Phase 4.

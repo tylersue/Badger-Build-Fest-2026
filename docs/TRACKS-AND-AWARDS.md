@@ -1,6 +1,6 @@
 # Badger BuildFest 2026: Tracks and Awards
 
-This is a reference copy of the event information supplied by the team on 2026-09-26. Select exactly one track and, optionally, up to two challenges that the project meaningfully addresses. For this project, **Applied AI & Automation** is the selected track. **Open Venture** and **The Art of the Break** are the team's current, tentative challenge choices; no entry has been submitted.
+This is a reference copy of the event information supplied by the team on 2026-09-26. Select exactly one track and, optionally, up to two challenges that the project meaningfully addresses. For this project, **Applied AI & Automation** is the selected track. **Badgers Building for Badgers** and **The Art of the Break** are the team's current, tentative challenge choices; no entry has been submitted.
 
 ## Tracks
 
