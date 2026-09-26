@@ -19,6 +19,7 @@ Start here, in this order:
 | [docs/HOW-AGENTS-WORK.md](docs/HOW-AGENTS-WORK.md) | Plain-language explanation of how an agent is built and run, mapped to LangSmith / LangGraph concepts |
 | [docs/DEMO.md](docs/DEMO.md) | The 4-minute, two-laptop demo script we are building toward |
 | [docs/RESEARCH.md](docs/RESEARCH.md) | What we learned from LangSmith, Delphi, GPT Store, Poe, and others, and what we're borrowing |
+| [docs/CUSTOMER-RESEARCH.md](docs/CUSTOMER-RESEARCH.md) | Who this is for: expert and hirer ICPs, segmentation, beachhead decision, PMF evidence, unit economics, market sizing, four-week validation plan, campus go-to-market, and the pitch narrative. Raw reports in `.planning/research/customer/` |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, system diagram, repo layout with ownership, data model, key flows, shared contracts |
 | [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md) | Six workstreams, who owns what, dependency order, how to pick up work |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Four-week plan, exit tests per week, what we cut first |
