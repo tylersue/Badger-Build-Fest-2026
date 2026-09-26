@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowDownUp, BadgeCheck, Plus, Store } from "lucide-react";
-import { Breadcrumbs, DataTable, EmptyState, Num, PageBody, PageHeader, Pill, PlaceholderNote, SearchField, Toolbar, AgentTile, buttonClass } from "@/components/app/ui";
+import { Breadcrumbs, DataTable, EmptyState, Num, PageBody, PageHeader, Pill, SearchField, Toolbar, AgentTile, buttonClass } from "@/components/app/ui";
 import { allAgents, currentIdentity, displayName, useDemo } from "@/lib/demo-store";
 import { CATEGORIES, CATEGORY_GRADIENTS, categoryLabel, type Category } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
@@ -122,7 +122,6 @@ export function MarketplaceView() {
             ))}
           </DataTable>
         )}
-        <PlaceholderNote feature="marketplace queries" phase={3} />
       </PageBody>
     </>
   );

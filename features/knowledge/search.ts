@@ -1,10 +1,12 @@
 /**
  * Knowledge lane contract. Phase 1 returns canned chunks (placeholder, D-14);
- * the real version embeds the query and searches only this agent's chunks
- * (the agent filter is the tenant boundary, RETR-03). Never throws.
+ * Phase 3 also searches interview answers typed in this browser (passed in as
+ * `extraChunks`) so a freshly built agent cites its own interview. The real
+ * version embeds the query and searches only this agent's chunks (the agent
+ * filter is the tenant boundary, RETR-03). Never throws.
  */
 import { CHUNKS, SOURCES } from "@/lib/data/seed";
-import type { Agent, Citation } from "@/lib/types";
+import type { Agent, Chunk, Citation } from "@/lib/types";
 
 export type RetrievedChunk = {
   id: string;
@@ -18,25 +20,42 @@ export type RetrievedChunk = {
   score: number;
 };
 
-const words = (s: string) => new Set(s.toLowerCase().match(/[a-z]{4,}/g) ?? []);
+/** Score of a chunk that shares no content word with the query. */
+export const BASE_SCORE = 0.55;
+const PER_WORD = 0.08;
+const MAX_SCORE = 0.95;
 
-export async function searchKnowledge(agent: Agent, query: string, k = 4): Promise<RetrievedChunk[]> {
+/** Function words that would make any question "match" any chunk. */
+const STOP_WORDS = new Set([
+  "what", "when", "where", "which", "while", "that", "this", "these", "those", "there", "their", "they", "them", "then", "than",
+  "with", "without", "have", "having", "from", "your", "yours", "does", "doing", "done", "should", "would", "could", "about", "into",
+  "also", "been", "being", "will", "just", "like", "some", "more", "most", "very", "only", "over", "after", "before", "because",
+  "want", "need", "know", "take", "make", "much", "many", "such", "each", "other", "here", "come", "comes", "going", "were",
+  "first", "thing", "things", "someone", "something", "anything", "everything", "still", "again", "back", "says", "said", "tell",
+  "told", "help", "please", "question", "questions", "answer", "answers", "really", "think", "good", "well", "even", "ever",
+]);
+
+const words = (s: string) => new Set((s.toLowerCase().match(/[a-z]{4,}/g) ?? []).filter((w) => !STOP_WORDS.has(w)));
+
+export async function searchKnowledge(agent: Agent, query: string, k = 4, extraChunks: Chunk[] = []): Promise<RetrievedChunk[]> {
   const q = words(query);
-  const own = CHUNKS.filter((c) => c.agentId === agent.id).map((c) => {
-    const source = SOURCES.find((s) => s.id === c.sourceId);
-    const overlap = [...words(c.content + " " + (c.question ?? ""))].filter((w) => q.has(w)).length;
-    return {
-      id: c.id,
-      agentId: c.agentId,
-      sourceType: c.question ? ("interview" as const) : ("document" as const),
-      sourceName: source?.name ?? "Interview answers",
-      question: c.question,
-      page: c.page,
-      headingPath: c.headingPath,
-      content: c.content,
-      score: Math.min(0.95, 0.55 + overlap * 0.08),
-    };
-  });
+  const own = [...CHUNKS, ...extraChunks]
+    .filter((c) => c.agentId === agent.id)
+    .map((c) => {
+      const source = SOURCES.find((s) => s.id === c.sourceId);
+      const overlap = [...words(c.content + " " + (c.question ?? ""))].filter((w) => q.has(w)).length;
+      return {
+        id: c.id,
+        agentId: c.agentId,
+        sourceType: c.question ? ("interview" as const) : ("document" as const),
+        sourceName: source?.name ?? "Interview answers",
+        question: c.question,
+        page: c.page,
+        headingPath: c.headingPath,
+        content: c.content,
+        score: Math.min(MAX_SCORE, BASE_SCORE + overlap * PER_WORD),
+      };
+    });
 
   const chunks = own.length
     ? own
@@ -66,6 +85,15 @@ export async function searchKnowledge(agent: Agent, query: string, k = 4): Promi
       ];
 
   return chunks.sort((a, b) => b.score - a.score).slice(0, k);
+}
+
+/**
+ * Weak retrieval (CHAT-03): nothing came back, or nothing shares a content
+ * word with the question. Seeded agents without stored chunks fall back to
+ * persona-derived chunks above the base score, so they are never "weak".
+ */
+export function isWeakRetrieval(chunks: RetrievedChunk[]): boolean {
+  return chunks.length === 0 || chunks.every((c) => c.score <= BASE_SCORE);
 }
 
 export function toCitations(chunks: RetrievedChunk[]): Citation[] {

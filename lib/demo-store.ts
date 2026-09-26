@@ -3,19 +3,21 @@
 /**
  * Client-side demo state for the presentation MVP (no backend).
  * Seed data is read-only; everything the viewer does (switching identity,
- * adding credits, chatting, interviewing, editing) is stored as a delta in
- * localStorage so it survives reloads. The mechanics are real: a metered call
- * checks the wallet first and refuses when it doesn't fit (hard stop at zero,
- * D-10), and every balance change writes a ledger row.
+ * adding credits, chatting, interviewing, editing, publishing) is stored as a
+ * delta in localStorage so it survives reloads. The mechanics are real: a
+ * metered call checks the wallet first and refuses when it doesn't fit (hard
+ * stop at zero, D-10), and every balance change writes a ledger row.
  */
 import { useSyncExternalStore } from "react";
-import { AGENTS, CONVERSATIONS, IDENTITIES, INTERVIEW_TURNS, LEDGER, MARIA, MESSAGES, PROFILES } from "@/lib/data/seed";
+import { AGENTS, CHUNKS, CONVERSATIONS, IDENTITIES, INTERVIEW_ANSWER_COUNTS, INTERVIEW_TURNS, LEDGER, MARIA, MESSAGES, PROFILES, SOURCES } from "@/lib/data/seed";
 import { PACK_GRANT_CENTS, SUBSCRIPTION_GRANT_CENTS, type MeteredPurpose } from "@/lib/config/credits";
 import type { Category } from "@/lib/config/categories";
+import { clampRate } from "@/lib/config/publish";
 import { costCentsFromUsage, estimateCents, splitUsageCharge, toChargeCents } from "@/features/billing/pricing";
-import { searchKnowledge } from "@/features/knowledge/search";
-import { cannedAnswer, nextInterviewQuestion } from "@/features/runtime/agent";
-import type { Agent, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile } from "@/lib/types";
+import { isWeakRetrieval, searchKnowledge } from "@/features/knowledge/search";
+import { publishBlockers } from "@/features/marketplace/publish";
+import { cannedAnswer, nextInterviewQuestion, refusalReply } from "@/features/runtime/agent";
+import type { Agent, AgentStatus, Chunk, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile } from "@/lib/types";
 
 const STORAGE_KEY = "bx-demo-v1";
 
@@ -27,6 +29,7 @@ export type DemoState = {
   agentEdits: Record<string, Partial<Agent>>;
   newAgents: Agent[];
   conversations: Conversation[];
+  conversationEdits: Record<string, Partial<Conversation>>;
   messages: Message[];
   interviewTurns: InterviewTurn[];
   answeredTurns: Record<string, string>;
@@ -40,6 +43,7 @@ const initialState = (): DemoState => ({
   agentEdits: {},
   newAgents: [],
   conversations: [],
+  conversationEdits: {},
   messages: [],
   interviewTurns: [],
   answeredTurns: {},
@@ -160,7 +164,7 @@ export function balanceOf(s: DemoState, identityId: string): number {
 }
 
 export function allConversations(s: DemoState): Conversation[] {
-  return [...CONVERSATIONS, ...s.conversations];
+  return [...CONVERSATIONS, ...s.conversations].map((c) => ({ ...c, ...s.conversationEdits[c.id] }));
 }
 
 export function messagesFor(s: DemoState, conversationId: string): Message[] {
@@ -192,6 +196,33 @@ export function pendingInterviewQuestion(s: DemoState, agentId: string): { turnI
   if (open) return { turnId: open.id, question: open.question };
   if (turns.length === 0) return { turnId: null, question: "Let's start with who you are. What do you do, who comes to you, and what do they usually ask first?" };
   return { turnId: null, question: nextInterviewQuestion(turns.length) };
+}
+
+/**
+ * Interview answers as retrievable chunks (Phase 3 D-02). Seeded answers that
+ * already exist in CHUNKS are skipped so they are not cited twice.
+ */
+export function interviewChunks(s: DemoState, agentId: string): Chunk[] {
+  const seeded = new Set(CHUNKS.filter((c) => c.agentId === agentId).map((c) => c.content.trim()));
+  return interviewTurnsFor(s, agentId)
+    .filter((t) => t.answer && !seeded.has(t.answer.trim()))
+    .map((t) => ({ id: `ic-${t.id}`, agentId, sourceId: `interview:${agentId}`, page: null, headingPath: null, question: t.question, content: t.answer! }));
+}
+
+export type KnowledgeStats = { answers: number; docChunks: number; total: number; lastUpdatedAt: string };
+
+/** Knowledge counts for the listing, the drawer and the publish gate: seeded counts plus anything answered in this browser. */
+export function knowledgeStats(s: DemoState, agentId: string): KnowledgeStats {
+  const seededShown = interviewTurnsFor({ ...s, interviewTurns: [], answeredTurns: {} }, agentId).filter((t) => t.answer).length;
+  const now = interviewTurnsFor(s, agentId).filter((t) => t.answer).length;
+  const answers = (INTERVIEW_ANSWER_COUNTS[agentId] ?? seededShown) + (now - seededShown);
+  const docChunks = SOURCES.filter((x) => x.agentId === agentId && x.kind !== "interview" && x.status === "ready").reduce((n, x) => n + x.chunkCount, 0);
+  const stamps = [
+    ...SOURCES.filter((x) => x.agentId === agentId).map((x) => x.createdAt),
+    ...s.interviewTurns.filter((t) => t.agentId === agentId).map((t) => t.createdAt),
+    agentById(s, agentId)?.createdAt ?? "",
+  ].filter(Boolean);
+  return { answers, docChunks, total: answers + docChunks, lastUpdatedAt: stamps.sort().at(-1) ?? nowIso() };
 }
 
 // ------------------------------------------------------------------ actions
@@ -261,21 +292,72 @@ export function startConversation(agentId: string, title: string): string {
   return id;
 }
 
-export async function sendChatMessage(conversationId: string, text: string): Promise<{ ok: true; chargedCents: number } | Refusal> {
+/** One hirer file per conversation (CHAT-04). Text arrives from /api/extract; it is context, never instructions. */
+export function attachConversationFile(conversationId: string, file: { name: string; text: string; chars: number }) {
+  setState((s) => ({
+    ...s,
+    conversationEdits: { ...s.conversationEdits, [conversationId]: { ...s.conversationEdits[conversationId], fileName: file.name, fileText: file.text, fileChars: file.chars } },
+  }));
+}
+
+export function removeConversationFile(conversationId: string) {
+  setState((s) => ({
+    ...s,
+    conversationEdits: { ...s.conversationEdits, [conversationId]: { ...s.conversationEdits[conversationId], fileName: null, fileText: null, fileChars: null } },
+  }));
+}
+
+export type ChatResult = { ok: true; chargedCents: number; grounded: boolean; messageId: string } | Refusal;
+
+/** Replies created in this browser session, so the chat page can stream them in once (CHAT-01). Not persisted. */
+const freshMessages = new Set<string>();
+export const isFreshMessage = (messageId: string) => freshMessages.has(messageId);
+export const markStreamed = (messageId: string) => {
+  freshMessages.delete(messageId);
+};
+
+/**
+ * Hirer message (CHAT-01..05, CHAT-12, CRED-04). Weak retrieval returns the fixed
+ * refusal at no charge (D-03); otherwise the canned grounded answer is charged
+ * at raw cost × multiplier and split across hirer, platform and expert.
+ */
+export async function sendChatMessage(conversationId: string, text: string): Promise<ChatResult> {
   const s0 = getSnapshot();
   const conversation = allConversations(s0).find((c) => c.id === conversationId);
   const agent = conversation && agentById(s0, conversation.agentId);
   if (!conversation || !agent) throw new Error("Conversation not found");
 
+  const expertName = displayName(s0, agent.ownerId);
+  const chunks = await searchKnowledge(agent, text, 4, interviewChunks(s0, agent.id));
+
+  if (isWeakRetrieval(chunks)) {
+    const reply = refusalReply(expertName, profileFor(s0, agent.ownerId).contactUrl || null);
+    const messageId = uid("m");
+    freshMessages.add(messageId);
+    setState((s) => {
+      const createdAt = nowIso();
+      return {
+        ...s,
+        messages: [
+          ...s.messages,
+          { id: uid("m"), conversationId, role: "user", content: text, citations: [], feedback: null, costCents: null, createdAt },
+          { id: messageId, conversationId, role: "assistant", content: reply, citations: [], feedback: null, costCents: 0, refusal: true, createdAt: new Date(Date.now() + 1).toISOString() },
+        ],
+      };
+    });
+    return { ok: true, chargedCents: 0, grounded: false, messageId };
+  }
+
   const refusal = precheck(s0, conversation.hirerId, "chat_message", agent.rateMultiplier);
   if (refusal) return refusal;
 
   const isFirstTurn = messagesFor(s0, conversationId).length === 0;
-  const chunks = await searchKnowledge(agent, text);
-  const answer = cannedAnswer(agent, displayName(s0, agent.ownerId), chunks, isFirstTurn);
+  const answer = cannedAnswer(agent, expertName, chunks, isFirstTurn, { fileName: conversation.fileName ?? null });
   const split = splitUsageCharge({ rawCents: costCentsFromUsage(CANNED_USAGE.chat_message), multiplier: agent.rateMultiplier });
 
   let charged = 0;
+  const messageId = uid("m");
+  freshMessages.add(messageId);
   setState((s) => {
     const hirerRow = debitRow(s, conversation.hirerId, split.hirerDebitCents, "chat_message", "conversation", conversationId, `${agent.persona.name} · 1 message`);
     charged = -hirerRow.amountCents;
@@ -291,12 +373,15 @@ export async function sendChatMessage(conversationId: string, text: string): Pro
     }
     const userMsg: Message = { id: uid("m"), conversationId, role: "user", content: text, citations: [], feedback: null, costCents: null, createdAt };
     const botMsg: Message = {
-      id: uid("m"), conversationId, role: "assistant", content: answer.content, citations: answer.citations, feedback: null,
+      id: messageId, conversationId, role: "assistant", content: answer.content, citations: answer.citations, feedback: null,
       costCents: charged, createdAt: new Date(Date.now() + 1).toISOString(),
     };
-    return { ...s, ledger: [...s.ledger, ...rows], messages: [...s.messages, userMsg, botMsg] };
+    const agentEdits = isFirstTurn
+      ? { ...s.agentEdits, [agent.id]: { ...s.agentEdits[agent.id], usageCount: agent.usageCount + 1 } }
+      : s.agentEdits;
+    return { ...s, ledger: [...s.ledger, ...rows], messages: [...s.messages, userMsg, botMsg], agentEdits };
   });
-  return { ok: true, chargedCents: charged };
+  return { ok: true, chargedCents: charged, grounded: true, messageId };
 }
 
 export const sandboxConversationId = (agentId: string) => `sandbox:${agentId}`;
@@ -311,7 +396,7 @@ export async function sendSandboxMessage(agentId: string, text: string): Promise
   if (refusal) return refusal;
 
   const conversationId = sandboxConversationId(agentId);
-  const chunks = await searchKnowledge(agent, text);
+  const chunks = await searchKnowledge(agent, text, 4, interviewChunks(s0, agent.id));
   const answer = cannedAnswer(agent, displayName(s0, agent.ownerId), chunks, messagesFor(s0, conversationId).length === 0);
   const cost = toChargeCents(costCentsFromUsage(CANNED_USAGE.sandbox_message));
 
@@ -372,6 +457,37 @@ export function updateAgent(agentId: string, patch: Partial<Agent>) {
 
 export function savePersona(agentId: string, persona: PersonaForm) {
   updateAgent(agentId, { persona });
+}
+
+// ------------------------------------------------------------------ publish (PUB-01..03)
+
+export type PublishResult = { ok: true; status: AgentStatus } | { ok: false; blockers: string[] };
+
+export function setRateMultiplier(agentId: string, multiplier: number) {
+  updateAgent(agentId, { rateMultiplier: clampRate(multiplier) });
+}
+
+/** Instant publish once the gate passes and consent is accepted (Phase 3 D-05, D-07). */
+export function publishAgent(agentId: string, opts: { acceptConsent?: boolean } = {}): PublishResult {
+  const s0 = getSnapshot();
+  const agent = agentById(s0, agentId);
+  if (!agent) throw new Error("Agent not found");
+  if (agent.ownerId !== currentIdentity(s0).id) return { ok: false, blockers: ["Only the owner can publish"] };
+  const blockers = publishBlockers(agent.persona, knowledgeStats(s0, agentId).total);
+  if (!agent.consentAcceptedAt && !opts.acceptConsent) blockers.push("Accept the content consent");
+  if (blockers.length) return { ok: false, blockers };
+  updateAgent(agentId, { status: "published", consentAcceptedAt: agent.consentAcceptedAt ?? nowIso() });
+  return { ok: true, status: "published" };
+}
+
+/** Instant unpublish; open chats keep working (Phase 3 D-08). */
+export function unpublishAgent(agentId: string): PublishResult {
+  const s0 = getSnapshot();
+  const agent = agentById(s0, agentId);
+  if (!agent) throw new Error("Agent not found");
+  if (agent.ownerId !== currentIdentity(s0).id) return { ok: false, blockers: ["Only the owner can unpublish"] };
+  updateAgent(agentId, { status: "unpublished" });
+  return { ok: true, status: "unpublished" };
 }
 
 export function createAgent(input: { name: string; category: Category }): string {

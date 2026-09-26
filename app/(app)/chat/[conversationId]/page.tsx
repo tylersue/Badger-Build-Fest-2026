@@ -8,16 +8,21 @@ import { toast } from "sonner";
 import { AssistantMessage, ChatColumn, Composer, CostCaption, NotEnoughCredits, UserMessage } from "@/components/app/chat";
 import { AgentTile, Breadcrumbs, EmptyState, Pill, buttonClass } from "@/components/app/ui";
 import {
-  agentById, allConversations, balanceOf, currentIdentity, displayName, messagesFor, profileFor, sendChatMessage, useDemo, type Refusal,
+  agentById, allConversations, attachConversationFile, balanceOf, currentIdentity, displayName, isFreshMessage, markStreamed, messagesFor, profileFor,
+  removeConversationFile, sendChatMessage, useDemo, type Refusal,
 } from "@/lib/demo-store";
 import { disclaimerFor } from "@/lib/config/categories";
-import { formatCredits } from "@/lib/format";
+import { formatCredits, formatNumber } from "@/lib/format";
 
-/* Hirer chat (runtime lane). Answers are canned in Phase 1; the wallet math is real. */
+type ExtractResponse = { name: string; text: string; chars: number; pages: number | null; truncated: boolean } | { error: string };
+
+/* Hirer chat (runtime lane). Answers are canned and revealed word by word (Phase 3 D-01); the wallet math is real. */
 export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const s = useDemo();
   const [refusal, setRefusal] = useState<Refusal | null>(null);
+  const [attaching, setAttaching] = useState(false);
+  const [attachError, setAttachError] = useState<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const conversation = allConversations(s).find((c) => c.id === conversationId);
   const agent = conversation && agentById(s, conversation.agentId);
@@ -39,6 +44,7 @@ export default function ChatPage() {
   const me = currentIdentity(s);
   const isHirer = me.id === conversation.hirerId;
   const expert = profileFor(s, agent.ownerId);
+  const expertFirst = displayName(s, agent.ownerId).split(" ")[0];
   const disclaimer = disclaimerFor(agent.persona.category);
 
   const send = async (text: string) => {
@@ -46,6 +52,27 @@ export default function ChatPage() {
     const r = await sendChatMessage(conversation.id, text);
     if (!r.ok) setRefusal(r);
     return r.ok;
+  };
+
+  const attach = async (file: File) => {
+    setAttaching(true);
+    setAttachError(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/extract", { method: "POST", body });
+      const data = (await res.json()) as ExtractResponse;
+      if (!res.ok || "error" in data) {
+        setAttachError("error" in data ? data.error : "Could not read that file.");
+        return;
+      }
+      attachConversationFile(conversation.id, { name: data.name, text: data.text, chars: data.chars });
+      toast(`Attached ${data.name} · ${formatNumber(data.chars)} characters${data.truncated ? " (truncated)" : ""}`);
+    } catch {
+      setAttachError("Could not reach the file reader. Is the dev server running?");
+    } finally {
+      setAttaching(false);
+    }
   };
 
   return (
@@ -57,7 +84,7 @@ export default function ChatPage() {
         <span className="hidden text-xs font-normal text-fg-muted sm:inline">
           by {displayName(s, agent.ownerId)} ·{" "}
           {expert.contactUrl ? (
-            <Link href={expert.contactUrl} target="_blank" className="text-selected-fg">
+            <Link href={expert.contactUrl} target="_blank" data-testid="contact-expert" className="text-selected-fg">
               Contact the expert
             </Link>
           ) : (
@@ -72,7 +99,7 @@ export default function ChatPage() {
           <button className={buttonClass("secondary")} aria-label="Flag this agent" onClick={() => toast("Flagging lands in Phase 4.")}>
             <Flag />
           </button>
-          <Pill className="bg-selected text-selected-fg" >
+          <Pill className="bg-selected text-selected-fg">
             <span data-testid="chat-balance">{formatCredits(balanceOf(s, conversation.hirerId))}</span>
           </Pill>
         </span>
@@ -90,7 +117,14 @@ export default function ChatPage() {
           m.role === "user" ? (
             <UserMessage key={m.id} content={m.content} />
           ) : (
-            <AssistantMessage key={m.id} content={m.content} citations={m.citations} caption={<CostCaption message={m} />} />
+            <AssistantMessage
+              key={m.id}
+              content={m.content}
+              citations={m.citations}
+              stream={isFreshMessage(m.id)}
+              onStreamed={() => markStreamed(m.id)}
+              caption={m.refusal ? <span data-testid="no-charge">No charge · not in {expertFirst}&apos;s knowledge</span> : <CostCaption message={m} />}
+            />
           ),
         )}
         {refusal && <NotEnoughCredits needed={refusal.neededCents} available={refusal.availableCents} onDismiss={() => setRefusal(null)} />}
@@ -98,7 +132,15 @@ export default function ChatPage() {
       </ChatColumn>
 
       {isHirer ? (
-        <Composer placeholder="Write your message…" onSend={send} attach />
+        <Composer
+          placeholder="Write your message…"
+          onSend={send}
+          attachment={conversation.fileName ? { name: conversation.fileName, chars: conversation.fileChars ?? conversation.fileText?.length ?? 0 } : null}
+          onAttach={attach}
+          onRemoveAttachment={() => removeConversationFile(conversation.id)}
+          attaching={attaching}
+          attachError={attachError}
+        />
       ) : (
         <div className="px-4 pb-4 text-center text-[13px] text-fg-muted">
           This is {displayName(s, conversation.hirerId)}&apos;s conversation. Switch to them in the sidebar to reply.

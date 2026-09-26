@@ -5,8 +5,8 @@ import { useParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { BookOpen, ChevronDown, ChevronRight, Ellipsis, Eye, FileText, Menu, Mic, Plus, Rocket, Settings2, UserRound, X } from "lucide-react";
 import { AgentTile, PlaceholderNote, StatusPill, buttonClass } from "@/components/app/ui";
-import { agentById, currentIdentity, displayName, interviewTurnsFor, useDemo, type DemoState } from "@/lib/demo-store";
-import { INTERVIEW_ANSWER_COUNTS, SOURCES } from "@/lib/data/seed";
+import { agentById, currentIdentity, displayName, knowledgeStats, useDemo, type DemoState } from "@/lib/demo-store";
+import { SOURCES } from "@/lib/data/seed";
 import { categoryLabel } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
 import { cn } from "@/lib/utils";
@@ -25,9 +25,7 @@ export function sourcesFor(agentId: string) {
 
 /** Answers captured so far: the seeded count plus anything answered in this session. */
 export function answerCount(s: DemoState, agentId: string) {
-  const seededShown = interviewTurnsFor({ ...s, interviewTurns: [], answeredTurns: {} }, agentId).filter((t) => t.answer).length;
-  const now = interviewTurnsFor(s, agentId).filter((t) => t.answer).length;
-  return (INTERVIEW_ANSWER_COUNTS[agentId] ?? seededShown) + (now - seededShown);
+  return knowledgeStats(s, agentId).answers;
 }
 
 /* Fleet builder split: chat column + 480px Configure drawer (D-05). */

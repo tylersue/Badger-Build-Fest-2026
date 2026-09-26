@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { ArrowUp, ChevronDown, ChevronRight, Database, Paperclip, Plus, Search, ThumbsDown, ThumbsUp, type LucideIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ArrowUp, ChevronDown, ChevronRight, Database, FileText, Paperclip, Plus, Search, ThumbsDown, ThumbsUp, X, type LucideIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddCreditsButton } from "@/components/app/add-credits";
-import { formatCredits } from "@/lib/format";
+import { formatCredits, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Citation, Message } from "@/lib/types";
 
@@ -16,11 +16,35 @@ export function UserMessage({ content }: { content: string }) {
   );
 }
 
+/* Word-by-word reveal for a fresh reply (CHAT-01, simulated per Phase 3 D-01). Non-streamed messages render at once. */
+const REVEAL_TOKENS_PER_TICK = 2;
+const REVEAL_TICK_MS = 28;
+
 /* Assistant turns are plain text, no bubble; [n] markers become citation chips with a hover card. */
-export function AssistantMessage({ content, citations = [], caption }: { content: string; citations?: Citation[]; caption?: ReactNode }) {
-  const parts = content.split(/(\[\d+\])/g);
+export function AssistantMessage({
+  content, citations = [], caption, stream = false, onStreamed,
+}: { content: string; citations?: Citation[]; caption?: ReactNode; stream?: boolean; onStreamed?: () => void }) {
+  const tokens = useMemo(() => content.split(/(?<=\s)/), [content]);
+  const [revealed, setRevealed] = useState(stream ? 0 : tokens.length);
+  useEffect(() => {
+    if (!stream) return;
+    const id = window.setInterval(() => {
+      setRevealed((n) => {
+        const next = Math.min(tokens.length, n + REVEAL_TOKENS_PER_TICK);
+        if (next >= tokens.length) window.clearInterval(id);
+        return next;
+      });
+    }, REVEAL_TICK_MS);
+    return () => window.clearInterval(id);
+  }, [stream, tokens.length]);
+  const done = revealed >= tokens.length;
+  useEffect(() => {
+    if (stream && done) onStreamed?.();
+  }, [stream, done, onStreamed]);
+  const visible = done ? content : tokens.slice(0, revealed).join("");
+  const parts = visible.split(/(\[\d+\])/g);
   return (
-    <div className="mb-5">
+    <div className="mb-5" data-testid="assistant-message" data-streaming={done ? undefined : "true"} aria-busy={!done}>
       <div className="text-base leading-[1.6] whitespace-pre-line">
         {parts.map((part, i) => {
           const m = part.match(/^\[(\d+)\]$/);
@@ -30,7 +54,7 @@ export function AssistantMessage({ content, citations = [], caption }: { content
           return (
             <Tooltip key={i}>
               <TooltipTrigger asChild>
-                <sup className="mx-0.5 cursor-help rounded bg-surface-3 px-[5px] text-xs text-selected-fg">{c.n}</sup>
+                <sup data-testid="citation" className="mx-0.5 cursor-help rounded bg-surface-3 px-[5px] text-xs text-selected-fg">{c.n}</sup>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <div className="font-medium">{c.sourceName}</div>
@@ -40,7 +64,7 @@ export function AssistantMessage({ content, citations = [], caption }: { content
           );
         })}
       </div>
-      {caption && <div className="mt-1.5 flex items-center gap-2 text-xs text-fg-muted">{caption}</div>}
+      {caption && done && <div className="mt-1.5 flex items-center gap-2 text-xs text-fg-muted">{caption}</div>}
     </div>
   );
 }
@@ -82,7 +106,7 @@ export function RetrievedSources({ items }: { items: NonNullable<Message["retrie
 export function CostCaption({ message }: { message: Message }) {
   return (
     <>
-      <span>{formatCredits(message.costCents ?? 0)}</span>
+      <span data-testid="message-cost">{formatCredits(message.costCents ?? 0)}</span>
       <ThumbsUp className={cn("size-3", message.feedback === "up" && "text-success")} />
       <ThumbsDown className={cn("size-3", message.feedback === "down" && "text-danger")} />
     </>
@@ -93,11 +117,27 @@ export function SavedChip({ credits }: { credits: number }) {
   return <ToolChip icon={Database} label={`Saved as knowledge · 1 chunk · ${formatCredits(credits)}`} />;
 }
 
+export type Attachment = { name: string; chars: number };
+
 /* Composer: 96px min height, 12px radius, surface-2 (UI-SPEC). Enter sends, Shift+Enter breaks a line.
-   onSend returns false when the call was refused, so the typed text is kept. */
-export function Composer({ placeholder, onSend, disabled, attach, hint }: { placeholder: string; onSend: (text: string) => Promise<boolean> | boolean; disabled?: boolean; attach?: boolean; hint?: ReactNode }) {
+   onSend returns false when the call was refused, so the typed text is kept.
+   With onAttach set, the footer offers one file per conversation (CHAT-04). */
+export function Composer({
+  placeholder, onSend, disabled, hint, attachment, onAttach, onRemoveAttachment, attaching, attachError,
+}: {
+  placeholder: string;
+  onSend: (text: string) => Promise<boolean> | boolean;
+  disabled?: boolean;
+  hint?: ReactNode;
+  attachment?: Attachment | null;
+  onAttach?: (file: File) => Promise<void>;
+  onRemoveAttachment?: () => void;
+  attaching?: boolean;
+  attachError?: string | null;
+}) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const submit = async () => {
     const t = text.trim();
     if (!t || busy || disabled) return;
@@ -126,15 +166,49 @@ export function Composer({ placeholder, onSend, disabled, attach, hint }: { plac
           placeholder={busy ? "Send a message to queue it up…" : placeholder}
           className="resize-none bg-transparent text-[15px] outline-none placeholder:text-fg-muted disabled:opacity-60"
         />
-        <div className="mt-auto flex items-center gap-2.5 text-fg-muted">
-          {attach ? (
-            <>
-              <Paperclip className="size-4" />
-              <span className="text-xs">Upload one file (PDF, DOCX, TXT)</span>
-            </>
+        <div className="mt-auto flex flex-wrap items-center gap-2.5 text-fg-muted">
+          {onAttach ? (
+            attachment ? (
+              <span data-testid="attachment-chip" className="inline-flex items-center gap-1.5 rounded bg-surface-3 px-2 py-0.5 text-xs text-fg-secondary">
+                <FileText className="size-3" />
+                <span className="max-w-[240px] truncate">{attachment.name}</span>
+                <span className="text-fg-muted">· {formatNumber(attachment.chars)} chars · untrusted</span>
+                {onRemoveAttachment && (
+                  <button type="button" aria-label="Remove file" onClick={onRemoveAttachment} className="ml-0.5 hover:text-foreground">
+                    <X className="size-3" />
+                  </button>
+                )}
+              </span>
+            ) : (
+              <>
+                <input
+                  ref={fileRef}
+                  data-testid="attach-input"
+                  type="file"
+                  accept=".pdf,.docx,.txt,.md"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (file) await onAttach(file);
+                  }}
+                />
+                <button
+                  type="button"
+                  data-testid="attach-file"
+                  disabled={disabled || attaching}
+                  onClick={() => fileRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 text-xs hover:text-foreground disabled:opacity-60"
+                >
+                  <Paperclip className="size-4" />
+                  {attaching ? "Reading file…" : "Attach one file (PDF, DOCX, TXT, MD)"}
+                </button>
+              </>
+            )
           ) : (
             <Plus className="size-4" />
           )}
+          {attachError && <span data-testid="attach-error" className="text-xs text-danger">{attachError}</span>}
           {hint && <span className="text-xs">{hint}</span>}
           <button
             data-testid="composer-send"
