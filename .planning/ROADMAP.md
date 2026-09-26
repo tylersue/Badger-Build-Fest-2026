@@ -13,6 +13,8 @@ Deliver one interview-first BUILD → PUBLISH → HIRE → USE loop in four week
 
 ## Delivery Checkpoints
 
+**Competition deadline unresolved:** the team's event brief requires a Sunday 11 AM submission and a two-minute video. The four-week checkpoints below need a separate weekend prototype milestone if this means September 27. Track/challenge strategy and proposed early stress-test work are in [BUILDFEST-STRATEGY.md](../docs/BUILDFEST-STRATEGY.md); do not treat September 30 challenge results as extra build time.
+
 | Checkpoint | Expected result |
 |------------|-----------------|
 | Kickoff gate | Phase 1 complete: deployed scaffold, RLS, auth, wallet, and agreed contracts; four owners can work against the same interfaces. |
@@ -92,6 +94,7 @@ Before parallel implementation, record the four owners in the project board and 
 
 ## Planning Notes
 
+- Applied AI & Automation is the confirmed track. Art of the Break is tentative; Badgers Building for Badgers is the recommended second challenge. Prepare stress-test fixtures during Phase 1 and collect real before/after evidence as soon as the agent runs in Phases 2–3; the submission Break Card cannot wait solely for Phase 4. Challenge registration and timing remain to be confirmed.
 - Phase 1 must decide and freeze the wallet and service contracts before parallel implementation. The margin share is a configurable constant (15% default); validate it and size the free grant against a complete interview build during Phase 1 planning.
 - Phase 2 planning needs focused research on interview turn-taking, answer segmentation, and persona drafting. Hirer-uploaded files need a prompt-injection threat model before Phase 3 delivery.
 - Health/PT and tax/finance require fixed regulated-category treatment. Confirm the category policy for career/admissions during Phase 1 planning. Safety checks and grounded refusal are part of the first published-chat release, then verified more deeply in Phase 4.

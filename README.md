@@ -12,12 +12,15 @@ BUILD an agent  →  PUBLISH it  →  HIRE it  →  USE it (chat grounded in the
 
 Start here, in this order:
 
+Current product scope and execution phases live in [`.planning/PROJECT.md`](.planning/PROJECT.md), [`.planning/REQUIREMENTS.md`](.planning/REQUIREMENTS.md), and [`.planning/ROADMAP.md`](.planning/ROADMAP.md). Older product docs below still need reconciliation with the interview-first and unified-wallet decisions.
+
 | Doc | What it is |
 |---|---|
+| [docs/BUILDFEST-STRATEGY.md](docs/BUILDFEST-STRATEGY.md) | Applied AI track, recommended challenges, stress-test experiment, two-minute submission video, and deadline clarification |
 | [docs/PRD.md](docs/PRD.md) | Product requirements: problem, users, journeys, requirements with IDs and priorities, trust/safety, success metrics, open questions |
 | [docs/MVP-SCOPE.md](docs/MVP-SCOPE.md) | The in/out list for each of the four functions, and what "presentable" means |
 | [docs/HOW-AGENTS-WORK.md](docs/HOW-AGENTS-WORK.md) | Plain-language explanation of how an agent is built and run, mapped to LangSmith / LangGraph concepts |
-| [docs/DEMO.md](docs/DEMO.md) | The 4-minute, two-laptop demo script we are building toward |
+| [docs/DEMO.md](docs/DEMO.md) | Historical four-minute live-demo script; use the BuildFest strategy for the current submission video |
 | [docs/RESEARCH.md](docs/RESEARCH.md) | What we learned from LangSmith, Delphi, GPT Store, Poe, and others, and what we're borrowing |
 | [docs/CUSTOMER-BRIEF.md](docs/CUSTOMER-BRIEF.md) ([HTML](docs/CUSTOMER-BRIEF.html)) | Two-page version of the customer research: who it's for, beachhead, evidence, competitors, money, what to prove, the pitch |
 | [docs/CUSTOMER-RESEARCH.md](docs/CUSTOMER-RESEARCH.md) | Who this is for: expert and hirer ICPs, segmentation, beachhead decision, PMF evidence, unit economics, market sizing, four-week validation plan, campus go-to-market, and the pitch narrative. Raw reports in `.planning/research/customer/` |

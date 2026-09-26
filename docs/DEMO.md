@@ -1,5 +1,7 @@
 # Demo Script (target: 4 minutes, two laptops)
 
+> Historical script: the document-first setup, Stripe, and per-agent trials below predate the current requirements. For the supplied event's two-minute submission video, use [BUILDFEST-STRATEGY.md](BUILDFEST-STRATEGY.md#two-minute-submission-video). Reconcile this live-demo script after the competition timeline is confirmed.
+
 **Laptop A** = the expert. **Laptop B** = the hirer. Both are signed in before the demo starts. Laptop A already has a *draft* agent with the persona form filled in but **no knowledge uploaded yet**, so the audience sees ingestion happen live.
 
 Prerequisite state (run `pnpm seed` the night before):
