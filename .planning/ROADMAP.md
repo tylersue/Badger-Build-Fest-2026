@@ -2,7 +2,7 @@
 
 ## Overview
 
-Deliver one interview-first BUILD → PUBLISH → HIRE → USE loop in four weeks with four collaborators. The first phase establishes shared contracts so builder, knowledge, runtime, and marketplace work can proceed in parallel. The next two phases make the complete loop work by the end of week 2. The final phase adds the remaining trust, privacy, earnings, and operator workflows and verifies the system with real users and content. `.planning/PROJECT.md` and `.planning/REQUIREMENTS.md` define the current scope; the older `docs/ROADMAP.md` and related docs need reconciliation because they still describe Stripe, document-first setup, and per-agent trials.
+Deliver one interview-first BUILD → PUBLISH → HIRE → USE loop in four weeks with four collaborators. Phase 1 establishes shared contracts. Phase 2 agent-building and Phase 3 discovery, chat, and credits then run concurrently across owners, with integration checkpoints before either outcome is accepted. The complete loop must work by the end of week 2. Phase 4 trust, privacy, earnings, and operator work can begin where contracts are stable, then completes after the integrated loop is verified with real users and content. `.planning/PROJECT.md` and `.planning/REQUIREMENTS.md` define the current scope; the older `docs/ROADMAP.md` and related docs need reconciliation because they still describe Stripe, document-first setup, and per-agent trials.
 
 ## Phases
 
@@ -20,7 +20,7 @@ Deliver one interview-first BUILD → PUBLISH → HIRE → USE loop in four week
 | End of week 2 | Phase 3 complete: two accounts can walk BUILD → PUBLISH → HIRE → USE on a deployed URL, with real metering and mock funding. |
 | Weeks 3–4 | Phase 4 complete: privacy, moderation, ratings, earnings, adversarial checks, and outside-user fixes are ready for release. |
 
-Phase gates describe integrated outcomes. Within a phase, the four owners can work in parallel against the shared contracts. Sandbox is an integration checkpoint between knowledge and runtime; published chat is an integration checkpoint between builder, marketplace, runtime, and wallet. The AI core must have separate knowledge and runtime owners.
+Phase gates describe integrated outcomes, not exclusive work periods. Phase 2 and Phase 3 implementation start together once Phase 1 contracts are stable. Sandbox is an integration checkpoint between knowledge and runtime; published chat is an integration checkpoint between builder, marketplace, runtime, and wallet. Phase 3 cannot pass verification until the Phase 2 knowledge and persona path works. The AI core must have separate knowledge and runtime owners.
 
 ## Four-Person Collaboration
 
@@ -33,7 +33,7 @@ Assign one teammate to each lane at kickoff; the names are intentionally open un
 | Runtime | `features/runtime/`, chat API and chat pages, LLM wrapper | Model registry, usage-logging contract, chat stream and safety contracts | Shared sandbox pipeline; hirer chat, grounding, citations, safety and file context | Privacy and feedback behavior, streaming and safety checks |
 | Marketplace → Credits | `features/marketplace/`, `features/billing/`, listing and wallet pages | Wallet, ledger, free grant and mock funding contract | Browse/listings and wallet checks; usage settlement and expert credit | Ratings, earnings, cash-out and expert insights |
 
-The knowledge and runtime lanes must be owned by different people. Freeze the shared `searchKnowledge`, `personaToSystemPrompt`, `buildPrompt`, wallet check, settlement, and chat stream types in Phase 1; changes to those contracts require review from every affected lane. Work on Phase 3 listings and chat UI may begin against stubs during Phase 2. The phase dependency marks when the integrated outcome can be accepted, not when another teammate may start work.
+The knowledge and runtime lanes must be owned by different people. Freeze the shared `searchKnowledge`, `personaToSystemPrompt`, `buildPrompt`, wallet check, settlement, and chat stream types in Phase 1; changes to those contracts require review from every affected lane. Phase 2 and Phase 3 owners can build against stubs in separate branches or worktrees and merge in small PRs. A single coordinator updates shared `.planning/ROADMAP.md` and `.planning/STATE.md` during concurrent execution to avoid competing state edits. GSD's `parallelization` setting runs independent plans within one phase; it does not itself schedule separate phases concurrently. The phase dependencies below distinguish when work may start from when its integrated result can be accepted.
 
 Before parallel implementation, record the four owners in the project board and `.github/CODEOWNERS`, replace obsolete issues with phase-mapped work, and land small PRs through CI and preview deploys. Use a two-account deployed walkthrough as the merge gate for the Phase 3 loop; verify build costs, hirer debit, and expert credit from the same run.
 
@@ -66,7 +66,7 @@ Before parallel implementation, record the four owners in the project board and 
 
 ### Phase 3: Publish, Discover & Use
 **Goal**: An expert's agent can be published and found, and a hirer can use it safely while both sides see the credit effect.
-**Depends on**: Phase 2
+**Depends on**: Phase 1 to start; Phase 2 to complete the end-to-end acceptance gate
 **Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, MKT-01, MKT-02, MKT-03, MKT-04, CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-06, CHAT-07, CHAT-10, CHAT-11, CHAT-12, CRED-04
 **Success Criteria** (what must be TRUE):
   1. An expert accepts content consent, sets a 1x–5x rate, publishes an eligible agent instantly, sees its generated listing, and can unpublish it immediately.
@@ -79,7 +79,7 @@ Before parallel implementation, record the four owners in the project board and 
 
 ### Phase 4: Trust, Insights & Launch Readiness
 **Goal**: Hirers, experts, and admins can review outcomes and exercise privacy and moderation controls; the full loop holds up under outside and adversarial use.
-**Depends on**: Phase 3
+**Depends on**: Phase 1 to start independent controls; Phase 2 and Phase 3 to complete the end-to-end acceptance gate
 **Requirements**: MKT-05, MKT-06, CHAT-08, CHAT-09, CRED-08, CRED-09, EXPT-01, EXPT-02, ADMN-01
 **Success Criteria** (what must be TRUE):
   1. A hirer can rate an agent once after five messages, give thumbs feedback on answers, flag an agent, and choose per conversation whether the expert may read its transcript; sharing starts off.
