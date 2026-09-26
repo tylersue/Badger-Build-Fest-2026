@@ -1,11 +1,11 @@
 ---
 current_phase: 1
-current_phase_name: Accounts, Wallet & Shared Contracts
+current_phase_name: Shell, Wallet & Shared Contracts
 total_phases: 4
 current_plan: 0
 status: Ready to plan
 progress: 0%
-last_activity: 2026-09-26 — Four-person roadmap created and all 58 v1 requirements mapped.
+last_activity: 2026-09-26 — Phase 1 context gathered; scope changed to a presentation MVP (no auth, seeded identities, LangSmith UI).
 ---
 
 # Project State
@@ -15,14 +15,14 @@ last_activity: 2026-09-26 — Four-person roadmap created and all 58 v1 requirem
 See: .planning/PROJECT.md (updated 2026-09-26)
 
 **Core value:** An expert with no audience or technical skill can turn their knowledge into a cited agent and earn when others use it.
-**Current focus:** Phase 1: Accounts, Wallet & Shared Contracts
+**Current focus:** Phase 1: Shell, Wallet & Shared Contracts
 
 ## Current Position
 
-Phase: 1 of 4 (Accounts, Wallet & Shared Contracts)
+Phase: 1 of 4 (Shell, Wallet & Shared Contracts)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-09-26 — Four-person roadmap created and all 58 v1 requirements mapped.
+Last activity: 2026-09-26 — Phase 1 context gathered; scope changed to a presentation MVP (no auth, seeded identities, LangSmith UI); 56 v1 requirements mapped.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -45,7 +45,9 @@ Progress: [░░░░░░░░░░] 0%
 
 ### Decisions
 
-Decisions are logged in .planning/PROJECT.md. Current scope is interview-first, a single credit wallet, real metering, mock funding and cash-out, and no Stripe integration in v1.
+Decisions are logged in .planning/PROJECT.md. Current scope is interview-first, a single credit wallet, real metering, mock funding and cash-out, and no Stripe integration in v1. As of 2026-09-26 the MVP is a presentation build: no auth or RLS, two seeded identities with a sidebar switcher, placeholder seed content, UI copied from LangSmith. Phase 1 decisions: .planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md.
+
+Working branch: `platform/skeleton-ui` (off `main`, PR back). GSD branching_strategy stays `none`.
 
 ### Pending Todos
 
@@ -53,9 +55,11 @@ Decisions are logged in .planning/PROJECT.md. Current scope is interview-first, 
 
 ### Blockers/Concerns
 
-- Size the free grant against a full interview build and confirm the configurable margin share during Phase 1 planning.
 - Research interview turn-taking and answer-to-chunk segmentation during Phase 2 planning.
-- Define treatment for each seed category and the untrusted hirer-file path before published chat.
+- Threat-model the untrusted hirer-file path before published chat.
+- Regulated-category list (health/PT, tax/finance) is provisional; revisit before Phase 3.
+- Tyler's roadmap assumed auth and RLS; the team has not yet seen the no-auth change (lands via the `platform/skeleton-ui` PR).
+- GSD subagents are not installed; plan-phase and execute-phase run inline until `npx get-shit-done-cc@latest --global` is run.
 
 ## Deferred Items
 
@@ -66,5 +70,5 @@ Decisions are logged in .planning/PROJECT.md. Current scope is interview-first, 
 ## Session Continuity
 
 Last session: 2026-09-26
-Stopped at: Roadmap drafted; Phase 1 is ready to plan.
-Resume file: None
+Stopped at: Phase 1 context gathered
+Resume file: .planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md
