@@ -1,0 +1,39 @@
+# Code owners get auto-requested for review on PRs touching these paths.
+# Fill in the GitHub usernames on kickoff day (see docs/WORKSTREAMS.md), then uncomment.
+# Later lines take precedence over earlier ones.
+
+# platform — infra, schema, shared UI, docs (reviewer for anything cross-cutting)
+# .github/                    @platform-owner
+# docs/                       @platform-owner
+# supabase/                   @platform-owner
+# lib/                        @platform-owner
+# components/ui/              @platform-owner
+# proxy.ts                    @platform-owner
+# app/(auth)/                 @platform-owner
+# app/(app)/layout.tsx        @platform-owner
+# app/(app)/admin/            @platform-owner
+# scripts/                    @platform-owner
+
+# builder
+# app/(app)/build/            @builder-owner
+# features/builder/           @builder-owner
+
+# knowledge
+# app/api/ingest/             @knowledge-owner
+# features/knowledge/         @knowledge-owner
+
+# runtime
+# app/api/chat/               @runtime-owner
+# app/(app)/chat/             @runtime-owner
+# features/runtime/           @runtime-owner
+
+# marketplace
+# app/(marketing)/            @marketplace-owner
+# app/(app)/marketplace/      @marketplace-owner
+# app/(app)/agents/           @marketplace-owner
+# features/marketplace/       @marketplace-owner
+
+# billing
+# app/api/stripe/             @billing-owner
+# app/(app)/earnings/         @billing-owner
+# features/billing/           @billing-owner

@@ -1,0 +1,253 @@
+- generic [active] [ref=f7e1]:
+  - link "Skip to main content" [ref=f7e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=f7e3]:
+    - link [ref=f7e5] [cursor=pointer]:
+      - /url: /hc/en-us
+      - img "Help Center Help Center home page" [ref=f7e6]
+    - navigation [ref=f7e8]:
+      - list [ref=f7e9]:
+        - link "Report a bug" [ref=f7e10] [cursor=pointer]:
+          - /url: https://help.poe.com/hc/en-us/requests/new?ticket_form_id=16988813886996
+        - link "Contact Us" [ref=f7e11] [cursor=pointer]:
+          - /url: https://help.poe.com/hc/en-us/requests/new
+        - link "Poe.com" [ref=f7e12] [cursor=pointer]:
+          - /url: https://poe.com/
+  - main [ref=f7e13]:
+    - generic [ref=f7e15]:
+      - navigation [ref=f7e16]:
+        - navigation "Breadcrumb" [ref=f7e17]:
+          - list [ref=f7e18]:
+            - listitem [ref=f7e19]:
+              - link "Help Center" [ref=f7e20] [cursor=pointer]:
+                - /url: /hc/en-us
+            - listitem [ref=f7e21]:
+              - text: ">"
+              - link "Creator Monetization" [ref=f7e22] [cursor=pointer]:
+                - /url: /hc/en-us/categories/23501852775572-Creator-Monetization
+            - listitem [ref=f7e23]:
+              - text: ">"
+              - link "FAQs" [ref=f7e24] [cursor=pointer]:
+                - /url: /hc/en-us/sections/23501842337556-FAQs
+        - search [ref=f7e26]:
+          - searchbox "Search" [ref=f7e27]
+      - generic [ref=f7e28]:
+        - complementary [ref=f7e29]
+        - article [ref=f7e30]:
+          - generic [ref=f7e31]:
+            - heading "Poe Creator Monetization FAQs" [level=1] [ref=f7e32]
+            - generic [ref=f7e35]:
+              - generic [ref=f7e36]:
+                - time [ref=f7e37]: 3 months ago
+                - text: ·
+              - text: Updated
+          - generic [ref=f7e40]:
+            - heading [level=2] [ref=f7e41]:
+              - link "What is creator monetization?" [ref=f7e42] [cursor=pointer]:
+                - /url: "#h_01HSYNAVFYE29TNWV8TR10ZDYT"
+            - paragraph [ref=f7e43]:
+              - text: The creator monetization program pays Poe bot creators for engaging users with their bots. You can set a price per message sent to your bots. For developers, see the
+              - link "API documentation" [ref=f7e44] [cursor=pointer]:
+                - /url: https://creator.poe.com/docs/server-bots/poe-bot-monetization-api-documentation
+              - text: for monetizing based on your specific bot implementation.
+            - heading [level=2] [ref=f7e45]:
+              - link "How do I participate in creator monetization?" [ref=f7e46] [cursor=pointer]:
+                - /url: "#h_01HSYNE5WBB742TJ5M9BS4SG41"
+            - heading "Join the program" [level=3] [ref=f7e47]
+            - paragraph [ref=f7e48]:
+              - text: Visit
+              - link "poe.com/creators" [ref=f7e49] [cursor=pointer]:
+                - /url: https://poe.com/creators
+              - text: via a desktop web browser, or navigate to Creators in the Poe menu. Navigate to Creators in the menu. Follow the steps to join creator monetization.
+            - heading "Set your price" [level=3] [ref=f7e50]
+            - paragraph [ref=f7e51]: You can set a bot’s price per-message. Each time a user messages your bot, you earn that price from Poe. Choose a price that balances your earnings with user accessibility - lower prices attract more users, while higher prices could limit your bot’s use, as it turns away some users.
+            - heading "Share" [level=3] [ref=f7e52]
+            - paragraph [ref=f7e53]: Share your bots with your friends, on social media, or use any other marketing approach to help people discover them. The more users engage with your bots, the more you’ll be able to earn.
+            - heading "Get paid" [level=3] [ref=f7e54]
+            - paragraph [ref=f7e55]: "Earn money when:"
+            - list [ref=f7e56]:
+              - listitem [ref=f7e57]: users send messages to your bot
+            - paragraph [ref=f7e58]: Check the Creator page to see earnings per bot.
+            - heading [level=2] [ref=f7e59]:
+              - link "Who is eligible to be monetized?" [ref=f7e60] [cursor=pointer]:
+                - /url: "#h_01HSYNR7XFRXTQT1T4GKPKY8DZ"
+            - paragraph [ref=f7e61]:
+              - text: Bot creators must agree to the Poe Creator Monetization program
+              - link "terms and conditions" [ref=f7e62] [cursor=pointer]:
+                - /url: https://poe.com/earnings_tos
+              - text: "and must be based in an eligible region to set a price per message. Below are the regions where the Poe Creator Monetization program is currently available:"
+            - figure [ref=f7e63]:
+              - table [ref=f7e64]:
+                - rowgroup [ref=f7e68]:
+                  - row [ref=f7e69]:
+                    - columnheader "Region" [ref=f7e70]
+                    - columnheader "Eligible for Price per message" [ref=f7e71]
+                - rowgroup [ref=f7e72]:
+                  - row [ref=f7e73]:
+                    - cell "Argentina" [ref=f7e74]
+                    - cell "Yes" [ref=f7e75]
+                  - row [ref=f7e76]:
+                    - cell "Australia" [ref=f7e77]
+                    - cell "Yes" [ref=f7e78]
+                  - row [ref=f7e79]:
+                    - cell "Belgium" [ref=f7e80]
+                    - cell "Yes" [ref=f7e81]
+                  - row [ref=f7e82]:
+                    - cell "Canada" [ref=f7e83]
+                    - cell "Yes" [ref=f7e84]
+                  - row [ref=f7e85]:
+                    - cell "Colombia" [ref=f7e86]
+                    - cell "Yes" [ref=f7e87]
+                  - row [ref=f7e88]:
+                    - cell "Denmark" [ref=f7e89]
+                    - cell "Yes" [ref=f7e90]
+                  - row [ref=f7e91]:
+                    - cell "Finland" [ref=f7e92]
+                    - cell "Yes" [ref=f7e93]
+                  - row [ref=f7e94]:
+                    - cell "Germany" [ref=f7e95]
+                    - cell "Yes" [ref=f7e96]
+                  - row [ref=f7e97]:
+                    - cell "Hong Kong" [ref=f7e98]
+                    - cell "Yes" [ref=f7e99]
+                  - row [ref=f7e100]:
+                    - cell "India" [ref=f7e101]
+                    - cell "Yes" [ref=f7e102]
+                  - row [ref=f7e103]:
+                    - cell "Ireland" [ref=f7e104]
+                    - cell "Yes" [ref=f7e105]
+                  - row [ref=f7e106]:
+                    - cell "Italy" [ref=f7e107]
+                    - cell "Yes" [ref=f7e108]
+                  - row [ref=f7e109]:
+                    - cell "Japan" [ref=f7e110]
+                    - cell "Yes" [ref=f7e111]
+                  - row [ref=f7e112]:
+                    - cell "Mexico" [ref=f7e113]
+                    - cell "Yes" [ref=f7e114]
+                  - row [ref=f7e115]:
+                    - cell "Netherlands" [ref=f7e116]
+                    - cell "Yes" [ref=f7e117]
+                  - row [ref=f7e118]:
+                    - cell "Norway" [ref=f7e119]
+                    - cell "Yes" [ref=f7e120]
+                  - row [ref=f7e121]:
+                    - cell "Portugal" [ref=f7e122]
+                    - cell "Yes" [ref=f7e123]
+                  - row [ref=f7e124]:
+                    - cell "Singapore" [ref=f7e125]
+                    - cell "Yes" [ref=f7e126]
+                  - row [ref=f7e127]:
+                    - cell "Spain" [ref=f7e128]
+                    - cell "Yes" [ref=f7e129]
+                  - row [ref=f7e130]:
+                    - cell "Sweden" [ref=f7e131]
+                    - cell "Yes" [ref=f7e132]
+                  - row [ref=f7e133]:
+                    - cell "Switzerland" [ref=f7e134]
+                    - cell "Yes" [ref=f7e135]
+                  - row [ref=f7e136]:
+                    - cell "United Kingdom" [ref=f7e137]
+                    - cell "Yes" [ref=f7e138]
+                  - row [ref=f7e139]:
+                    - cell "United States of America" [ref=f7e140]
+                    - cell "Yes" [ref=f7e141]
+            - heading [level=2] [ref=f7e142]:
+              - link "How are message earnings calculated?" [ref=f7e143] [cursor=pointer]:
+                - /url: "#h_01HSYNSSMCQSRMJ3MF9S1EQMHT"
+            - paragraph [ref=f7e144]: For every message sent to you that your bot responds to, you earn the price you set. Total message earnings are the sum of all those creator prices earned during a pay period.
+            - paragraph [ref=f7e145]: "For example, the below table illustrates how changes to your per-message price can affect your earnings. For the full month, total earnings from messages would be $65:"
+            - figure [ref=f7e146]:
+              - table [ref=f7e147]:
+                - rowgroup [ref=f7e148]:
+                  - row [ref=f7e149]:
+                    - columnheader "Day" [ref=f7e150]
+                    - columnheader "Creator price in USD$ per 1000 messages" [ref=f7e151]: Creator price in USD$per 1000 messages
+                    - columnheader "Total messages responded to (in 1000s)" [ref=f7e152]: Total messages responded to(in 1000s)
+                    - columnheader "Total messages responded to (in 1000s)" [ref=f7e153]: Total messages responded to(in 1000s)
+                - rowgroup [ref=f7e154]:
+                  - row [ref=f7e155]:
+                    - cell "1 → 10" [ref=f7e156]
+                    - cell "$0.00" [ref=f7e157]
+                    - cell "100" [ref=f7e158]
+                    - cell "$0" [ref=f7e159]
+                  - row [ref=f7e160]:
+                    - cell "11 → 20" [ref=f7e161]
+                    - cell "$3.00" [ref=f7e162]
+                    - cell "10" [ref=f7e163]
+                    - cell "$30" [ref=f7e164]
+                  - row [ref=f7e165]:
+                    - cell "21 → 30" [ref=f7e166]
+                    - cell "$0.50" [ref=f7e167]
+                    - cell "70" [ref=f7e168]
+                    - cell "$35" [ref=f7e169]
+            - paragraph [ref=f7e170]:
+              - text: You can view your total monetized messages and total earnings accumulated per-bot on the
+              - link "Creators page" [ref=f7e171] [cursor=pointer]:
+                - /url: https://poe.com/creators
+              - text: on Poe.com’s desktop website. These message counts or total earnings may be adjusted in accordance with the
+              - link "Terms of Service" [ref=f7e172] [cursor=pointer]:
+                - /url: https://poe.com/earnings_tos
+              - text: (e.g. policy violating behaviors).
+            - heading [level=2] [ref=f7e173]:
+              - link "How should I decide on a price?" [ref=f7e174] [cursor=pointer]:
+                - /url: "#h_01HTQ3YX8B3ZTDEY852NGTWX83"
+            - paragraph [ref=f7e175]: The cost to users will be displayed in compute points which are an aggregate of the price you set and our costs (e.g. base bots, compute costs, etc). So balance is important. We recommend starting with lower prices and making infrequent adjustments. If you have your own server costs, set a price that covers those costs. Higher prices and frequent price changes could affect your distribution on Poe and result in fewer users messaging your bot.
+            - paragraph [ref=f7e176]: The system will allow you to change the per-message price as often as you would like and view the current user-facing points price from your bot’s edit page. It may take up to 24 hours for a price to update. The maximum price per 1,000 messages is 10,000 USD, meant to cover API bots that are expensive to run or contain highly specialized knowledge bases. On Poe, prices and earnings are in United States Dollars (USD).
+            - heading [level=2] [ref=f7e177]:
+              - link "How do I receive payments?" [ref=f7e178] [cursor=pointer]:
+                - /url: "#h_01HSYP0PT2G337ZD6WBE4W407B"
+            - paragraph [ref=f7e179]: Complete your account setup on Stripe to receive payouts. After joining creator monetization, navigate to the Creators page and follow the instructions to connect to our payment processor. Fill in your taxpayer information within 90 days of joining the program to be eligible for payments. You will receive payments through your Stripe account. Poe will send payments in USD to Stripe, and Stripe will transfer payments to you. If needed, Stripe will convert to the currency set in your Stripe account based on their available conversion rate at that time.
+            - heading [level=2] [ref=f7e180]:
+              - link "When will I receive payments?" [ref=f7e181] [cursor=pointer]:
+                - /url: "#h_01HSYP2920PNGYA8YV6109YEA6"
+            - paragraph [ref=f7e182]:
+              - text: Assuming you are eligible, have joined creator monetization, completed all required information, and remain in good standing, you will become eligible for a payment when you have earnings of $10+ to be paid. Payments are made within 30–45 days of the end of a month. For example, if your bot has earnings January 1st and January 28th, the end of the month is January 31st; 30-45 days later- February 28th to March 15th- you would be paid those earnings. See the
+              - link "terms and conditions" [ref=f7e183] [cursor=pointer]:
+                - /url: https://poe.com/earnings_tos
+              - text: for full details.
+            - heading [level=2] [ref=f7e184]:
+              - link "How do I set a price for my bot?" [ref=f7e185] [cursor=pointer]:
+                - /url: "#h_01HTQ4C0MSQFWBWCR5NG5PVW1V"
+            - paragraph [ref=f7e186]: You can set a bot’s price when you create or edit one of your bots.
+            - paragraph [ref=f7e187]: "New bot price setting:"
+            - list [ref=f7e188]:
+              - listitem [ref=f7e189]: Visit poe.com or the Poe app.
+              - listitem [ref=f7e190]: Click "Create bot" in the menu.
+              - listitem [ref=f7e191]: Scroll down to Monetization tools.
+              - listitem [ref=f7e192]: Customize your bot's price.
+            - paragraph [ref=f7e193]: "Existing bot price setting:"
+            - list [ref=f7e194]:
+              - listitem [ref=f7e195]: Visit poe.com or the Poe app.
+              - listitem [ref=f7e196]:
+                - text: Navigate to your
+                - link "profile" [ref=f7e197] [cursor=pointer]:
+                  - /url: https://poe.com/profile
+                - text: to view your bot list.
+              - listitem [ref=f7e198]: Click on the bot you wish to edit. This will open a chat page with that bot.
+              - listitem [ref=f7e199]: In the bot details on the right of the page, or on the bot info card at the top of the chat thread, click the overflow button (ie “...”).
+              - listitem [ref=f7e200]: Click "Edit bot".
+              - listitem [ref=f7e201]: Scroll down to Monetization tools.
+              - listitem [ref=f7e202]: Customize your bot's price.
+          - generic [ref=f7e205]:
+            - text: Have more questions?
+            - link "Submit a request" [ref=f7e206] [cursor=pointer]:
+              - /url: /hc/en-us/requests/new
+  - contentinfo [ref=f7e208]:
+    - generic [ref=f7e209]:
+      - link "About Poe" [ref=f7e210] [cursor=pointer]:
+        - /url: https://poe.com/about
+      - link "Usage Guidelines" [ref=f7e211] [cursor=pointer]:
+        - /url: https://poe.com/usage_guidelines
+      - link "Terms of Service" [ref=f7e212] [cursor=pointer]:
+        - /url: https://poe.com/tos
+      - link "Privacy Policy" [ref=f7e213] [cursor=pointer]:
+        - /url: https://poe.com/privacy
+      - link "Subscriber Terms" [ref=f7e214] [cursor=pointer]:
+        - /url: https://poe.com/subscriber_tos
+      - link "Earnings Terms of Service" [ref=f7e215] [cursor=pointer]:
+        - /url: https://poe.com/earnings_tos
+      - link "Quora Inc. © 2023" [ref=f7e216] [cursor=pointer]:
+        - /url: https://www.quora.com
+      - button "English (United States)" [ref=f7e219] [cursor=pointer]
+  - button "Open support" [ref=f7e222] [cursor=pointer]

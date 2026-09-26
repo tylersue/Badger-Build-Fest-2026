@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Product questions
+    url: https://github.com/tylersue/Badger-Build-Fest-2026/blob/main/docs/PRD.md
+    about: Read the PRD first; open a Discussion or ping the team chat for scope questions.

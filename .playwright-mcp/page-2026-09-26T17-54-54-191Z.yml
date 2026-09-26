@@ -1,0 +1,162 @@
+- generic:
+  - generic:
+    - generic:
+      - banner [aria-hidden]:
+        - link [ref=f5e1] [cursor=pointer]:
+          - /url: /discover
+        - generic [ref=f5e7]:
+          - link [ref=f5e8] [cursor=pointer]:
+            - /url: /auth?callbackUrl=%2Fvanessa
+            - text: Sign In
+          - link [ref=f5e9] [cursor=pointer]:
+            - /url: /onboarding?source=vanessa
+            - text: Create Your Delphi
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - button [ref=f5e11] [cursor=pointer]: Share
+                                  - generic [aria-hidden]:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - heading [level=1]:
+                                              - generic: Vanessa Van Edwards
+                                  - generic [aria-hidden]:
+                                    - paragraph:
+                                      - generic: Science of People, Science Of People · Behavioral Researcher, Founder, Author, Harvard Instructor
+                                  - generic [aria-hidden]:
+                                    - generic:
+                                      - heading [level=2]: About
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - paragraph:
+                                              - text: I'm Vanessa Van Edwards, a behavioral researcher, Wall Street Journal bestselling author of
+                                              - button: Captivate
+                                              - text: and
+                                              - button: Cues
+                                              - text: ", and founder of"
+                                              - button: Science of People
+                                              - text: .
+                                            - paragraph:
+                                              - text: For over a decade, I've decoded human behavior through my lab at
+                                              - button: Science of People
+                                              - text: ", training millions via YouTube (100M+ views), courses like People School, and keynotes for Google, Meta, Harvard, and more."
+                                            - paragraph:
+                                              - text: Ask me about reading
+                                              - button: cues
+                                              - text: ","
+                                              - button: building charisma
+                                              - text: ", and"
+                                              - button: mastering first impressions
+                                              - text: .
+                                  - generic:
+                                    - region "Ask me about":
+                                      - generic:
+                                        - heading "Ask me about" [level=2]
+                                      - generic:
+                                        - generic:
+                                          - button "How can I make a great first impression?"
+                                        - generic:
+                                          - button "How do I overcome social anxiety or awkwardness?"
+                                        - generic:
+                                          - button "How do I read body language accurately?"
+                                  - generic [aria-hidden]:
+                                    - heading [level=2]: Follow Vanessa for more...
+                                    - generic:
+                                      - link:
+                                        - /url: https://x.com/vvanedwards
+                                        - generic: X
+                                      - link:
+                                        - /url: https://instagram.com/vvanedwards
+                                        - generic: Instagram
+                                      - link:
+                                        - /url: https://www.linkedin.com/in/vanessavanedwards
+                                        - generic: LinkedIn
+                                      - link:
+                                        - /url: https://www.scienceofpeople.com/
+                                        - generic: Website
+                                      - link:
+                                        - /url: https://facebook.com/vvandwards
+                                        - generic: Facebook
+                                      - link:
+                                        - /url: https://youtube.com/@vvanedwards
+                                        - generic: YouTube
+                                      - link:
+                                        - /url: https://tiktok.com/@vvanedwards
+                                        - generic: TikTok
+                                  - generic [aria-hidden]:
+                                    - paragraph:
+                                      - text: © 2026 Delphi ·
+                                      - link:
+                                        - /url: /terms
+                                        - text: Terms
+                                      - text: ·
+                                      - link:
+                                        - /url: /privacy
+                                        - text: Privacy
+          - generic [aria-hidden]:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - button [ref=f5e12] [cursor=pointer]: View chat
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - button
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - textbox [disabled]:
+                                      - /placeholder: Ask Vanessa Van Edwards anything…
+                              - generic:
+                                - generic:
+                                  - button
+                                - button [ref=f5e15] [cursor=pointer]:
+                                  - generic [ref=f5e18]: Call
+                    - paragraph [ref=f5e19]:
+                      - text: By using this service, you agree to the
+                      - link [ref=f5e20] [cursor=pointer]:
+                        - /url: https://www.delphi.ai/terms
+                        - text: Terms of Service
+                      - text: and
+                      - link [ref=f5e21] [cursor=pointer]:
+                        - /url: https://www.delphi.ai/privacy
+                        - text: Privacy Policy
+                      - text: .
+  - region "Notifications alt+T"
+  - alert
+  - dialog [ref=f5e23]:
+    - heading [level=2] [ref=f5e29]:
+      - text: Sign in to continue with
+      - generic [ref=f5e30]:
+        - img "Vanessa Van Edwards" [ref=f5e33]
+        - text: Vanessa
+    - generic [ref=f5e34]:
+      - button "Continue with Google" [active] [ref=f5e36] [cursor=pointer]
+      - generic [ref=f5e37]: or
+      - button "Continue with Email" [ref=f5e40] [cursor=pointer]
+      - paragraph [ref=f5e41]:
+        - text: By continuing, you agree to our
+        - link "Terms of Service" [ref=f5e42] [cursor=pointer]:
+          - /url: https://www.delphi.ai/terms
+        - text: and
+        - link "Privacy Policy" [ref=f5e43] [cursor=pointer]:
+          - /url: https://www.delphi.ai/privacy
+    - button "Close" [ref=f5e44] [cursor=pointer]

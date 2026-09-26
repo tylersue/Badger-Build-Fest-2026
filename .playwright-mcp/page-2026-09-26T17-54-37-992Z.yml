@@ -1,0 +1,139 @@
+- generic [active] [ref=f4e1]:
+  - banner [ref=f4e2]:
+    - generic [ref=f4e3]:
+      - link "BuilderPack" [ref=f4e4] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=f4e6]:
+        - link "Actions" [ref=f4e7] [cursor=pointer]:
+          - /url: /actions
+        - link "Use cases" [ref=f4e9] [cursor=pointer]:
+          - /url: /use-cases
+        - link "Docs" [ref=f4e11] [cursor=pointer]:
+          - /url: /docs
+        - link "Support" [ref=f4e13] [cursor=pointer]:
+          - /url: /support
+      - generic [ref=f4e14]:
+        - button "Switch to dark mode" [ref=f4e15]
+        - link "Install in HubSpot" [ref=f4e18] [cursor=pointer]:
+          - /url: /install
+  - main [ref=f4e20]:
+    - generic [ref=f4e22]:
+      - generic [ref=f4e23]:
+        - paragraph [ref=f4e24]: For HubSpot Agent Builder
+        - heading "AI actions that take Agent Builder beyond the CRM." [level=1] [ref=f4e26]
+        - paragraph [ref=f4e27]: Research, enrichment and content in one pack. Drop them into any workflow, or hand them to your agents as tools.
+        - generic [ref=f4e28]:
+          - link "Install in HubSpot" [ref=f4e29] [cursor=pointer]:
+            - /url: /install
+          - paragraph [ref=f4e30]: 19 actions, one HubSpot OAuth install, no API keys. Needs a Professional or Enterprise portal.
+        - paragraph [ref=f4e31]:
+          - link "Read the setup guide" [ref=f4e32] [cursor=pointer]:
+            - /url: /docs
+      - generic [ref=f4e35]:
+        - img "An agent in the middle, connected to the actions in the pack — LinkedIn, news, company, content, image, screenshot, domain, X, YouTube and messaging" [ref=f4e36]:
+          - generic [ref=f4e54]: LINKEDIN
+          - generic [ref=f4e62]: NEWS
+          - generic [ref=f4e68]: COMPANY
+          - generic [ref=f4e73]: CONTENT
+          - generic [ref=f4e78]: IMAGE
+          - generic [ref=f4e85]: SCREENSHOT
+          - generic [ref=f4e91]: DOMAIN
+          - generic [ref=f4e97]: X
+          - generic [ref=f4e102]: YOUTUBE
+          - generic [ref=f4e107]: MESSAGE
+          - generic [ref=f4e117]: YOUR AGENT
+        - paragraph [ref=f4e118]: The agent does the legwork.
+    - generic [ref=f4e120]:
+      - generic [ref=f4e121]:
+        - paragraph [ref=f4e122]: What’s in the pack
+        - paragraph [ref=f4e124]: 19 actions across 4 groups. Every one doubles as an agent tool.
+      - link [ref=f4e125] [cursor=pointer]:
+        - /url: /actions
+        - paragraph [ref=f4e126]: "01"
+        - heading "Company research3 actions" [level=3] [ref=f4e127]:
+          - text: Company research
+          - generic [ref=f4e128]: 3 actions
+        - generic [ref=f4e129]:
+          - paragraph [ref=f4e130]: Financials, earnings, and domain intelligence from a name or URL.
+          - paragraph [ref=f4e131]: Company Earnings Info, Company Financial Profile, Domain Info
+      - link [ref=f4e134] [cursor=pointer]:
+        - /url: /actions
+        - paragraph [ref=f4e135]: "02"
+        - heading "Social & web intelligence11 actions" [level=3] [ref=f4e136]:
+          - text: Social & web intelligence
+          - generic [ref=f4e137]: 11 actions
+        - generic [ref=f4e138]:
+          - paragraph [ref=f4e139]: LinkedIn, Instagram, X, YouTube, and news lookups as single steps.
+          - paragraph [ref=f4e140]: Get LinkedIn Activity, Get LinkedIn Posts, Get LinkedIn Company Posts, and more
+      - link [ref=f4e143] [cursor=pointer]:
+        - /url: /actions
+        - paragraph [ref=f4e144]: "03"
+        - heading "Content generation2 actions" [level=3] [ref=f4e145]:
+          - text: Content generation
+          - generic [ref=f4e146]: 2 actions
+        - generic [ref=f4e147]:
+          - paragraph [ref=f4e148]: Long-form content and images from a prompt, ready for the next step.
+          - paragraph [ref=f4e149]: Generate Content, Generate Image
+      - link [ref=f4e152] [cursor=pointer]:
+        - /url: /actions
+        - paragraph [ref=f4e153]: "04"
+        - heading "Utilities3 actions" [level=3] [ref=f4e154]:
+          - text: Utilities
+          - generic [ref=f4e155]: 3 actions
+        - generic [ref=f4e156]:
+          - paragraph [ref=f4e157]: Capture pages, send messages, and hand work to another agent.
+          - paragraph [ref=f4e158]: Web Page Screenshot, Send Message, Invoke Other Agent
+      - link "Browse all 19 actions" [ref=f4e162] [cursor=pointer]:
+        - /url: /actions
+    - generic [ref=f4e164]:
+      - generic [ref=f4e165]:
+        - paragraph [ref=f4e166]: Works in two places
+        - heading "A step in a workflow. A tool on an agent." [level=2] [ref=f4e168]
+        - paragraph [ref=f4e169]: Installing once covers both.
+      - generic [ref=f4e170]:
+        - generic [ref=f4e171]:
+          - heading "In a workflow" [level=3] [ref=f4e172]
+          - list [ref=f4e173]:
+            - listitem [ref=f4e174]:
+              - generic [ref=f4e175]: "01"
+              - generic [ref=f4e176]: Install the pack into your HubSpot portal.
+            - listitem [ref=f4e177]:
+              - generic [ref=f4e178]: "02"
+              - generic [ref=f4e179]: Add a BuilderPack action to any workflow and map its inputs.
+            - listitem [ref=f4e180]:
+              - generic [ref=f4e181]: "03"
+              - generic [ref=f4e182]: Use its output tokens in any later step.
+        - generic [ref=f4e183]:
+          - heading "On an agent" [level=3] [ref=f4e184]
+          - list [ref=f4e185]:
+            - listitem [ref=f4e186]:
+              - generic [ref=f4e187]: "01"
+              - generic [ref=f4e188]: Create or open an agent in Agent Builder.
+            - listitem [ref=f4e189]:
+              - generic [ref=f4e190]: "02"
+              - generic [ref=f4e191]: Add BuilderPack tools on the Actions tab.
+            - listitem [ref=f4e192]:
+              - generic [ref=f4e193]: "03"
+              - generic [ref=f4e194]: Run the agent from the Agent Inbox or from chat.
+    - generic [ref=f4e197]:
+      - generic [ref=f4e198]:
+        - heading "Ready to try them?" [level=2] [ref=f4e199]
+        - paragraph [ref=f4e200]: Install once with HubSpot OAuth. No API keys, no per-action setup. You’ll need a HubSpot Professional or Enterprise plan; Agent Builder isn’t available on Free or Starter portals.
+      - link "Install in HubSpot" [ref=f4e201] [cursor=pointer]:
+        - /url: /install
+  - contentinfo [ref=f4e202]:
+    - generic [ref=f4e203]:
+      - paragraph [ref=f4e204]:
+        - text: Made with
+        - img "love" [ref=f4e205]
+        - text: by HubSpot Labs.
+      - navigation [ref=f4e207]:
+        - link "Terms" [ref=f4e208] [cursor=pointer]:
+          - /url: /terms
+        - link "Privacy" [ref=f4e209] [cursor=pointer]:
+          - /url: /privacy
+        - link "Support" [ref=f4e210] [cursor=pointer]:
+          - /url: /support
+        - link "skills.org" [ref=f4e211] [cursor=pointer]:
+          - /url: https://skills.org
+  - alert [ref=f4e212]
