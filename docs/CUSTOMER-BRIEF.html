@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer Brief</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#5c5c5c; --line:#e3e3e3; --accent:#b21f2d; --bg:#fbfbfa; --card:#fff; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#ebebeb; --muted:#a8a8a8; --line:#333; --accent:#ff7b86; --bg:#151515; --card:#1e1e1e; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  main { max-width:860px; margin:0 auto; padding:40px 24px 64px; }
+  h1 { font-size:30px; margin:0 0 4px; letter-spacing:-0.01em; }
+  .meta { color:var(--muted); font-size:13px; margin-bottom:24px; }
+  h2 { font-size:17px; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent); margin:32px 0 10px; padding-top:14px; border-top:1px solid var(--line); }
+  .story { font-size:20px; font-weight:600; line-height:1.35; padding:16px 20px; background:var(--card); border-left:4px solid var(--accent); border-radius:4px; margin:8px 0 6px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; background:var(--card); margin:8px 0; }
+  th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); }
+  td:first-child { font-weight:600; white-space:nowrap; }
+  ul { margin:6px 0 0; padding-left:20px; } li { margin:4px 0; }
+  ol { margin:6px 0 0; padding-left:22px; } ol li { margin:4px 0; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:14px 16px; }
+  .card h3 { margin:0 0 8px; font-size:15px; }
+  .card dl { margin:0; } .card dt { font-size:12px; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); margin-top:8px; } .card dd { margin:2px 0 0; }
+  .kpi { display:flex; gap:12px; flex-wrap:wrap; margin:8px 0; }
+  .kpi div { flex:1 1 180px; background:var(--card); border:1px solid var(--line); border-radius:6px; padding:12px 14px; }
+  .kpi b { display:block; font-size:24px; line-height:1.1; } .kpi span { color:var(--muted); font-size:13px; }
+  .note { color:var(--muted); font-size:13px; }
+  .u { color:var(--muted); font-style:italic; }
+  @media (max-width:640px) { .grid { grid-template-columns:1fr; } td:first-child { white-space:normal; } }
+  @media print { body { background:#fff; color:#000; font-size:11.5px; } main { max-width:none; padding:0; } h2 { break-after:avoid; margin-top:18px; } table, .card, .kpi div { break-inside:avoid; } .story { font-size:15px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Customer Brief</h1>
+  <div class="meta">Expert Agent Platform · Badger Build Fest 2026 · 2026-09-26 · Short version of <code>docs/CUSTOMER-RESEARCH.md</code>. Numbers passed a 45-claim verification unless marked <span class="u">unverified</span>.</div>
+
+  <h2>The story in one line</h2>
+  <div class="story">Ask a real expert's AI, built from an interview with them, that cites only their words and refuses the rest, for cents a message.</div>
+
+  <div class="kpi">
+    <div><b>57%</b><span>of standard financial questions chatbots get wrong; 88% on hard ones</span></div>
+    <div><b>372 : 1</b><span>students per US school counselor (ASCA recommends 250 : 1)</span></div>
+    <div><b>4.56¢</b><span>price per message at the default 3× multiplier; expert earns 2.58¢</span></div>
+  </div>
+
+  <h2>Who we're for</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Expert (supply)</h3>
+      <dl>
+        <dt>Who</dt><dd>A practicing advisor with <b>no audience and no tech skill</b>: independent college consultant, former admissions officer, campus career coach. From January: solo tax preparer (EA, AFSP, one-partner CPA).</dd>
+        <dt>Trigger</dt><dd>The fifth "can you look at my essay" this week. Tax pros: April 20 or October 16, burnout fresh, off-season open.</dd>
+        <dt>Uses today</dt><dd>Free intro calls, a course nobody buys, the same checklist emailed over and over.</dd>
+        <dt>Why switch</dt><dd>Answer the same 30 questions once. Earn from people who can't afford a package. Zero liability in admissions.</dd>
+        <dt>Must see in session 1</dt><dd>25-min interview → 20+ Q&amp;As. Agent critiques a real essay with a citation. Refuses to predict odds or ghostwrite. Delete guarantee.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Hirer (demand)</h3>
+      <dl>
+        <dt>Who</dt><dd>A student or applicant with <b>a document and a deadline</b>: resume, personal statement, essay, later a W-2. Priced out of $140–$349 an hour.</dd>
+        <dt>Trigger</dt><dd>A career fair in 48 hours, a Nov 1 deadline, a grad application due.</dd>
+        <dt>Uses today</dt><dd>ChatGPT ("generic AI slop"), Reddit, a school counselor with 372 other students.</dd>
+        <dt>Why switch</dt><dd>A named expert's rubric applied to their own upload, cited, at 11 pm, for cents.</dd>
+        <dt>Must see in session 1</dt><dd>Upload a draft, get feedback tied to the expert's framework, see a refusal that offers the human.</dd>
+      </dl>
+    </div>
+  </div>
+  <p class="note"><b>Not for:</b> experts who already have an audience (Delphi's market); anyone wanting diagnosis, prescriptions, investment picks, or a filled-in return; therapists, financial advisors, immigration paralegals, and vets in year one (AI-therapy bans, Advisers Act, unauthorized-practice and vet-client rules).</p>
+
+  <h2>Beachhead and order</h2>
+  <table>
+    <tr><th>#</th><th>Category</th><th>When</th><th>Why</th></tr>
+    <tr><td>1</td><td><b>Career + college admissions</b></td><td>October 2026, on campus</td><td>No license anywhere. Lowest liability. The essay is the natural upload. Six campus career fairs Oct 1–Nov 4. Experts reachable via three UW career offices and the IECA directory. Scored 32/35 vs tax 23, PT 26.</td></tr>
+    <tr><td>2</td><td><b>Tax</b></td><td>Recruit Oct–Dec, launch late Jan 2027</td><td>Biggest market (886k PTIN holders), most answerable from documents, but October is its trough and CPAs negotiate disclaimers.</td></tr>
+    <tr><td>3</td><td><b>PT / fitness</b></td><td>Scoped sprint, full launch later</td><td>Largest year-round demand (230M weekly health questions on ChatGPT, <span class="u">self-reported by OpenAI</span>) but scope-of-practice rules limit it to conditioning and injury-prevention education.</td></tr>
+  </table>
+  <p class="note"><b>What would flip it:</b> week-1 fake-door tests showing career coaches booking under 10 interviews per 100 sign-ups while tax pros book more.</p>
+
+  <h2>Evidence the market exists</h2>
+  <ul>
+    <li><b>People already pay strangers for expert answers.</b> JustAnswer: 12,000 experts, 700 categories, $28–$125/month. The FTC sued them in January 2026 over the subscription trap. Demand is real; the incumbent's trust is broken.</li>
+    <li><b>People pay for expert help inside software.</b> TurboTax Live is 53% of a $5.3B business and grew 37% last year.</li>
+    <li><b>Experts will let an AI answer for them.</b> Delphi: $16M Series A led by Sequoia, 2,000+ experts, one creator at seven figures on $39/month. Personify launched April 2026. Both require an audience. We don't.</li>
+    <li><b>Generic AI fails on exactly these questions.</b> 57% wrong on standard financial questions, 88% on hard ones (18 models, 10,000+ answers). Half of chatbot health answers problematic (BMJ Open, April 2026). r/tax threads document ChatGPT using last year's standard deduction.</li>
+    <li><b>Half of US adults use chatbots,</b> a fifth for medical advice (Pew, 2026). Only 18% rate the health answers highly accurate vs 65% for their own provider.</li>
+  </ul>
+
+  <h2>Why now</h2>
+  <ul>
+    <li><b>Oct 29, 2025:</b> OpenAI bars tailored licensed advice without a licensed professional involved. A named, consenting expert is the compliant shape.</li>
+    <li><b>Dec 11, 2026:</b> custom GPTs stop running; the GPT Store never broadly paid creators. The biggest consumer "build an agent" surface is leaving.</li>
+    <li><b>Tokens are cheap:</b> a typical grounded message costs about 1.5¢ on Sonnet 5.</li>
+    <li><b>Law is moving toward verified self-clones:</b> NO FAKES Act, FTC impersonation rules, Illinois's AI-therapy ban (Aug 2025), New York and Pennsylvania bills against bots posing as licensed professionals.</li>
+  </ul>
+
+  <h2>Competitors</h2>
+  <table>
+    <tr><th>Who</th><th>What they are</th><th>Our difference</th></tr>
+    <tr><td>Delphi, Personify, Coachvox, BuddyPro</td><td>Expert clones; $79–$197/month SaaS for the creator; assume you bring followers</td><td>We serve the 99% with expertise and no audience. No SaaS fee. Cost-based credits.</td></tr>
+    <tr><td>JustAnswer, Intro, Clarity</td><td>Human experts for hire; $28–$125/month or $100–$2,000/hour</td><td>Same trust, cents per message, the expert never has to show up.</td></tr>
+    <tr><td>ChatGPT, Gemini, Claude</td><td>Free, generic, no accountability</td><td>Named expert, cited answers, refuses outside its knowledge.</td></tr>
+    <tr><td>Poe, GPT Store, Character.AI</td><td>Bot marketplaces: per-message points, no payouts, or entertainment</td><td>Per-message pricing that pays the expert 85% of the markup.</td></tr>
+  </table>
+  <p class="note"><b>The empty slot:</b> named-practitioner accountability at chatbot price, with the platform bringing the hirers. No AI product occupies it.</p>
+
+  <h2>Money</h2>
+  <ul>
+    <li><b>Cost per message:</b> about 1.5¢ typical, 5¢ heavy.</li>
+    <li><b>Price at 3×:</b> 4.56¢. Expert earns 2.58¢, platform 0.46¢ plus cost recovery. A 10-message session is 46¢ vs a $28 minimum month at JustAnswer.</li>
+    <li><b>Honest sizing:</b> ~934k independent US advice professionals → ~$2.2B GMV supply ceiling. Demand is the real limit: ~$125M GMV at plausible conversion. Say <b>$0.5B central case</b> and that demand is what we must prove.</li>
+    <li><b>At MVP volume an expert earns tens of dollars, not hundreds.</b> The MVP proves the metering loop and the 85/15 split, not an income.</li>
+  </ul>
+
+  <h2>What we must prove in four weeks</h2>
+  <table>
+    <tr><th>Metric</th><th>Bar</th><th>Kill signal</th></tr>
+    <tr><td>Experts who start an interview and publish</td><td>≥ 60%</td><td>Under 30% finish a 45-minute interview</td></tr>
+    <tr><td>Hirers who open a chat and send a paid message</td><td>≥ 15%</td><td>Concierge trial-to-paid under 10%</td></tr>
+    <tr><td>Hirers who return within 7 days</td><td>≥ 25%</td><td>Under 15%, or nobody uses it twice</td></tr>
+    <tr><td>Cited answers / correct refusals (50-question eval)</td><td>≥ 90% / ≥ 90%</td><td>Citation grounding under 85%</td></tr>
+    <tr><td>Sean Ellis "very disappointed if gone"</td><td>≥ 40%</td><td>—</td></tr>
+  </table>
+  <p class="note"><b>How:</b> 15 expert + 15 hirer interviews in week 1; fake-door pages (5–10% conversion is a real signal); a concierge test at 50¢ a message in week 2; alpha with five experts in week 3.</p>
+
+  <h2>The pitch in 60 seconds</h2>
+  <ol>
+    <li><b>Problem:</b> AI gets financial questions wrong 57% of the time, and 57% of people who ask would act on the answer anyway.</li>
+    <li><b>Why now:</b> OpenAI just exited tailored advice and is retiring GPTs; tokens cost cents; the law wants verified self-clones.</li>
+    <li><b>Wedge:</b> college and career advice on this campus, this month. Tax in January.</li>
+    <li><b>Demo:</b> interview a coach → a student asks and gets her cited answer → uploads an essay, gets rubric feedback → asks admission odds, gets a refusal and a link to book her → the coach's dashboard shows credits earned.</li>
+    <li><b>Model:</b> cents per message; the expert keeps 85% of the markup. We only make money when the expert does.</li>
+    <li><b>Ask:</b> the prize, ten intros to counselors and enrolled agents, a small pre-seed for a tax-season pilot.</li>
+  </ol>
+  <p class="note"><b>Strongest objection, "why doesn't OpenAI do this?":</b> they just banned tailored licensed advice and are killing the product that would host it. Their creator push copies Patreon, which needs an audience. Ours doesn't.</p>
+
+  <h2>Decisions still yours</h2>
+  <ol>
+    <li>Confirm the beachhead order above (research recommends it; not yet ratified).</li>
+    <li>Assign the four lanes to four names.</li>
+    <li>Product name.</li>
+  </ol>
+</main>
+</body>
+</html>

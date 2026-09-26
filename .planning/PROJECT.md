@@ -72,6 +72,8 @@ An expert with no audience and no technical skill can put their knowledge into a
 
 ## Context
 
+- **Competition:** Applied AI & Automation is the confirmed track. Badgers Building for Badgers and The Art of the Break are the team's current, tentative challenge choices. See `docs/TRACKS-AND-AWARDS.md` for the supplied event information and `docs/BUILDFEST-STRATEGY.md` for the entry plan, proposed stress test, and two-minute video.
+- **Submission timing needs clarification:** the supplied event brief says Sunday at 11 AM, live finalist demos 1–3 PM, and asynchronous challenge results September 30, 2026. This conflicts with the four-week build assumption below; confirm the weekend prototype milestone before using that schedule for the competition.
 - **Team and timeline:** four collaborators (tylersue, AustinHan07, jonathankwon, 22joshlee) at Badger Build Fest 2026, four weeks part-time, kickoff 2026-09-26.
 - **Existing artifacts in the repo:** `docs/PRD.md`, `docs/MVP-SCOPE.md`, `docs/HOW-AGENTS-WORK.md`, `docs/ARCHITECTURE.md`, `docs/WORKSTREAMS.md`, `docs/ROADMAP.md`, `docs/RESEARCH.md`, `docs/DEMO.md`, `CONTRIBUTING.md`, GitHub labels/milestone/36 issues. These predate the interview-first and unified-credit decisions and need a reconciliation pass (tracked in Key Decisions).
 - **Research (`.planning/research/`):** LangSmith Fleet is the reference for "describe it in chat, get a config, test, publish" and for metering build and run from one allowance; its unit (LCU) is criticized as opaque, so ours is cents. Delphi is the closest marketplace analogue (subscriptions to one expert, 15% take, ID verification, citations) but assumes the creator brings an audience. GPT Store, Poe, Character.AI show that opaque or per-message-only monetization fails creators. No comparable product uses an interview as the primary knowledge source; that is our differentiator and needs its own research at plan time.
@@ -90,6 +92,8 @@ An expert with no audience and no technical skill can put their knowledge into a
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Enter Applied AI & Automation | Interview-driven expert agents and automated grounded assistance fit the selected track | Confirmed by team 2026-09-26 |
+| Consider Art of the Break plus Badgers Building for Badgers | Stress-test the core grounding promise and show a concrete benefit for a UW student | Current team preference; entry pending |
 | MVP = the loop BUILD → PUBLISH → HIRE → USE; nothing off that path ships | Four people, four weeks | — Pending |
 | Interview is the primary knowledge source; documents optional | Experts have tacit knowledge that isn't in any document; no competitor does this; GSD-style questioning is the model | — Pending |
 | Interview drafts the persona; expert edits a short form | Fewer forms, same answers reused | — Pending |
@@ -129,4 +133,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-26 after Phase 1 discussion (presentation MVP, no auth)*
+*Last updated: 2026-09-26 after the Phase 1 discussion (presentation MVP, no auth) and recording the BuildFest track, tentative challenge pair, awards, and deadline conflict*
