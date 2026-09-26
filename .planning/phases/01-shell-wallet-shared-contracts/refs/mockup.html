@@ -21,6 +21,7 @@ html{color-scheme:dark}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--tx);font:14px/1.5 Inter,-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;display:flex;font-variant-numeric:tabular-nums}
 a{color:var(--sel-tx);text-decoration:none}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
 svg.lucide{width:16px;height:16px;stroke-width:1.75;flex:none}
 /* sidebar */
 .side{width:244px;flex:none;background:var(--side);border-right:1px solid var(--bd-faint);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;padding-bottom:12px}
@@ -439,7 +440,7 @@ function show(v){
   document.getElementById('crumb').innerHTML=crumbs[v]||'';
   document.querySelector('.main').scrollTop=0;bind();
 }
-function bind(){document.querySelectorAll('[data-v]').forEach(el=>{el.onclick=e=>{e.stopPropagation();show(el.dataset.v)}});lucide.createIcons();}
+function bind(){document.querySelectorAll('[data-v]').forEach(el=>{el.tabIndex=0;el.onclick=e=>{e.stopPropagation();show(el.dataset.v)};el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show(el.dataset.v)}}});lucide.createIcons();}
 let who='expert';
 function ident(id){
   who=id;const ex=id==='expert';
