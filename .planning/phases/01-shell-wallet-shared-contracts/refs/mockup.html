@@ -24,11 +24,11 @@ a{color:var(--sel-tx);text-decoration:none}
 svg.lucide{width:16px;height:16px;stroke-width:1.75;flex:none}
 /* sidebar */
 .side{width:244px;background:var(--side);border-right:1px solid var(--bd-faint);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;padding-bottom:12px}
-.brand{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 16px;font-weight:600;font-size:15px}
+.brand{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 16px;font-weight:600;font-size:16px}
 .brand .lucide{color:var(--mut)}
 .search{margin:4px 8px 10px;height:24px;background:var(--s3);border-radius:4px;display:flex;align-items:center;gap:6px;padding:0 8px;color:var(--mut);font-size:13px}
 .search .k{margin-left:auto;display:flex;gap:2px}
-.search .k span{background:var(--s4);border-radius:3px;padding:0 4px;font-size:11px;color:var(--tx3)}
+.search .k span{background:var(--s4);border-radius:4px;padding:0 4px;font-size:12px;color:var(--tx3)}
 .nav{display:flex;flex-direction:column;gap:6px;padding:0 8px;overflow:auto;flex:1}
 .lbl{font-size:10px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:4px;padding:8px 8px 0}
 .lbl .lucide{width:12px;height:12px}
@@ -44,7 +44,7 @@ svg.lucide{width:16px;height:16px;stroke-width:1.75;flex:none}
 .row.start .tile{width:18px;height:18px;border-radius:4px;background:var(--s4);display:grid;place-items:center}
 .row.start .tile .lucide{width:11px;height:11px;color:var(--sel-tx)}
 .foot{margin:auto 8px 0;position:relative}
-.ident{height:64px;display:flex;align-items:center;gap:10px;padding:12px;border-radius:6px;cursor:pointer}
+.ident{height:64px;display:flex;align-items:center;gap:10px;padding:12px;border-radius:4px;cursor:pointer}
 .ident:hover{background:var(--s2)}
 .ava{width:40px;height:40px;border-radius:8px;background:#5a4636;display:grid;place-items:center;font-weight:600;color:#fff;flex:none}
 .ava.b{background:#2f5a4b}
@@ -56,7 +56,7 @@ svg.lucide{width:16px;height:16px;stroke-width:1.75;flex:none}
 .pop .t{font-size:12px;color:var(--mut);padding:4px 8px 8px}
 .pop .o{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:4px;cursor:pointer;font-size:13px}
 .pop .o:hover{background:var(--s3)}
-.pop .o .ava{width:28px;height:28px;border-radius:6px;font-size:12px}
+.pop .o .ava{width:28px;height:28px;border-radius:8px;font-size:12px}
 .pop .o .lucide{margin-left:auto;color:var(--sel-tx)}
 .pop .h{font-size:12px;color:var(--mut);padding:8px 8px 2px;border-top:1px solid var(--bd-muted);margin-top:6px}
 /* main */
@@ -129,8 +129,8 @@ td.num,th.num{text-align:right;padding-right:16px}
 .hero h1{margin:0 0 12px;font-size:28px;font-weight:500;line-height:1.2}
 .hero p{margin:0 0 20px;color:var(--tx3);line-height:1.5}
 .hero .r{background:linear-gradient(135deg,#1566b8,#5fbef8);margin:16px;border-radius:12px;min-height:260px;display:grid;place-items:center}
-.hero .r .fake{width:70%;background:#0d0f18;border-radius:8px;padding:12px;font-size:11px;color:var(--mut);border:1px solid var(--bd-subtle)}
-.hero .r .fake b{display:block;color:var(--tx);font-size:12px;margin-bottom:6px}
+.hero .r .fake{width:70%;background:#0d0f18;border-radius:8px;padding:12px;font-size:12px;color:var(--mut);border:1px solid var(--bd-subtle)}
+.hero .r .fake b{display:block;color:var(--tx);font-size:13px;font-weight:500;margin-bottom:6px}
 .exp{display:flex;align-items:center;gap:12px;margin-top:8px}
 .exp .n{font-weight:600}
 .exp .m{font-size:12px;color:var(--mut)}
@@ -153,7 +153,7 @@ td.num,th.num{text-align:right;padding-right:16px}
 .onb{text-align:center;padding:48px 0 24px}
 .onb .h{display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:600}
 .apill{display:inline-flex;align-items:center;gap:8px;background:var(--s3);border-radius:9999px;height:32px;padding:0 12px 0 6px;font-size:13px;font-weight:500}
-.apill .tile{width:22px;height:22px;border-radius:6px}
+.apill .tile{width:22px;height:22px;border-radius:4px}
 .apill .tile .lucide{width:12px;height:12px}
 .onb p{margin:8px 0 0;font-size:13px;color:var(--mut)}
 .msg{font-size:16px;line-height:1.6;margin:0 0 20px;white-space:pre-line}
@@ -165,7 +165,7 @@ td.num,th.num{text-align:right;padding-right:16px}
 .cost{font-size:12px;color:var(--mut);margin:-12px 0 20px}
 .compose{flex:none;display:flex;justify-content:center;padding:12px 16px 16px}
 .box{width:100%;max-width:752px;min-height:96px;background:var(--s2);border:1px solid var(--bd-subtle);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
-.box .ph{color:var(--mut);font-size:15px}
+.box .ph{color:var(--mut);font-size:16px}
 .box .ctl{display:flex;align-items:center;gap:10px;margin-top:auto}
 .box .ctl .lucide{color:var(--mut)}
 .box .send{margin-left:auto;width:24px;height:24px;border-radius:9999px;background:var(--brand-fill);display:grid;place-items:center}
@@ -185,7 +185,7 @@ td.num,th.num{text-align:right;padding-right:16px}
 .drow .s{font-size:12px;color:var(--mut)}
 .drow .lucide{color:var(--mut)}
 .drow .chev{margin-left:auto;width:14px;height:14px}
-.drow .ico{width:24px;height:24px;border-radius:6px;background:var(--s3);display:grid;place-items:center}
+.drow .ico{width:24px;height:24px;border-radius:4px;background:var(--s3);display:grid;place-items:center}
 .drow .ico .lucide{width:13px;height:13px;color:var(--tx3)}
 .dash{margin:8px 12px 12px;height:36px;border:1px dashed var(--bd);border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;color:var(--sel-tx);cursor:pointer}
 .dsec .pad{padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px}
@@ -343,7 +343,7 @@ td.num,th.num{text-align:right;padding-right:16px}
   <!-- HIRER CHAT -->
   <section class="view chatlike" id="v-chat">
     <div class="col">
-      <div class="thead"><span class="tile" style="width:24px;height:24px;border-radius:6px"><i data-lucide="activity" style="width:12px;height:12px"></i></span><span class="ttl">Maria Chen · Physical therapy <small>by Maria Chen · <a href="#">Contact the expert</a></small></span><span class="r"><span class="btn"><i data-lucide="share-2"></i>Share transcript: off</span><span class="btn"><i data-lucide="flag"></i></span><span class="pill" id="balpill">7,988 credits</span></span></div>
+      <div class="thead"><span class="tile" style="width:24px;height:24px;border-radius:4px"><i data-lucide="activity" style="width:12px;height:12px"></i></span><span class="ttl">Maria Chen · Physical therapy <small>by Maria Chen · <a href="#">Contact the expert</a></small></span><span class="r"><span class="btn"><i data-lucide="share-2"></i>Share transcript: off</span><span class="btn"><i data-lucide="flag"></i></span><span class="pill" id="balpill">7,988 credits</span></span></div>
       <div class="scroll"><div class="thread" style="padding-top:24px">
         <div class="msg u"><span>My knee is swollen three weeks after an ACL repair. Normal?</span></div>
         <div class="chip"><i data-lucide="search"></i>Retrieved 4 sources</div>
