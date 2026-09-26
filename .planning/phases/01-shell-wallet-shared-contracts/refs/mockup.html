@@ -38,6 +38,7 @@ svg.lucide{width:16px;height:16px;stroke-width:1.75;flex:none}
 .row:hover{background:var(--s2)}
 .row.active{background:var(--sel);color:var(--sel-tx)}
 .row.active .lucide{color:var(--sel-tx)}
+.row .lab{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .cnt{margin-left:auto;font-size:13px;color:var(--mut);font-weight:400}
 .row.start{background:var(--s2);height:32px}
 .row.start .tile{width:18px;height:18px;border-radius:4px;background:var(--s4);display:grid;place-items:center}
@@ -204,19 +205,19 @@ td.num,th.num{text-align:right;padding-right:16px}
   <div class="brand"><span>Badger Experts</span><i data-lucide="panel-left"></i></div>
   <div class="search"><i data-lucide="search"></i>Search…<span class="k"><span>⌘</span><span>K</span></span></div>
   <nav class="nav">
-    <div class="row active" data-v="marketplace"><i data-lucide="store"></i>Marketplace</div>
-    <div class="row" data-v="chats"><i data-lucide="message-square"></i>Chats<span class="cnt">3</span></div>
+    <div class="row active" data-v="marketplace"><i data-lucide="store"></i><span class="lab">Marketplace</span></div>
+    <div class="row" data-v="chats"><i data-lucide="message-square"></i><span class="lab">Chats</span><span class="cnt">3</span></div>
     <div class="lbl exp-only"><i data-lucide="chevron-down"></i>Build</div>
-    <div class="row exp-only" data-v="agents"><i data-lucide="bot"></i>My agents</div>
-    <div class="row start exp-only" data-v="builder"><span class="tile"><i data-lucide="sparkles"></i></span>New agent</div>
+    <div class="row exp-only" data-v="agents"><i data-lucide="bot"></i><span class="lab">My agents</span></div>
+    <div class="row start exp-only" data-v="builder"><span class="tile"><i data-lucide="sparkles"></i></span><span class="lab">New agent</span></div>
     <div class="lbl exp-only"><i data-lucide="chevron-down"></i>My agents<i data-lucide="plus" class="plus"></i></div>
-    <div class="row exp-only" data-v="builder"><i data-lucide="activity"></i>Maria Chen · Physical therapy</div>
+    <div class="row exp-only" data-v="builder"><i data-lucide="activity"></i><span class="lab">Maria Chen · Physical therapy</span></div>
     <div class="lbl"><i data-lucide="chevron-down"></i>Credits</div>
-    <div class="row" data-v="wallet"><i data-lucide="wallet"></i>Wallet</div>
-    <div class="row exp-only" data-v="earnings"><i data-lucide="trending-up"></i>Earnings</div>
+    <div class="row" data-v="wallet"><i data-lucide="wallet"></i><span class="lab">Wallet</span></div>
+    <div class="row exp-only" data-v="earnings"><i data-lucide="trending-up"></i><span class="lab">Earnings</span></div>
     <div style="margin-top:auto"></div>
-    <div class="row" data-v="admin"><i data-lucide="shield"></i>Admin</div>
-    <div class="row" data-v="settings"><i data-lucide="settings"></i>Settings</div>
+    <div class="row" data-v="admin"><i data-lucide="shield"></i><span class="lab">Admin</span></div>
+    <div class="row" data-v="settings"><i data-lucide="settings"></i><span class="lab">Settings</span></div>
   </nav>
   <div class="foot">
     <div class="pop" id="pop">
