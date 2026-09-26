@@ -367,7 +367,7 @@ Health information, not medical care. If you're unsure, Maria's contact link is 
     <h1 class="title">Wallet</h1>
     <div class="sub">1 credit = 1 cent. Building and chatting both draw from here.</div>
     <div class="stats">
-      <div class="stat"><div class="l">Balance</div><div class="v" id="balv">7,988 credits</div><div class="c">$79.88</div></div>
+      <div class="stat"><div class="l">Balance</div><div class="v" id="balv">7,988 credits</div><div class="c" id="balc">$79.88</div></div>
       <div class="stat"><div class="l">Spent this week</div><div class="v">312 credits</div><div class="c">Interview 118 · Chat 194</div></div>
       <div class="stat"><div class="l">Added this month</div><div class="v">8,000 credits</div><div class="c">Seed · subscription · pack</div></div>
       <div class="stat"><div class="l">Typical call</div><div class="v">3 credits</div><div class="c">Reserved before each call</div></div>
@@ -428,7 +428,9 @@ Health information, not medical care. If you're unsure, Maria's contact link is 
 
 <script>
 const crumbs={marketplace:'<b>Marketplace</b>',listing:'<span>Marketplace</span>›<b>Maria Chen · Physical therapy</b><span class="r"><span class="btn p lg" data-v="chat">Start chat</span></span>',agents:'<b>My agents</b>',chats:'<b>Chats</b>',builder:'<span>My agents</span>›<b>Maria Chen · Physical therapy</b>',chat:'<span>Chats</span>›<b>Knee swelling after ACL repair</b>',wallet:'<b>Wallet</b>',earnings:'<b>Earnings</b>',admin:'<b>Admin</b>',settings:'<b>Settings</b>'};
+let cur='marketplace';
 function show(v){
+  cur=v;
   document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
   document.querySelectorAll('.nav .row').forEach(r=>r.classList.toggle('active',r.dataset.v===v&&!r.classList.contains('start')));
   if(v==='listing')document.querySelector('.nav .row[data-v=marketplace]').classList.add('active');
@@ -445,10 +447,11 @@ function ident(id){
   document.getElementById('ava').textContent=ex?'M':'S';document.getElementById('ava').className='ava'+(ex?'':' b');
   document.getElementById('ck-expert').style.display=ex?'':'none';document.getElementById('ck-hirer').style.display=ex?'none':'';
   document.querySelectorAll('.exp-only').forEach(e=>e.style.display=ex?'':'none');
-  document.getElementById('balpill').textContent=(ex?'7,988':'4,872')+' credits';document.getElementById('balv').textContent=(ex?'7,988':'4,872')+' credits';
+  document.getElementById('balpill').textContent=(ex?'7,988':'4,872')+' credits';document.getElementById('balv').textContent=(ex?'7,988':'4,872')+' credits';document.getElementById('balc').textContent=ex?'$79.88':'$48.72';
   document.getElementById('pop').classList.remove('open');
   toast('Switched to '+(ex?'Maria Chen':'Sam Okafor'));
-  show(ex?'marketplace':'marketplace');
+  const expOnly=['agents','builder','earnings'];
+  show(ex||!expOnly.includes(cur)?cur:'marketplace');
 }
 function toast(m){document.getElementById('toastmsg').textContent=m;const t=document.getElementById('toast');t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2500);}
 document.getElementById('ident').onclick=()=>document.getElementById('pop').classList.toggle('open');
