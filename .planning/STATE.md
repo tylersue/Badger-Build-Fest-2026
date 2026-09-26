@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 1 UI-SPEC approved
-last_updated: "2026-09-26T20:14:00.414Z"
+stopped_at: Phase 1 research complete (01-RESEARCH.md); plans not yet written. Resume with /gsd-plan-phase 1 (uses existing research).
+last_updated: "2026-09-26T20:28:41.683Z"
 last_activity: 2026-09-26 — Phase 1 context gathered; scope changed to a presentation MVP (no auth, seeded identities, LangSmith UI); 56 v1 requirements mapped.
 progress:
   total_phases: 4
@@ -76,6 +76,6 @@ Working branch: `platform/skeleton-ui` (off `main`, PR back). GSD branching_stra
 
 ## Session Continuity
 
-Last session: 2026-09-26T20:14:00.409Z
-Stopped at: Phase 1 UI-SPEC approved
-Resume file: .planning/phases/01-shell-wallet-shared-contracts/01-UI-SPEC.md
+Last session: 2026-09-26T20:28:41.677Z
+Stopped at: Phase 1 research complete (01-RESEARCH.md); plans not yet written. Resume with /gsd-plan-phase 1 (uses existing research).
+Resume file: .planning/phases/01-shell-wallet-shared-contracts/01-RESEARCH.md
