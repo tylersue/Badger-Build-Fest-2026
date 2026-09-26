@@ -145,16 +145,73 @@ Deferred. Tracked but not in the current roadmap.
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases cover which requirements. Each v1 requirement maps to exactly one phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (filled by roadmap) | | |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| INTV-01 | Phase 2 | Pending |
+| INTV-02 | Phase 2 | Pending |
+| INTV-03 | Phase 2 | Pending |
+| INTV-04 | Phase 2 | Pending |
+| INTV-05 | Phase 2 | Pending |
+| INTV-06 | Phase 2 | Pending |
+| INTV-07 | Phase 2 | Pending |
+| PERS-01 | Phase 2 | Pending |
+| PERS-02 | Phase 2 | Pending |
+| PERS-03 | Phase 2 | Pending |
+| DOCS-01 | Phase 2 | Pending |
+| DOCS-02 | Phase 2 | Pending |
+| DOCS-03 | Phase 2 | Pending |
+| DOCS-04 | Phase 2 | Pending |
+| RETR-01 | Phase 2 | Pending |
+| RETR-02 | Phase 2 | Pending |
+| RETR-03 | Phase 2 | Pending |
+| SBOX-01 | Phase 2 | Pending |
+| SBOX-02 | Phase 2 | Pending |
+| PUB-01 | Phase 3 | Pending |
+| PUB-02 | Phase 3 | Pending |
+| PUB-03 | Phase 3 | Pending |
+| PUB-04 | Phase 3 | Pending |
+| MKT-01 | Phase 3 | Pending |
+| MKT-02 | Phase 3 | Pending |
+| MKT-03 | Phase 3 | Pending |
+| MKT-04 | Phase 3 | Pending |
+| MKT-05 | Phase 4 | Pending |
+| MKT-06 | Phase 4 | Pending |
+| CHAT-01 | Phase 3 | Pending |
+| CHAT-02 | Phase 3 | Pending |
+| CHAT-03 | Phase 3 | Pending |
+| CHAT-04 | Phase 3 | Pending |
+| CHAT-05 | Phase 3 | Pending |
+| CHAT-06 | Phase 3 | Pending |
+| CHAT-07 | Phase 3 | Pending |
+| CHAT-08 | Phase 4 | Pending |
+| CHAT-09 | Phase 4 | Pending |
+| CHAT-10 | Phase 3 | Pending |
+| CHAT-11 | Phase 3 | Pending |
+| CHAT-12 | Phase 3 | Pending |
+| CRED-01 | Phase 1 | Pending |
+| CRED-02 | Phase 2 | Pending |
+| CRED-03 | Phase 2 | Pending |
+| CRED-04 | Phase 3 | Pending |
+| CRED-05 | Phase 2 | Pending |
+| CRED-06 | Phase 1 | Pending |
+| CRED-07 | Phase 1 | Pending |
+| CRED-08 | Phase 4 | Pending |
+| CRED-09 | Phase 4 | Pending |
+| CRED-10 | Phase 2 | Pending |
+| EXPT-01 | Phase 4 | Pending |
+| EXPT-02 | Phase 4 | Pending |
+| ADMN-01 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 58 total
-- Mapped to phases: 0
-- Unmapped: 58 ⚠️
+- Mapped to phases: 58
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-26*
