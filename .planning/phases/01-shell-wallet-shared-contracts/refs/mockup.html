@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<title>Badger Experts — Phase 1 shell mockup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --bg:#09090f;--side:#0d0f18;--s2:#111521;--s3:#1b2030;--s4:#282e42;
+  --bd-faint:#111521;--bd-muted:#1b2030;--bd-subtle:#282e42;--bd:#393f55;
+  --tx:#f5f8fb;--tx2:#e2e8f0;--tx3:#cbd5e1;--mut:#8790ab;
+  --brand:#0078f1;--brand-fill:#006ddd;--sel:#0c336a;--sel-tx:#5fbef8;
+  --ok:#46cd89;--ok-bg:#053321;--warn:#fdb022;--warn-bg:#4c2400;--bad:#f97066;--bad-fill:#d92d20;
+  --purple:#4e3487;--purple-bg:#190d38;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:14px/1.5 Inter,-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;display:flex;font-variant-numeric:tabular-nums}
+a{color:var(--sel-tx);text-decoration:none}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
+svg.lucide{width:16px;height:16px;stroke-width:1.75;flex:none}
+/* sidebar */
+.side{width:244px;flex:none;background:var(--side);border-right:1px solid var(--bd-faint);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;padding-bottom:12px}
+.brand{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 16px;font-weight:600;font-size:16px}
+.brand .lucide{color:var(--mut)}
+.search{margin:4px 8px 10px;height:24px;background:var(--s3);border-radius:4px;display:flex;align-items:center;gap:6px;padding:0 8px;color:var(--mut);font-size:13px}
+.search .k{margin-left:auto;display:flex;gap:2px}
+.search .k span{background:var(--s4);border-radius:4px;padding:0 4px;font-size:12px;color:var(--tx3)}
+.nav{display:flex;flex-direction:column;gap:6px;padding:0 8px;overflow:auto;flex:1}
+.lbl{font-size:10px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:4px;padding:8px 8px 0}
+.lbl .lucide{width:12px;height:12px}
+.lbl .plus{margin-left:auto;width:14px;height:14px}
+.row{height:28px;border-radius:4px;display:flex;align-items:center;gap:8px;padding:0 10px;font-size:13px;font-weight:500;color:var(--tx);cursor:pointer}
+.row .lucide{color:var(--mut)}
+.row:hover{background:var(--s2)}
+.row.active{background:var(--sel);color:var(--sel-tx)}
+.row.active .lucide{color:var(--sel-tx)}
+.row .lab{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .cnt{margin-left:auto;font-size:13px;color:var(--mut);font-weight:400}
+.row.start{background:var(--s2);height:32px}
+.row.start .tile{width:18px;height:18px;border-radius:4px;background:var(--s4);display:grid;place-items:center}
+.row.start .tile .lucide{width:11px;height:11px;color:var(--sel-tx)}
+.foot{margin:auto 8px 0;position:relative}
+.ident{height:64px;display:flex;align-items:center;gap:10px;padding:12px;border-radius:4px;cursor:pointer}
+.ident:hover{background:var(--s2)}
+.ava{width:40px;height:40px;border-radius:8px;background:#5a4636;display:grid;place-items:center;font-weight:600;color:#fff;flex:none}
+.ava.b{background:#2f5a4b}
+.ident .n{font-size:13px;font-weight:600}
+.ident .e{font-size:12px;color:var(--mut)}
+.ident .lucide{margin-left:auto;color:var(--mut)}
+.pop{position:absolute;left:0;right:0;bottom:70px;background:var(--s2);border:1px solid var(--bd-subtle);border-radius:8px;padding:8px;display:none;box-shadow:0 12px 32px #000a}
+.pop.open{display:block}
+.pop .t{font-size:12px;color:var(--mut);padding:4px 8px 8px}
+.pop .o{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:4px;cursor:pointer;font-size:13px}
+.pop .o:hover{background:var(--s3)}
+.pop .o .ava{width:28px;height:28px;border-radius:8px;font-size:12px}
+.pop .o .lucide{margin-left:auto;color:var(--sel-tx)}
+.pop .h{font-size:12px;color:var(--mut);padding:8px 8px 2px;border-top:1px solid var(--bd-muted);margin-top:6px}
+/* main */
+.main{flex:1;min-width:0;height:100vh;overflow:auto;display:flex;flex-direction:column}
+.crumb{height:40px;display:flex;align-items:center;gap:8px;padding:0 24px;font-size:13px;color:var(--mut);flex:none}
+.crumb b{color:var(--tx);font-weight:500}
+.crumb .r{margin-left:auto;display:flex;gap:8px}
+.view{display:none;padding:0 24px 32px;flex:1}
+.view.on{display:block}
+.view.chatlike{display:none;padding:0}
+.view.chatlike.on{display:flex}
+.title{font-size:24px;font-weight:500;line-height:1.33;margin:8px 0 2px}
+.sub{font-size:13px;color:var(--mut);margin-bottom:20px}
+.bar{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.btn{height:24px;padding:0 8px;border-radius:4px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd-muted);background:var(--side);color:var(--tx2);cursor:pointer;white-space:nowrap}
+.btn .lucide{width:16px;height:16px}
+.btn.p{background:var(--brand-fill);border-color:var(--brand);color:#fff}
+.btn.lg{height:32px;padding:0 12px;font-weight:500}
+.btn.d{background:var(--bad-fill);border-color:var(--bad-fill);color:#fff}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--sel-tx)}
+.field{height:24px;background:var(--s3);border-radius:4px;display:flex;align-items:center;gap:6px;padding:0 8px;color:var(--mut);font-size:13px;width:218px}
+.seg{display:inline-flex;border:1px solid var(--bd-muted);border-radius:4px;overflow:hidden;padding:2px;gap:2px}
+.seg span{height:18px;padding:0 8px;border-radius:2px;display:flex;align-items:center;font-size:13px;color:var(--tx3);cursor:pointer}
+.seg span.on{background:var(--s3);color:var(--tx)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:1439px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:767px){.grid{grid-template-columns:1fr}}
+.card{background:var(--side);border:1px solid var(--bd-subtle);border-radius:12px;overflow:hidden;cursor:pointer}
+.card:hover{border-color:var(--bd)}
+.card .img{aspect-ratio:16/9;background:linear-gradient(135deg,#102656,#0c336a 60%,#1566b8)}
+.card .img{position:relative}.card .img .pill{position:absolute;top:16px;left:16px;background:rgba(9,9,15,.72);color:var(--tx2)}
+.card .f>span{white-space:nowrap}
+.card .img.tax{background:linear-gradient(135deg,#190d38,#3b2560 60%,#6244a0)}
+.card .img.career{background:linear-gradient(135deg,#053321,#084d31 60%,#079455)}
+.card .b{padding:16px;display:flex;gap:12px}
+.tile{width:32px;height:32px;border-radius:8px;background:var(--purple-bg);border:1px solid var(--purple);display:grid;place-items:center;color:#c5b4f0;flex:none}
+.card h2{margin:0;font-size:14px;font-weight:600}
+.card p{margin:2px 0 0;font-size:13px;color:var(--mut);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .f{display:flex;align-items:center;gap:8px;padding:0 16px 14px;font-size:12px;color:var(--mut)}
+.pill{background:var(--s3);color:var(--tx3);border-radius:9999px;padding:2px 8px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.pill.ok{color:var(--ok);background:var(--ok-bg)}
+.pill.warn{color:var(--warn);background:var(--warn-bg)}
+.pill.sel{color:var(--sel-tx);background:var(--sel)}
+.f .by{margin-left:auto;display:flex;align-items:center;gap:4px}
+.f .by .lucide{width:12px;height:12px;color:var(--sel-tx)}
+/* table */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{height:40px;text-align:left;font-size:13px;font-weight:600;color:var(--tx3);padding:0 0 0 8px;background:var(--bg)}
+td{height:40px;padding:0 0 0 8px;color:var(--tx)}
+tr:hover td{background:var(--s2)}
+td.num,th.num{text-align:right;padding-right:16px}
+.npill{background:var(--s4);border-radius:4px;padding:2px 6px;font-size:12px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.mut{color:var(--mut)}
+/* stat tiles */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat{background:var(--side);border:1px solid var(--bd-subtle);border-radius:12px;padding:16px}
+.stat .l{font-size:12px;color:var(--mut)}
+.stat .v{font-size:24px;font-weight:500;line-height:1.33;margin-top:4px}
+.stat .c{font-size:12px;color:var(--mut);margin-top:2px}
+/* empty */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:96px 0;text-align:center}
+.empty .ic{width:48px;height:48px;border-radius:9999px;background:var(--sel);color:var(--sel-tx);display:grid;place-items:center;margin-bottom:8px}
+.empty .ic .lucide{width:20px;height:20px}
+.empty h2{margin:0;font-size:16px;font-weight:600}
+.empty p{margin:0 0 10px;font-size:13px;color:var(--tx3)}
+/* listing */
+.wrap{max-width:1080px;margin:0 auto}
+.hero{display:grid;grid-template-columns:1fr 1fr;background:var(--side);border:1px solid var(--bd-subtle);border-radius:12px;overflow:hidden;margin:16px 0 24px}
+.hero .l{padding:32px}
+.hero h1{margin:0 0 12px;font-size:28px;font-weight:500;line-height:1.2}
+.hero p{margin:0 0 20px;color:var(--tx3);line-height:1.5}
+.hero .r{background:linear-gradient(135deg,#1566b8,#5fbef8);margin:16px;border-radius:12px;min-height:260px;display:grid;place-items:center}
+.hero .r .fake{width:70%;background:#0d0f18;border-radius:8px;padding:12px;font-size:12px;color:var(--mut);border:1px solid var(--bd-subtle)}
+.hero .r .fake b{display:block;color:var(--tx);font-size:13px;font-weight:500;margin-bottom:6px}
+.exp{display:flex;align-items:center;gap:12px;margin-top:8px}
+.exp .n{font-weight:600}
+.exp .m{font-size:12px;color:var(--mut)}
+.sec{background:var(--side);border:1px solid var(--bd-subtle);border-radius:12px;padding:24px;margin-bottom:16px}
+.sec h2{margin:0 0 12px;font-size:16px;font-weight:600}
+.chk{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;cursor:pointer}
+.chk .lucide{color:var(--mut)}
+.chk:hover{color:var(--sel-tx)}
+.disc{font-size:13px;color:var(--mut);margin:0 0 16px}
+/* chat / builder */
+.chatlike{flex:1;min-height:0}
+.col{flex:1;min-width:0;display:flex;flex-direction:column}
+.thead{height:40px;display:flex;align-items:center;gap:12px;padding:0 16px;font-size:14px;font-weight:500;flex:none}
+.thead .lucide{color:var(--mut)}
+.thead .r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.thead .ttl{display:flex;align-items:center;gap:8px}
+.thead .ttl small{font-size:12px;color:var(--mut);font-weight:400}
+.scroll{flex:1;overflow:auto;display:flex;justify-content:center}
+.thread{width:100%;max-width:752px;padding:16px 16px 0}
+.onb{text-align:center;padding:48px 0 24px}
+.onb .h{display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:600}
+.apill{display:inline-flex;align-items:center;gap:8px;background:var(--s3);border-radius:9999px;height:32px;padding:0 12px 0 6px;font-size:13px;font-weight:500}
+.apill .tile{width:22px;height:22px;border-radius:4px}
+.apill .tile .lucide{width:12px;height:12px}
+.onb p{margin:8px 0 0;font-size:13px;color:var(--mut)}
+.msg{font-size:16px;line-height:1.6;margin:0 0 20px;white-space:pre-line}
+.msg.u{display:flex;justify-content:flex-end}
+.msg.u span{background:var(--s2);border-radius:12px;padding:12px 16px;max-width:70%}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);background:var(--s2);border-radius:4px;padding:2px 8px;margin-bottom:8px}
+.chip .lucide{width:12px;height:12px}
+.cite{display:inline-block;background:var(--s3);color:var(--sel-tx);border-radius:4px;font-size:12px;padding:0 5px;vertical-align:super;line-height:1.4;margin:0 2px;cursor:help}
+.cost{font-size:12px;color:var(--mut);margin:-12px 0 20px}
+.compose{flex:none;display:flex;justify-content:center;padding:12px 16px 16px}
+.box{width:100%;max-width:752px;min-height:96px;background:var(--s2);border:1px solid var(--bd-subtle);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.box .ph{color:var(--mut);font-size:16px}
+.box .ctl{display:flex;align-items:center;gap:10px;margin-top:auto}
+.box .ctl .lucide{color:var(--mut)}
+.box .send{margin-left:auto;width:24px;height:24px;border-radius:9999px;background:var(--brand-fill);display:grid;place-items:center}
+.box .send .lucide{color:#fff;width:14px;height:14px}
+.drawer{width:480px;flex:none;background:var(--side);border-left:1px solid var(--bd-faint);display:flex;flex-direction:column;overflow:auto}
+.dh{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bd-muted)}
+.dh .n{font-size:16px;font-weight:600}
+.dh .d{font-size:12px;color:var(--tx3)}
+.dh .r{margin-left:auto;display:flex;gap:6px;align-items:center}
+.dsec{flex:none;margin:12px 16px 0;background:var(--s2);border:1px solid var(--bd-muted);border-radius:12px;overflow:hidden}
+.dsec .h{display:flex;align-items:center;gap:8px;padding:12px;font-size:14px;font-weight:600}
+.dsec .h .lucide{width:20px;height:20px;color:var(--tx3)}
+.dsec .h .lucide.chev{margin-left:auto;width:14px;height:14px;color:var(--mut)}
+.drow{height:60px;display:flex;align-items:center;gap:12px;padding:12px;border-top:1px solid var(--bd-muted);cursor:pointer}
+.drow:hover{background:var(--s3)}
+.drow .t{font-size:14px;font-weight:500}
+.drow .s{font-size:12px;color:var(--mut)}
+.drow .lucide{color:var(--mut)}
+.drow .chev{margin-left:auto;width:14px;height:14px}
+.drow .ico{width:24px;height:24px;border-radius:4px;background:var(--s3);display:grid;place-items:center}
+.drow .ico .lucide{width:13px;height:13px;color:var(--tx3)}
+.dash{margin:8px 12px 12px;height:36px;border:1px dashed var(--bd);border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;color:var(--sel-tx);cursor:pointer}
+.dsec .pad{padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px}
+.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--sel);color:var(--tx);font-size:13px;height:40px;border-radius:8px;display:none;align-items:center;gap:12px;padding:0 12px 0 16px;z-index:9}
+.toast.show{display:flex}
+.toast .lucide{width:14px;height:14px;color:var(--tx3);cursor:pointer}
+.form{max-width:640px;display:grid;gap:14px}
+.form label{font-size:13px;font-weight:500;display:grid;gap:6px}
+.form input,.form textarea{background:var(--s2);border:1px solid var(--bd);border-radius:4px;color:var(--tx);font:inherit;font-size:14px;padding:8px 10px}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form .hint{font-size:12px;color:var(--mut)}
+.note{font-size:12px;color:var(--mut);margin-top:12px}
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="brand"><span>Badger Experts</span><i data-lucide="panel-left"></i></div>
+  <div class="search"><i data-lucide="search"></i>Search…<span class="k"><span>⌘</span><span>K</span></span></div>
+  <nav class="nav">
+    <div class="row active" data-v="marketplace"><i data-lucide="store"></i><span class="lab">Marketplace</span></div>
+    <div class="row" data-v="chats"><i data-lucide="message-square"></i><span class="lab">Chats</span><span class="cnt">3</span></div>
+    <div class="lbl exp-only"><i data-lucide="chevron-down"></i>Build</div>
+    <div class="row exp-only" data-v="agents"><i data-lucide="bot"></i><span class="lab">My agents</span></div>
+    <div class="row start exp-only" data-v="builder"><span class="tile"><i data-lucide="sparkles"></i></span><span class="lab">New agent</span></div>
+    <div class="lbl exp-only"><i data-lucide="chevron-down"></i>My agents<i data-lucide="plus" class="plus"></i></div>
+    <div class="row exp-only" data-v="builder"><i data-lucide="activity"></i><span class="lab">Maria Chen · Physical therapy</span></div>
+    <div class="row exp-only" data-v="builder"><i data-lucide="activity"></i><span class="lab">Maria Chen · Running form clinic</span></div>
+    <div class="lbl"><i data-lucide="chevron-down"></i>Credits</div>
+    <div class="row" data-v="wallet"><i data-lucide="wallet"></i><span class="lab">Wallet</span></div>
+    <div class="row exp-only" data-v="earnings"><i data-lucide="trending-up"></i><span class="lab">Earnings</span></div>
+    <div style="margin-top:auto"></div>
+    <div class="row" data-v="admin"><i data-lucide="shield"></i><span class="lab">Admin</span></div>
+    <div class="row" data-v="settings"><i data-lucide="settings"></i><span class="lab">Settings</span></div>
+  </nav>
+  <div class="foot">
+    <div class="pop" id="pop">
+      <div class="t">Viewing as</div>
+      <div class="o" data-id="expert"><span class="ava">M</span><span>Maria Chen — Expert</span><i data-lucide="check" id="ck-expert"></i></div>
+      <div class="o" data-id="hirer"><span class="ava b">S</span><span>Sam Okafor — Hirer</span><i data-lucide="check" id="ck-hirer" style="display:none"></i></div>
+      <div class="h">Switch to see the other side of the loop.</div>
+    </div>
+    <div class="ident" id="ident">
+      <span class="ava" id="ava">M</span>
+      <span><div class="n" id="who">Maria Chen</div><div class="e" id="role">Expert · 8,000 credits</div></span>
+      <i data-lucide="chevrons-up-down"></i>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="crumb" id="crumb"><b>Marketplace</b></div>
+
+  <!-- MARKETPLACE -->
+  <section class="view on" id="v-marketplace">
+    <h1 class="title">Marketplace</h1>
+    <div class="sub">Agents built from real experts' own answers. Every reply cites what they said.</div>
+    <div class="bar">
+      <span class="btn p exp-only"><i data-lucide="plus"></i>New agent</span>
+      <span class="field"><i data-lucide="search"></i>Search by name…</span>
+      <span class="seg"><span class="on">Grid</span><span>List</span></span>
+      <span class="btn"><i data-lucide="filter"></i>Filter</span>
+      <span class="btn"><i data-lucide="arrow-down-up"></i>Rating</span>
+    </div>
+    <div class="grid">
+      <div class="card" data-v="listing"><div class="img"><span class="pill">Health / PT</span></div><div class="b"><span class="tile"><i data-lucide="activity"></i></span><div><h2>Maria Chen · Physical therapy</h2><p>Post-op knee and shoulder rehab, return-to-running plans, what to do when a flare-up hits.</p></div></div><div class="f"><span>★ 4.8 (23)</span><span>3 credits / msg</span><span class="by">by Maria Chen <i data-lucide="badge-check"></i></span></div></div>
+      <div class="card" data-v="listing"><div class="img tax"><span class="pill">Tax / Finance</span></div><div class="b"><span class="tile"><i data-lucide="calculator"></i></span><div><h2>Dev Patel · Tax for freelancers</h2><p>Quarterly estimates, home-office deductions, and the 1099 questions nobody answers plainly.</p></div></div><div class="f"><span>★ 4.6 (41)</span><span>4 credits / msg</span><span class="by">by Dev Patel <i data-lucide="badge-check"></i></span></div></div>
+      <div class="card" data-v="listing"><div class="img career"><span class="pill">Career / Admissions</span></div><div class="b"><span class="tile"><i data-lucide="graduation-cap"></i></span><div><h2>Priya Nair · College admissions</h2><p>Essay strategy, school lists that make sense, and how to talk about a bad semester.</p></div></div><div class="f"><span>★ 4.9 (12)</span><span>2 credits / msg</span><span class="by">by Priya Nair <i data-lucide="badge-check"></i></span></div></div>
+      <div class="card" data-v="listing"><div class="img"><span class="pill">Health / PT</span></div><div class="b"><span class="tile"><i data-lucide="heart-pulse"></i></span><div><h2>Luis Ortega · Strength coaching</h2><p>Programming for busy adults, deload weeks, and training around old injuries.</p></div></div><div class="f"><span>★ 4.7 (18)</span><span>3 credits / msg</span><span class="by">by Luis Ortega <i data-lucide="badge-check"></i></span></div></div>
+      <div class="card" data-v="listing"><div class="img tax"><span class="pill">Tax / Finance</span></div><div class="b"><span class="tile"><i data-lucide="piggy-bank"></i></span><div><h2>Hannah Kim · First-job finances</h2><p>401(k) match math, emergency funds, and which credit card questions actually matter at 23.</p></div></div><div class="f"><span>★ 4.5 (9)</span><span>2 credits / msg</span><span class="by">by Hannah Kim <i data-lucide="badge-check"></i></span></div></div>
+      <div class="card" data-v="listing"><div class="img career"><span class="pill">Career / Admissions</span></div><div class="b"><span class="tile"><i data-lucide="briefcase"></i></span><div><h2>Tom Reyes · Resume &amp; interviews</h2><p>Resumes that survive the screen, STAR answers that don't sound rehearsed, offer negotiation.</p></div></div><div class="f"><span>★ 4.8 (33)</span><span>2 credits / msg</span><span class="by">by Tom Reyes <i data-lucide="badge-check"></i></span></div></div>
+    </div>
+    <div class="note">Placeholder data — real marketplace queries land in Phase 3.</div>
+  </section>
+
+  <!-- LISTING -->
+  <section class="view" id="v-listing">
+    <div class="wrap">
+      <div class="hero">
+        <div class="l">
+          <h1>Maria Chen · Physical therapy</h1>
+          <p>Fifteen years in outpatient ortho. Ask about post-op knee and shoulder rehab, return-to-running plans, and what to do when a flare-up hits. Answers come from Maria's own interview and clinic notes.</p>
+          <div class="exp"><span class="ava">M</span><div><div class="n">Maria Chen <span class="pill">Self-reported</span></div><div class="m">DPT, OCS · 15 years · Madison, WI</div></div></div>
+          <p class="disc" style="margin-top:20px">Health information, not medical care. For emergencies call 911. This agent will say when it doesn't know.</p>
+        </div>
+        <div class="r"><div class="fake"><b>Maria Chen</b>Persona · 38 interview answers · 2 documents<br><br><b>Always</b>Cite the answer or page it came from<br><b>Never</b>Diagnose; suggest a visit when unsure</div></div>
+      </div>
+      <div class="sec"><h2>Example questions</h3>
+        <div class="chk" data-v="chat"><i data-lucide="circle-check"></i>My knee is swollen three weeks after an ACL repair. Normal?</div>
+        <div class="chk" data-v="chat"><i data-lucide="circle-check"></i>How do I get back to running without wrecking my shins again?</div>
+        <div class="chk" data-v="chat"><i data-lucide="circle-check"></i>What does a good week of shoulder rehab look like?</div>
+      </div>
+      <div class="sec"><h2>About the expert</h3><p style="margin:0;color:var(--tx3)">Maria runs a small outpatient practice and teaches a rehab elective. Credentials are self-reported. Knowledge last updated 2 days ago. <a href="#">Contact Maria</a></p></div>
+    </div>
+  </section>
+
+  <!-- MY AGENTS -->
+  <section class="view" id="v-agents">
+    <h1 class="title">My agents</h1>
+    <div class="sub">Everything you've built. Publish when the persona is done and the interview has enough answers.</div>
+    <div class="bar"><span class="btn p" data-v="builder"><i data-lucide="plus"></i>New agent</span><span class="field"><i data-lucide="search"></i>Search by name…</span><span class="btn"><i data-lucide="columns-3"></i>Columns</span></div>
+    <table><tr><th>Name</th><th>Status</th><th>Category</th><th class="num">Answers</th><th class="num">Chats (7d)</th><th class="num">Rating</th><th>Updated</th></tr>
+      <tr data-v="builder"><td>Maria Chen · Physical therapy</td><td><span class="pill ok">Published</span></td><td>Health / PT</td><td class="num"><span class="npill">38</span></td><td class="num"><span class="npill">12</span></td><td class="num ok">4.8</td><td class="mut">2 days ago</td></tr>
+      <tr data-v="builder"><td>Maria Chen · Running form clinic</td><td><span class="pill warn">Draft</span></td><td>Health / PT</td><td class="num"><span class="npill">6</span></td><td class="num"><span class="npill">0</span></td><td class="num mut">—</td><td class="mut">today</td></tr>
+    </table>
+  </section>
+
+  <!-- CHATS -->
+  <section class="view" id="v-chats">
+    <h1 class="title">Chats</h1>
+    <div class="sub">Every conversation you've had, on either side.</div>
+    <div class="bar"><span class="field"><i data-lucide="search"></i>Search by name…</span><span class="btn"><i data-lucide="filter"></i>Filter</span></div>
+    <table><tr><th>Conversation</th><th>Agent</th><th class="num">Messages</th><th class="num">Spent</th><th>Shared with expert</th><th>Last message</th></tr>
+      <tr data-v="chat"><td>Knee swelling after ACL repair</td><td>Maria Chen · Physical therapy</td><td class="num"><span class="npill">8</span></td><td class="num">24 credits</td><td class="mut">Off</td><td class="mut">10 min ago</td></tr>
+      <tr data-v="chat"><td>Quarterly estimate for Q3</td><td>Dev Patel · Tax for freelancers</td><td class="num"><span class="npill">5</span></td><td class="num">20 credits</td><td class="ok">On</td><td class="mut">yesterday</td></tr>
+      <tr data-v="chat"><td>Essay draft feedback</td><td>Priya Nair · College admissions</td><td class="num"><span class="npill">14</span></td><td class="num">28 credits</td><td class="mut">Off</td><td class="mut">3 days ago</td></tr>
+    </table>
+  </section>
+
+  <!-- BUILDER -->
+  <section class="view chatlike" id="v-builder">
+    <div class="col">
+      <div class="thead"><i data-lucide="menu"></i><span class="ttl">Maria Chen · Physical therapy <small>Interview</small></span><span class="r"><span class="seg"><span class="on">Interview</span><span>Test</span></span><span class="btn p"><i data-lucide="plus"></i>New thread</span><span class="btn"><i data-lucide="settings-2"></i>Configure</span></span></div>
+      <div class="scroll"><div class="thread">
+        <div class="onb"><div class="h">Interview <span class="apill"><span class="tile"><i data-lucide="activity"></i></span>Maria Chen · Physical therapy</span></div><p>You'll be asked about what you know and how you work. Every answer becomes knowledge.</p></div>
+        <div class="msg">Hi Maria. Let's start with the thing you get asked most. When someone comes in three weeks after an ACL repair worried about swelling, what do you actually look at first, and what tells you it's normal versus a problem?</div>
+        <div class="msg u"><span>First thing is the pattern. Swelling that's worse at night after a busy day and better in the morning is the knee doing its job. What worries me is swelling that's warm, that came on fast, or that comes with calf pain, because then I'm thinking infection or clot and that's a phone call, not a home exercise.</span></div>
+        <div class="chip"><i data-lucide="database"></i>Saved as knowledge · 1 chunk · 2 credits</div>
+        <div class="msg">That "night vs morning" pattern is exactly the kind of thing a textbook won't say. Give me a concrete example: a patient who thought they had a problem and didn't, and what you told them.</div>
+      </div></div>
+      <div class="compose"><div class="box"><div class="ph">Write your answer…</div><div class="ctl"><i data-lucide="plus"></i><i data-lucide="pause"></i><span class="send"><i data-lucide="arrow-up"></i></span></div></div></div>
+    </div>
+    <aside class="drawer">
+      <div class="dh"><span class="tile"><i data-lucide="activity"></i></span><div><div class="n">Maria Chen · Physical therapy</div><div class="d">Post-op rehab and return-to-running plans</div></div><span class="r"><span class="btn"><i data-lucide="eye"></i>View</span><i data-lucide="x" style="color:var(--mut)"></i></span></div>
+      <div class="dsec"><div class="h"><i data-lucide="user-round"></i>Persona<i data-lucide="chevron-down" class="chev"></i></div>
+        <div class="drow"><div><div class="t">Headline</div><div class="s">Post-op rehab and return-to-running plans</div></div><i data-lucide="chevron-right" class="chev"></i></div>
+        <div class="drow"><div><div class="t">How I work</div><div class="s">Pattern first, then the test, then the plan</div></div><i data-lucide="chevron-right" class="chev"></i></div>
+        <div class="drow"><div><div class="t">Always / Never</div><div class="s">Cite the source · Never diagnose</div></div><i data-lucide="chevron-right" class="chev"></i></div>
+        <div class="drow"><div><div class="t">Advanced: system prompt</div><div class="s">Generated from the form · editable</div></div><i data-lucide="chevron-right" class="chev"></i></div>
+      </div>
+      <div class="dsec"><div class="h"><i data-lucide="book-open"></i>Knowledge <span class="pill">40</span><i data-lucide="chevron-down" class="chev"></i></div>
+        <div class="drow"><span class="ico"><i data-lucide="mic"></i></span><div><div class="t">Interview answers</div><div class="s">38 answers · re-embedded on edit</div></div><i data-lucide="chevron-right" class="chev"></i></div>
+        <div class="drow"><span class="ico"><i data-lucide="file-text"></i></span><div><div class="t">ACL-rehab-protocol.pdf</div><div class="s">Ready · 42 chunks · 14 pages</div></div><i data-lucide="ellipsis" class="chev"></i></div>
+        <div class="drow"><span class="ico"><i data-lucide="file-text"></i></span><div><div class="t">Return-to-run checklist.md</div><div class="s">Processing…</div></div><i data-lucide="ellipsis" class="chev"></i></div>
+        <div class="dash"><i data-lucide="plus"></i>Add document</div>
+      </div>
+      <div class="dsec"><div class="h"><i data-lucide="rocket"></i>Publishing<i data-lucide="chevron-down" class="chev"></i></div>
+        <div class="drow"><div><div class="t">Rate multiplier</div><div class="s">3× · about 3 credits per message</div></div><i data-lucide="chevron-right" class="chev"></i></div>
+        <div class="drow"><div><div class="t">Content consent</div><div class="s">Accepted 2026-09-24</div></div><i data-lucide="check" class="chev" style="color:var(--ok)"></i></div>
+        <div class="pad"><span class="pill ok" style="align-self:flex-start">Published</span><span class="btn d lg" style="justify-content:center">Unpublish</span></div>
+      </div>
+      <div class="note" style="margin:12px 16px">Placeholder data — real interview and persona land in Phase 2.</div>
+    </aside>
+  </section>
+
+  <!-- HIRER CHAT -->
+  <section class="view chatlike" id="v-chat">
+    <div class="col">
+      <div class="thead"><span class="tile" style="width:24px;height:24px;border-radius:4px"><i data-lucide="activity" style="width:12px;height:12px"></i></span><span class="ttl">Maria Chen · Physical therapy <small>by Maria Chen · <a href="#">Contact the expert</a></small></span><span class="r"><span class="btn"><i data-lucide="share-2"></i>Share transcript: off</span><span class="btn"><i data-lucide="flag"></i></span><span class="pill" id="balpill">8,000 credits</span></span></div>
+      <div class="scroll"><div class="thread" style="padding-top:24px">
+        <div class="msg u"><span>My knee is swollen three weeks after an ACL repair. Normal?</span></div>
+        <div class="chip"><i data-lucide="search"></i>Retrieved 4 sources</div>
+        <div class="msg">Usually, yes. Three weeks out, swelling that's worse at night after a busy day and better in the morning is the knee doing its job<span class="cite">1</span>. What Maria tells patients to watch for instead: swelling that's warm to the touch, that came on fast, or that comes with calf pain. Any of those means a phone call to the surgeon's office, not a home exercise<span class="cite">1</span><span class="cite">2</span>.
+
+If the pattern is the normal one, the protocol she uses is ice after activity and keeping the quad set count up, not resting more<span class="cite">3</span>.
+
+Health information, not medical care. If you're unsure, Maria's contact link is at the top.</div>
+        <div class="cost">3 credits · <span class="ok">▲</span> <span>▼</span></div>
+        <div class="msg u"><span>What counts as "warm"?</span></div>
+        <div class="chip"><i data-lucide="search"></i>Retrieved 2 sources</div>
+        <div class="msg">Maria's rule of thumb: compare it with the other knee with the back of your hand. Noticeably warmer than the other side, plus redness, is the combination she cares about<span class="cite">4</span>. Warm alone right after exercise is expected.</div>
+        <div class="cost">3 credits · <span class="ok">▲</span> <span>▼</span></div>
+      </div></div>
+      <div class="compose"><div class="box"><div class="ph">Write your message…</div><div class="ctl"><i data-lucide="paperclip"></i><span class="mut" style="font-size:12px">Upload one file (PDF, DOCX, TXT)</span><span class="send"><i data-lucide="arrow-up"></i></span></div></div></div>
+    </div>
+  </section>
+
+  <!-- WALLET -->
+  <section class="view" id="v-wallet">
+    <h1 class="title">Wallet</h1>
+    <div class="sub">1 credit = 1 cent. Building and chatting both draw from here.</div>
+    <div class="stats">
+      <div class="stat"><div class="l">Balance</div><div class="v" id="balv">8,000 credits</div><div class="c" id="balc">$80.00</div></div>
+      <div class="stat"><div class="l">Spent this week</div><div class="v">312 credits</div><div class="c">Interview 118 · Chat 194</div></div>
+      <div class="stat"><div class="l">Added this month</div><div class="v">8,000 credits</div><div class="c">Seed · subscription · pack</div></div>
+      <div class="stat"><div class="l">Typical call</div><div class="v">3 credits</div><div class="c">Reserved before each call</div></div>
+    </div>
+    <div class="bar"><span class="btn p lg" id="addc"><i data-lucide="plus"></i>Add credits</span><span class="field"><i data-lucide="search"></i>Search history…</span><span class="btn"><i data-lucide="filter"></i>Filter</span></div>
+    <table><tr><th>When</th><th>Purpose</th><th>Detail</th><th class="num">Credits</th><th class="num">Balance</th></tr>
+      <tr><td class="mut">10 min ago</td><td>Chat</td><td>Maria Chen · Knee swelling after ACL repair</td><td class="num bad">−3</td><td class="num">8,000</td></tr>
+      <tr><td class="mut">today</td><td>Interview turn</td><td>Running form clinic · answer 6</td><td class="num bad">−2</td><td class="num">8,003</td></tr>
+      <tr><td class="mut">yesterday</td><td>Embedding</td><td>ACL-rehab-protocol.pdf · 42 chunks</td><td class="num bad">−9</td><td class="num">8,005</td></tr>
+      <tr><td class="mut">yesterday</td><td>Earnings</td><td>Knee swelling after ACL repair · net</td><td class="num ok">+14</td><td class="num">8,014</td></tr>
+      <tr><td class="mut">Sep 20</td><td>Credit pack</td><td>Mock purchase · no payment taken</td><td class="num ok">+1,000</td><td class="num">8,000</td></tr>
+      <tr><td class="mut">Sep 12</td><td>Subscription</td><td>Mock monthly plan</td><td class="num ok">+2,000</td><td class="num">7,000</td></tr>
+      <tr><td class="mut">Sep 1</td><td>Seed</td><td>Starting balance</td><td class="num ok">+5,000</td><td class="num">5,000</td></tr>
+    </table>
+  </section>
+
+  <!-- EARNINGS -->
+  <section class="view" id="v-earnings">
+    <h1 class="title">Earnings</h1>
+    <div class="sub">Per conversation: gross, what the platform keeps, what you get. Real ledger rows, no estimates.</div>
+    <div class="stats">
+      <div class="stat"><div class="l">Net this month</div><div class="v ok">214 credits</div><div class="c">$2.14</div></div>
+      <div class="stat"><div class="l">Gross</div><div class="v">380 credits</div><div class="c">Raw cost × your multiplier</div></div>
+      <div class="stat"><div class="l">Platform share</div><div class="v">166 credits</div><div class="c">Raw cost + 15% of margin</div></div>
+      <div class="stat"><div class="l">Cash-out</div><div class="v">0 credits</div><div class="c">Nothing requested yet</div></div>
+    </div>
+    <div class="bar"><span class="btn p lg"><i data-lucide="banknote"></i>Request cash-out</span><span class="btn"><i data-lucide="columns-3"></i>Columns</span></div>
+    <table><tr><th>Conversation</th><th>Agent</th><th class="num">Messages</th><th class="num">Gross</th><th class="num">Platform</th><th class="num">Net to you</th></tr>
+      <tr><td>Knee swelling after ACL repair</td><td>Physical therapy</td><td class="num"><span class="npill">8</span></td><td class="num">24</td><td class="num mut">10</td><td class="num ok">+14</td></tr>
+      <tr><td>Shoulder rehab week plan</td><td>Physical therapy</td><td class="num"><span class="npill">12</span></td><td class="num">36</td><td class="num mut">16</td><td class="num ok">+20</td></tr>
+      <tr><td>Return to running after shin splints</td><td>Physical therapy</td><td class="num"><span class="npill">6</span></td><td class="num">18</td><td class="num mut">8</td><td class="num ok">+10</td></tr>
+    </table>
+  </section>
+
+  <!-- ADMIN -->
+  <section class="view" id="v-admin">
+    <h1 class="title">Admin</h1>
+    <div class="sub">Flags from listings and chats. Unpublishing needs a note for the expert.</div>
+    <div class="bar"><span class="seg"><span class="on">Agents</span><span>Conversations</span></span><span class="field"><i data-lucide="search"></i>Search flags…</span></div>
+    <div class="empty"><div class="ic"><i data-lucide="flag"></i></div><h2>No flags</h2><p>Flagged agents and conversations show up here.</p></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="v-settings">
+    <h1 class="title">Settings</h1>
+    <div class="sub">Your expert profile. Credentials are shown to hirers with a "self-reported" label.</div>
+    <div class="form">
+      <div class="two"><label>Display name<input value="Maria Chen"></label><label>Field<input value="Physical therapy"></label></div>
+      <label>Credentials <span class="hint">Shown as self-reported</span><input value="DPT, OCS"></label>
+      <div class="two"><label>Years of experience<input value="15"></label><label>Contact link<input value="https://cal.com/maria-chen"></label></div>
+      <label>Bio<textarea rows="3">Fifteen years in outpatient ortho. I run a small practice in Madison and teach a rehab elective.</textarea></label>
+      <div><span class="btn p lg">Save profile</span></div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"><span id="toastmsg">Switched to Sam Okafor</span><i data-lucide="x" onclick="document.getElementById('toast').classList.remove('show')"></i></div>
+
+<script>
+const crumbs={marketplace:'<b>Marketplace</b>',listing:'<span>Marketplace</span>›<b>Maria Chen · Physical therapy</b><span class="r"><span class="btn p lg" data-v="chat">Start chat</span></span>',agents:'<b>My agents</b>',chats:'<b>Chats</b>',builder:'<span>My agents</span>›<b>Maria Chen · Physical therapy</b>',chat:'<span>Chats</span>›<b>Knee swelling after ACL repair</b>',wallet:'<b>Wallet</b>',earnings:'<b>Earnings</b>',admin:'<b>Admin</b>',settings:'<b>Settings</b>'};
+let cur='marketplace';
+function show(v){
+  cur=v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
+  document.querySelectorAll('.nav .row').forEach(r=>r.classList.toggle('active',r.dataset.v===v&&!r.classList.contains('start')));
+  if(v==='listing')document.querySelector('.nav .row[data-v=marketplace]').classList.add('active');
+  if(v==='chat')document.querySelector('.nav .row[data-v=chats]').classList.add('active');
+  document.getElementById('crumb').innerHTML=crumbs[v]||'';
+  document.querySelector('.main').scrollTop=0;bind();
+}
+function bind(){document.querySelectorAll('[data-v]').forEach(el=>{el.tabIndex=0;el.onclick=e=>{e.stopPropagation();show(el.dataset.v)};el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show(el.dataset.v)}}});lucide.createIcons();}
+let who='expert';
+function ident(id){
+  who=id;const ex=id==='expert';
+  document.getElementById('who').textContent=ex?'Maria Chen':'Sam Okafor';
+  document.getElementById('role').textContent=(ex?'Expert':'Hirer')+' · '+(ex?'8,000':'4,872')+' credits';
+  document.getElementById('ava').textContent=ex?'M':'S';document.getElementById('ava').className='ava'+(ex?'':' b');
+  document.getElementById('ck-expert').style.display=ex?'':'none';document.getElementById('ck-hirer').style.display=ex?'none':'';
+  document.querySelectorAll('.exp-only').forEach(e=>e.style.display=ex?'':'none');
+  document.getElementById('balpill').textContent=(ex?'8,000':'4,872')+' credits';document.getElementById('balv').textContent=(ex?'8,000':'4,872')+' credits';document.getElementById('balc').textContent=ex?'$80.00':'$48.72';
+  document.getElementById('pop').classList.remove('open');
+  toast('Switched to '+(ex?'Maria Chen':'Sam Okafor'));
+  const expOnly=['agents','builder','earnings'];
+  show(ex||!expOnly.includes(cur)?cur:'marketplace');
+}
+function toast(m){document.getElementById('toastmsg').textContent=m;const t=document.getElementById('toast');t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2500);}
+document.getElementById('ident').onclick=()=>document.getElementById('pop').classList.toggle('open');
+document.querySelectorAll('.pop .o').forEach(o=>o.onclick=()=>ident(o.dataset.id));
+document.body.addEventListener('click',e=>{if(!e.target.closest('.foot'))document.getElementById('pop').classList.remove('open')});
+document.getElementById('addc').onclick=()=>{toast('Credits added · +1,000 (mock)');};
+bind();
+</script>
+</body>
+</html>

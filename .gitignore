@@ -41,3 +41,9 @@ yarn-error.log*
 
 # tool scratch
 .playwright-mcp/
+
+# next.js / tests
+next-env.d.ts
+*.tsbuildinfo
+/test-results/
+/playwright-report/
