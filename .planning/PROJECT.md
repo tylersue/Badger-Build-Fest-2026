@@ -4,7 +4,7 @@
 
 A platform where people with real-world expertise turn what they know into an AI agent and get paid when other people use it. An expert builds their agent mainly by being **interviewed** by the platform (an interviewer agent asks open-ended questions and every answer becomes knowledge), optionally uploads documents, tests it, and publishes it to a marketplace. Anyone can find an agent, chat with it, and upload their own file for it to work on. One **credit wallet** per account pays for building and using agents; experts earn credits when their agent is used and can spend them or cash them out.
 
-The MVP is one working loop: **BUILD → PUBLISH → HIRE → USE.**
+The MVP is one working loop: **BUILD → PUBLISH → HIRE → USE.** It is a presentation build: no sign-in, two seeded identities (an expert and a hirer) with a switcher, placeholder content on every page, and a UI copied closely from LangSmith. The interview, chat, metering and ledger are real.
 
 ## Core Value
 
@@ -44,19 +44,22 @@ An expert with no audience and no technical skill can put their knowledge into a
 - [ ] One wallet per account; 1 credit = 1 cent
 - [ ] Every metered LLM call (interview turn, embedding, chat message) deducts its real cost from the caller's wallet after it completes
 - [ ] A chat message charges the hirer raw cost × the expert's rate multiplier; the platform keeps raw cost plus a configurable share of the margin; the expert's wallet receives the rest
-- [ ] Wallet is funded by a mock monthly platform subscription (grants N credits), mock credit packs, and a configurable free grant for new accounts
+- [ ] Wallet is funded by a mock monthly platform subscription (grants N credits), mock credit packs, and seeded starting balances
 - [ ] Before any metered call the platform checks the wallet covers a typical call; otherwise it shows a top-up prompt
 - [ ] Every charge and credit is a ledger row; the expert's earnings page shows per-conversation gross / platform share / net
 - [ ] Expert can request a mock cash-out: credits deducted, payout row recorded at 1 cent per credit
 
 **Platform**
-- [ ] Email + Google sign-in; one account can both build and hire
-- [ ] Expert profile: name, photo, field, credentials, years, contact link; consent checkbox (content ownership, service license) at first publish
-- [ ] Row-level security on every table; retrieval always filtered by agent server-side with a cross-tenant test
+- [ ] No sign-in: the app opens straight into a LangSmith-style shell; a sidebar switcher swaps between the seeded expert and hirer
+- [ ] Every route of the loop exists as a page from Phase 1; seed data makes every page look lived-in
+- [ ] Expert profile: name, photo, field, credentials, years, contact link; seeded and editable; consent checkbox (content ownership, service license) at first publish
+- [ ] Retrieval always filtered by agent server-side with a cross-agent isolation test
 - [ ] Every LLM call logged (tokens, model, cost, latency); daily spend cap
 
 ### Out of Scope
 
+- **Authentication (email + Google), RLS, admin allowlist** — presentation MVP; two seeded identities with a switcher stand in for accounts, admin pages are open; reinstate when strangers use the platform
+- **Marketing landing page** — the site opens straight into the shell
 - **Real payment rails (Stripe, payouts, KYC)** — purchases and cash-out are mock buttons that write rows; the metering and ledger are real so rails can be attached later
 - **Voice interview** — typed first; voice (speech-to-text) is the first post-MVP addition and the interview is designed so either input feeds the same pipeline
 - **Voice / video / avatar clones** — Delphi's most expensive feature; not the value here
@@ -64,7 +67,7 @@ An expert with no audience and no technical skill can put their knowledge into a
 - **Admin approval before publish** — publishing is instant so the loop has no human gate; add a review queue when strangers start publishing
 - **Credential / identity verification, "Licensed" badge** — self-reported with a label in MVP; verification is the first trust feature after
 - **Teams, SSO, audit logs, mobile apps, fine-tuning, second LLM provider** — not needed for the loop
-- **Per-agent subscriptions or allowances, per-agent free trials** — replaced by the single wallet and a free grant
+- **Per-agent subscriptions or allowances, per-agent free trials, free grant for new accounts** — replaced by the single wallet and seeded balances
 - **Exact pricing numbers (grant size, subscription tiers, take rate)** — configurable constants; decided after the loop works
 
 ## Context
@@ -78,7 +81,7 @@ An expert with no audience and no technical skill can put their knowledge into a
 
 - **Timeline**: 4 weeks to a working MVP — the loop must walk end-to-end (ugly) by week 2
 - **Team**: 4 people in parallel — one owner per folder, day-one stubbed contracts, the AI core never on one person
-- **Tech stack**: Next.js 16 single app, Supabase (Postgres + pgvector + Auth + Storage, RLS everywhere), Vercel AI SDK 7 + Anthropic Claude, Voyage embeddings, Vercel — decided and verified 2026-09-26; no Python service, no monorepo tooling, no LangGraph
+- **Tech stack**: Next.js 16 single app, Supabase (Postgres + pgvector + Storage; Auth and RLS unused in the MVP), Vercel AI SDK 7 + Anthropic Claude, Voyage embeddings, Vercel — decided and verified 2026-09-26; no Python service, no monorepo tooling, no LangGraph
 - **Budget**: LLM spend capped per day via env; cheapest capable model by default (Sonnet 5), set per category by the platform
 - **Money**: no real payment rails in the MVP; all purchases and cash-outs are mocked, all metering is real
 - **Safety**: regulated-category disclaimers and hard stops are non-negotiable and cannot be removed by the expert
@@ -95,13 +98,18 @@ An expert with no audience and no technical skill can put their knowledge into a
 | Building deducts raw LLM cost, no markup | One meter for everything; experts learn run cost; platform has a lever against huge uploads | — Pending |
 | Usage charge = raw cost × expert multiplier; platform keeps raw cost + configurable margin share (default 15%) | 15% is the market anchor (Delphi, Clarity, Salesforce); exact number deferred | — Pending |
 | Purchases and cash-out mocked; metering and ledger real | No real money in MVP, but the loop must prove earnings | — Pending |
-| Free grant for new accounts replaces per-agent trials | One entitlement check; grant size is a constant to tune later | — Pending |
+| Free grant for new accounts replaces per-agent trials | One entitlement check; grant size is a constant to tune later | Superseded 2026-09-26: no accounts, each seeded identity starts with $50 |
 | Hirer file upload in chat is P0, minimum functional (extract text → prompt) | Career, tax, and PT agents need the hirer's document; no embedding needed | — Pending |
 | Transcript sharing is hirer opt-in per conversation | Privacy default; expert still gets aggregates | — Pending |
 | Instant publish, no admin gate; admin can unpublish | No human in the loop; review queue when strangers arrive | — Pending |
 | Seed categories: health/PT, tax/finance, career/admissions | Team has real material in these | — Pending |
 | Model set by platform per category, not by expert | Resolves "no model picker" vs `agents.model` ambiguity | — Pending |
 | Reconcile `docs/` and the 36 GitHub issues to these decisions after the roadmap exists | Issues should map to phases | — Pending |
+| No authentication in the MVP; two seeded identities (expert, hirer) with a sidebar switcher | Presentation build; sign-in adds screens and gates that don't help the demo | Decided 2026-09-26 (Phase 1 context) |
+| Placeholder content, real mechanics | Seeded experts, agents, ratings, balances and history look lived-in; interview, chat, metering and ledger run for real | Decided 2026-09-26 |
+| Copy LangSmith's UI (sidebar shell + Agent Builder layout) with our own section names; open straight into the shell | Proven layout, no design debate, no landing page | Decided 2026-09-26 |
+| Wallet reserves the estimated cost before a call and hard-stops at zero | Balance never goes negative; user preference over overdraft | Decided 2026-09-26 |
+| Regulated categories = health/PT and tax/finance, kept in config | Provisional; expected to change | Decided 2026-09-26 |
 
 ## Evolution
 
@@ -121,4 +129,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-26 after initialization*
+*Last updated: 2026-09-26 after Phase 1 discussion (presentation MVP, no auth)*

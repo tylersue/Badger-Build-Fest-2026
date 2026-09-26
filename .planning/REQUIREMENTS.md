@@ -7,12 +7,12 @@
 
 Requirements for the working MVP loop (BUILD → PUBLISH → HIRE → USE). Each maps to a roadmap phase.
 
-### Accounts
+### Shell, identity & profile (no sign-in)
 
-- [ ] **AUTH-01**: User can sign up and sign in with email or Google and stay signed in across sessions
-- [ ] **AUTH-02**: One account can both build agents and hire agents; no separate account types
-- [ ] **AUTH-03**: User can fill an expert profile: display name, photo, field, credentials (labeled self-reported), years of experience, contact link
-- [ ] **AUTH-04**: Admin access is granted by an email allowlist in config
+- [ ] **SHEL-01**: The app opens at `/` straight into a LangSmith-style shell (collapsible sidebar, breadcrumb bar, dense tables) with every route of the loop present as a page: my agents, interview, persona, knowledge, test, publish, marketplace, listing, chat, wallet, earnings, insights, admin
+- [ ] **SHEL-02**: Two seeded identities (an expert and a hirer) replace sign-in; a "Viewing as" switcher in the sidebar footer swaps name, avatar and wallet, highlights the active side, and survives reloads
+- [ ] **SHEL-03**: Seed data makes every page look lived-in on first load: experts, agents across the three seed categories, ratings, wallet balances, ledger history, past conversations
+- [ ] **AUTH-03**: User can fill an expert profile: display name, photo, field, credentials (labeled self-reported), years of experience, contact link; seeded for the demo expert and editable
 
 ### Interview (primary knowledge intake)
 
@@ -57,7 +57,6 @@ Requirements for the working MVP loop (BUILD → PUBLISH → HIRE → USE). Each
 
 ### Marketplace
 
-- [ ] **MKT-01**: Visitor sees a landing page that explains building and hiring, with a call to action for each
 - [ ] **MKT-02**: Hirer can browse published agents in a grid, filter by category, sort by rating, newest, or most used, and search by text
 - [ ] **MKT-03**: Listing page shows expert card (photo, credentials, years, self-reported label), headline, description, clickable example questions, rating and count, typical cost per message, "knowledge last updated," and the category disclaimer where required
 - [ ] **MKT-04**: Hirer can start a conversation from the listing, including by clicking an example question that is sent as the first message
@@ -81,13 +80,12 @@ Requirements for the working MVP loop (BUILD → PUBLISH → HIRE → USE). Each
 
 ### Credits (purchases mocked, metering real)
 
-- [ ] **CRED-01**: Every account has one wallet; 1 credit = 1 cent; the balance is visible in the app shell
+- [ ] **CRED-01**: Every identity has one wallet; 1 credit = 1 cent; the balance is visible in the app shell
 - [ ] **CRED-02**: Every LLM call is logged with tokens in and out, model, purpose, latency, and computed cost
 - [ ] **CRED-03**: Building actions (interview turns, document embedding, sandbox messages) deduct real cost from the builder's wallet after the call completes
 - [ ] **CRED-04**: A chat message charges the hirer real cost × the agent's rate multiplier; the ledger records the hirer debit, the platform's cost recovery, the platform's margin share (configurable, default 15%), and the expert's credit
 - [ ] **CRED-05**: Before any metered call, the platform checks the wallet covers a typical call; if not, it shows a top-up prompt instead of running the call
 - [ ] **CRED-06**: User can "subscribe" to a mock monthly plan that grants a configured number of credits, and "buy" mock credit packs; both write ledger rows and update the balance with no real payment
-- [ ] **CRED-07**: New accounts receive a configured free credit grant
 - [ ] **CRED-08**: Expert sees an earnings page: per-conversation gross, platform share, and net credited, plus a wallet history of every debit and credit
 - [ ] **CRED-09**: Expert can request a mock cash-out that deducts credits and records a payout row at 1 cent per credit with status "requested"
 - [ ] **CRED-10**: A daily platform-wide LLM spend cap stops new metered calls when exceeded
@@ -135,7 +133,10 @@ Deferred. Tracked but not in the current roadmap.
 |---------|--------|
 | Voice, video, or avatar clones | Expensive, not the value; Delphi's most costly feature |
 | Visual workflow or graph builder; agent tools or web access | The visual-builder tier collapsed in 2026; our agent is persona + knowledge + fixed pipeline |
-| Per-agent subscriptions, allowances, or free trials | Replaced by the single wallet and a free grant |
+| Per-agent subscriptions, allowances, or free trials | Replaced by the single wallet and seeded balances |
+| Authentication (email + Google sign-in), RLS, admin allowlist (AUTH-01, AUTH-02, AUTH-04) | Presentation MVP: two seeded identities with a switcher stand in for accounts; reinstate when strangers use the platform |
+| Free credit grant for new accounts (CRED-07) | No accounts without auth; each seeded identity starts with $50 (5,000 credits) |
+| Marketing landing page (MKT-01) | The app is a website that opens straight into the shell |
 | Teams, SSO, audit logs | Not needed for the loop |
 | Mobile apps | Web first |
 | Fine-tuning | Prompt + retrieval only |
@@ -149,10 +150,10 @@ Which phases cover which requirements. Each v1 requirement maps to exactly one p
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
+| SHEL-01 | Phase 1 | Pending |
+| SHEL-02 | Phase 1 | Pending |
+| SHEL-03 | Phase 1 | Pending |
 | AUTH-03 | Phase 1 | Pending |
-| AUTH-04 | Phase 1 | Pending |
 | INTV-01 | Phase 2 | Pending |
 | INTV-02 | Phase 2 | Pending |
 | INTV-03 | Phase 2 | Pending |
@@ -176,7 +177,6 @@ Which phases cover which requirements. Each v1 requirement maps to exactly one p
 | PUB-02 | Phase 3 | Pending |
 | PUB-03 | Phase 3 | Pending |
 | PUB-04 | Phase 3 | Pending |
-| MKT-01 | Phase 3 | Pending |
 | MKT-02 | Phase 3 | Pending |
 | MKT-03 | Phase 3 | Pending |
 | MKT-04 | Phase 3 | Pending |
@@ -200,7 +200,6 @@ Which phases cover which requirements. Each v1 requirement maps to exactly one p
 | CRED-04 | Phase 3 | Pending |
 | CRED-05 | Phase 2 | Pending |
 | CRED-06 | Phase 1 | Pending |
-| CRED-07 | Phase 1 | Pending |
 | CRED-08 | Phase 4 | Pending |
 | CRED-09 | Phase 4 | Pending |
 | CRED-10 | Phase 2 | Pending |
@@ -209,10 +208,10 @@ Which phases cover which requirements. Each v1 requirement maps to exactly one p
 | ADMN-01 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 58 total
-- Mapped to phases: 58
+- v1 requirements: 56 total
+- Mapped to phases: 56
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-26*
-*Last updated: 2026-09-26 after initial definition*
+*Last updated: 2026-09-26 after Phase 1 discussion (presentation MVP: no auth, seeded identities, shell requirements added)*
