@@ -230,7 +230,7 @@ td.num,th.num{text-align:right;padding-right:16px}
     </div>
     <div class="ident" id="ident">
       <span class="ava" id="ava">M</span>
-      <span><div class="n" id="who">Maria Chen</div><div class="e" id="role">Expert · 7,988 credits</div></span>
+      <span><div class="n" id="who">Maria Chen</div><div class="e" id="role">Expert · 8,000 credits</div></span>
       <i data-lucide="chevrons-up-down"></i>
     </div>
   </div>
@@ -344,7 +344,7 @@ td.num,th.num{text-align:right;padding-right:16px}
   <!-- HIRER CHAT -->
   <section class="view chatlike" id="v-chat">
     <div class="col">
-      <div class="thead"><span class="tile" style="width:24px;height:24px;border-radius:4px"><i data-lucide="activity" style="width:12px;height:12px"></i></span><span class="ttl">Maria Chen · Physical therapy <small>by Maria Chen · <a href="#">Contact the expert</a></small></span><span class="r"><span class="btn"><i data-lucide="share-2"></i>Share transcript: off</span><span class="btn"><i data-lucide="flag"></i></span><span class="pill" id="balpill">7,988 credits</span></span></div>
+      <div class="thead"><span class="tile" style="width:24px;height:24px;border-radius:4px"><i data-lucide="activity" style="width:12px;height:12px"></i></span><span class="ttl">Maria Chen · Physical therapy <small>by Maria Chen · <a href="#">Contact the expert</a></small></span><span class="r"><span class="btn"><i data-lucide="share-2"></i>Share transcript: off</span><span class="btn"><i data-lucide="flag"></i></span><span class="pill" id="balpill">8,000 credits</span></span></div>
       <div class="scroll"><div class="thread" style="padding-top:24px">
         <div class="msg u"><span>My knee is swollen three weeks after an ACL repair. Normal?</span></div>
         <div class="chip"><i data-lucide="search"></i>Retrieved 4 sources</div>
@@ -368,17 +368,17 @@ Health information, not medical care. If you're unsure, Maria's contact link is 
     <h1 class="title">Wallet</h1>
     <div class="sub">1 credit = 1 cent. Building and chatting both draw from here.</div>
     <div class="stats">
-      <div class="stat"><div class="l">Balance</div><div class="v" id="balv">7,988 credits</div><div class="c" id="balc">$79.88</div></div>
+      <div class="stat"><div class="l">Balance</div><div class="v" id="balv">8,000 credits</div><div class="c" id="balc">$80.00</div></div>
       <div class="stat"><div class="l">Spent this week</div><div class="v">312 credits</div><div class="c">Interview 118 · Chat 194</div></div>
       <div class="stat"><div class="l">Added this month</div><div class="v">8,000 credits</div><div class="c">Seed · subscription · pack</div></div>
       <div class="stat"><div class="l">Typical call</div><div class="v">3 credits</div><div class="c">Reserved before each call</div></div>
     </div>
     <div class="bar"><span class="btn p lg" id="addc"><i data-lucide="plus"></i>Add credits</span><span class="field"><i data-lucide="search"></i>Search history…</span><span class="btn"><i data-lucide="filter"></i>Filter</span></div>
     <table><tr><th>When</th><th>Purpose</th><th>Detail</th><th class="num">Credits</th><th class="num">Balance</th></tr>
-      <tr><td class="mut">10 min ago</td><td>Chat</td><td>Maria Chen · Knee swelling after ACL repair</td><td class="num bad">−3</td><td class="num">7,988</td></tr>
-      <tr><td class="mut">today</td><td>Interview turn</td><td>Running form clinic · answer 6</td><td class="num bad">−2</td><td class="num">7,991</td></tr>
-      <tr><td class="mut">yesterday</td><td>Embedding</td><td>ACL-rehab-protocol.pdf · 42 chunks</td><td class="num bad">−9</td><td class="num">7,993</td></tr>
-      <tr><td class="mut">yesterday</td><td>Earnings</td><td>Knee swelling after ACL repair · net</td><td class="num ok">+2</td><td class="num">8,002</td></tr>
+      <tr><td class="mut">10 min ago</td><td>Chat</td><td>Maria Chen · Knee swelling after ACL repair</td><td class="num bad">−3</td><td class="num">8,000</td></tr>
+      <tr><td class="mut">today</td><td>Interview turn</td><td>Running form clinic · answer 6</td><td class="num bad">−2</td><td class="num">8,003</td></tr>
+      <tr><td class="mut">yesterday</td><td>Embedding</td><td>ACL-rehab-protocol.pdf · 42 chunks</td><td class="num bad">−9</td><td class="num">8,005</td></tr>
+      <tr><td class="mut">yesterday</td><td>Earnings</td><td>Knee swelling after ACL repair · net</td><td class="num ok">+14</td><td class="num">8,014</td></tr>
       <tr><td class="mut">Sep 20</td><td>Credit pack</td><td>Mock purchase · no payment taken</td><td class="num ok">+1,000</td><td class="num">8,000</td></tr>
       <tr><td class="mut">Sep 12</td><td>Subscription</td><td>Mock monthly plan</td><td class="num ok">+2,000</td><td class="num">7,000</td></tr>
       <tr><td class="mut">Sep 1</td><td>Seed</td><td>Starting balance</td><td class="num ok">+5,000</td><td class="num">5,000</td></tr>
@@ -444,11 +444,11 @@ let who='expert';
 function ident(id){
   who=id;const ex=id==='expert';
   document.getElementById('who').textContent=ex?'Maria Chen':'Sam Okafor';
-  document.getElementById('role').textContent=(ex?'Expert':'Hirer')+' · '+(ex?'7,988':'4,872')+' credits';
+  document.getElementById('role').textContent=(ex?'Expert':'Hirer')+' · '+(ex?'8,000':'4,872')+' credits';
   document.getElementById('ava').textContent=ex?'M':'S';document.getElementById('ava').className='ava'+(ex?'':' b');
   document.getElementById('ck-expert').style.display=ex?'':'none';document.getElementById('ck-hirer').style.display=ex?'none':'';
   document.querySelectorAll('.exp-only').forEach(e=>e.style.display=ex?'':'none');
-  document.getElementById('balpill').textContent=(ex?'7,988':'4,872')+' credits';document.getElementById('balv').textContent=(ex?'7,988':'4,872')+' credits';document.getElementById('balc').textContent=ex?'$79.88':'$48.72';
+  document.getElementById('balpill').textContent=(ex?'8,000':'4,872')+' credits';document.getElementById('balv').textContent=(ex?'8,000':'4,872')+' credits';document.getElementById('balc').textContent=ex?'$80.00':'$48.72';
   document.getElementById('pop').classList.remove('open');
   toast('Switched to '+(ex?'Maria Chen':'Sam Okafor'));
   const expOnly=['agents','builder','earnings'];
