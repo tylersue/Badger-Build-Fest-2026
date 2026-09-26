@@ -141,13 +141,14 @@ export function AgentTile({ icon, size = "md" }: { icon: string; size?: "xs" | "
   );
 }
 
-export function IdentityAvatar({ initial, color, size = 40 }: { initial: string; color: string; size?: number }) {
+export function IdentityAvatar({ initial, color, size = 40, photoUrl }: { initial: string; color: string; size?: number; photoUrl?: string }) {
+  const photo = photoUrl && /^https?:\/\//i.test(photoUrl) ? photoUrl : undefined;
   return (
     <span
       className="grid shrink-0 place-items-center font-semibold text-white"
-      style={{ width: size, height: size, background: color, borderRadius: size >= 40 ? 8 : 6, fontSize: size >= 40 ? 14 : 12 }}
+      style={{ width: size, height: size, background: color, backgroundImage: photo ? `url("${photo.replace(/["\\]/g, "")}")` : undefined, backgroundSize: "cover", backgroundPosition: "center", borderRadius: size >= 40 ? 8 : 6, fontSize: size >= 40 ? 14 : 12 }}
     >
-      {initial}
+      {photo ? null : initial}
     </span>
   );
 }

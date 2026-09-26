@@ -58,6 +58,11 @@ function ProfileForm({ profile, expert }: { profile: Profile; expert: boolean })
         </Field>
       </div>
       {expert && (
+        <Field label="Photo URL" hint="Optional; use a direct image link">
+          <TextInput name="photoUrl" value={p.photoUrl ?? ""} onChange={set("photoUrl")} />
+        </Field>
+      )}
+      {expert && (
         <Field label="Credentials" hint="Shown as self-reported">
           <TextInput name="credentials" value={p.credentials} onChange={set("credentials")} />
         </Field>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
-  Bot, Check, ChevronDown, ChevronsUpDown, MessageSquare, Plus, Search, Settings, Shield, Sparkles, Store, TrendingUp, Wallet,
+  Bot, ChartNoAxesCombined, Check, ChevronDown, ChevronsUpDown, MessageSquare, Plus, Search, Settings, Shield, Sparkles, Store, TrendingUp, Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { AgentTile, IdentityAvatar } from "@/components/app/ui";
 import { APP_NAME } from "@/lib/config/app";
-import { allAgents, balanceOf, currentIdentity, displayName, switchableIdentities, switchIdentity, useDemo, useDemoSnapshot } from "@/lib/demo-store";
+import { allAgents, balanceOf, currentIdentity, displayName, profileFor, switchableIdentities, switchIdentity, useDemo, useDemoSnapshot } from "@/lib/demo-store";
 import { allConversations } from "@/lib/demo-store";
 import { formatCredits } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -32,6 +32,7 @@ const NAV = {
   myAgents: { label: "My agents", href: "/build", icon: Bot, side: "expert", match: (p: string) => p === "/build", testId: "nav-my-agents" },
   wallet: { label: "Wallet", href: "/wallet", icon: Wallet, side: "both", match: (p: string) => p.startsWith("/wallet"), testId: "nav-wallet" },
   earnings: { label: "Earnings", href: "/earnings", icon: TrendingUp, side: "expert", match: (p: string) => p.startsWith("/earnings"), testId: "nav-earnings" },
+  insights: { label: "Insights", href: "/insights", icon: ChartNoAxesCombined, side: "expert", match: (p: string) => p.startsWith("/insights"), testId: "nav-insights" },
   admin: { label: "Admin", href: "/admin", icon: Shield, side: "both", match: (p: string) => p.startsWith("/admin"), testId: "nav-admin" },
   settings: { label: "Settings", href: "/settings", icon: Settings, side: "both", match: (p: string) => p.startsWith("/settings"), testId: "nav-settings" },
 } satisfies Record<string, NavItem>;
@@ -142,6 +143,7 @@ function AppSidebar() {
         <Group label="Credits">
           {row(NAV.wallet)}
           {row(NAV.earnings)}
+          {row(NAV.insights)}
         </Group>
 
         <SidebarMenu className="mt-auto gap-1.5 pt-4 pb-2">
@@ -209,7 +211,7 @@ function IdentitySwitcher() {
       data-testid="identity-card"
       className="flex h-16 w-full items-center gap-2.5 rounded-md p-3 text-left hover:bg-surface-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0"
     >
-      <IdentityAvatar initial={me.avatarInitial} color={me.avatarColor} size={sidebarState === "collapsed" ? 32 : 40} />
+      <IdentityAvatar initial={me.avatarInitial} color={me.avatarColor} photoUrl={profileFor(s, me.id).photoUrl} size={sidebarState === "collapsed" ? 32 : 40} />
       <span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
         <span data-testid="identity-name" className="block truncate text-[13px] font-semibold">{displayName(s, me.id)}</span>
         <span data-testid="sidebar-balance" className="block truncate text-xs text-fg-muted tabular-nums">{roleLine}</span>
@@ -239,7 +241,7 @@ function IdentitySwitcher() {
             onClick={() => choose(i.id)}
             className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 text-left text-[13px] hover:bg-surface-3"
           >
-            <IdentityAvatar initial={i.avatarInitial} color={i.avatarColor} size={28} />
+            <IdentityAvatar initial={i.avatarInitial} color={i.avatarColor} photoUrl={profileFor(s, i.id).photoUrl} size={28} />
             <span className="truncate">
               {displayName(s, i.id)} — {i.kind === "expert" ? "Expert" : "Hirer"}
             </span>

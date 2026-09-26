@@ -6,7 +6,7 @@ Deliver one interview-first BUILD → PUBLISH → HIRE → USE loop in four week
 
 ## Phases
 
-- [ ] **Phase 1: Shell, Wallet & Shared Contracts** - The app opens straight into a LangSmith-style shell with every loop route stubbed, two seeded identities, a funded credit wallet, and frozen schema and service contracts.
+- [x] **Phase 1: Shell, Wallet & Shared Contracts** - The local app opens straight into a LangSmith-style shell with every loop route stubbed, two seeded identities, a funded credit wallet, and typed frontend service contracts. The database schema is Phase 2 work.
 - [ ] **Phase 2: Interview-First Agent Building** - Experts can create knowledge through an adaptive interview, add documents, edit their agent, and test grounded answers at real build cost.
 - [ ] **Phase 3: Publish, Discover & Use** - An expert can publish an agent; another account can find it, chat safely with citations, and pay credits that generate expert earnings.
 - [ ] **Phase 4: Trust, Insights & Launch Readiness** - Hirers control feedback and transcript sharing; experts see earnings and insights; admins handle flags; the full loop is verified.
@@ -17,9 +17,9 @@ Deliver one interview-first BUILD → PUBLISH → HIRE → USE loop in four week
 
 | Checkpoint | Expected result |
 |------------|-----------------|
-| Kickoff gate | Phase 1 complete: deployed scaffold, shell with every route stubbed, seeded identities and wallets, and agreed contracts; four owners can work against the same interfaces. |
+| Kickoff gate | Phase 1 complete: local scaffold, shell with every route stubbed, seeded identities and wallets, and agreed frontend contracts; four owners can work against the same interfaces. |
 | End of week 1 | Phase 2 complete: an expert can build and test an agent from an interview; optional documents work too. |
-| End of week 2 | Phase 3 complete: switching between the seeded expert and hirer walks BUILD → PUBLISH → HIRE → USE on a deployed URL, with real metering and mock funding. |
+| End of week 2 | Phase 3 complete: switching between the seeded expert and hirer walks BUILD → PUBLISH → HIRE → USE in the local demo, with real metering and mock funding. |
 | Weeks 3–4 | Phase 4 complete: privacy, moderation, ratings, earnings, adversarial checks, and outside-user fixes are ready for release. |
 
 Phase gates describe integrated outcomes, not exclusive work periods. Phase 2 and Phase 3 implementation start together once Phase 1 contracts are stable. Sandbox is an integration checkpoint between knowledge and runtime; published chat is an integration checkpoint between builder, marketplace, runtime, and wallet. Phase 3 cannot pass verification until the Phase 2 knowledge and persona path works. The AI core must have separate knowledge and runtime owners.
@@ -37,7 +37,7 @@ Assign one teammate to each lane at kickoff; the names are intentionally open un
 
 The knowledge and runtime lanes must be owned by different people. Freeze the shared `searchKnowledge`, `personaToSystemPrompt`, `buildPrompt`, wallet check, settlement, and chat stream types in Phase 1; changes to those contracts require review from every affected lane. Phase 2 and Phase 3 owners can build against stubs in separate branches or worktrees and merge in small PRs. A single coordinator updates shared `.planning/ROADMAP.md` and `.planning/STATE.md` during concurrent execution to avoid competing state edits. GSD's `parallelization` setting runs independent plans within one phase; it does not itself schedule separate phases concurrently. The phase dependencies below distinguish when work may start from when its integrated result can be accepted.
 
-Before parallel implementation, record the four owners in the project board and `.github/CODEOWNERS`, replace obsolete issues with phase-mapped work, and land small PRs through CI and preview deploys. Use a deployed walkthrough that switches between the seeded expert and hirer as the merge gate for the Phase 3 loop; verify build costs, hirer debit, and expert credit from the same run.
+Before parallel implementation, record the four owners in the project board and `.github/CODEOWNERS`, replace obsolete issues with phase-mapped work, and land small PRs through CI. Use a local walkthrough that switches between the seeded expert and hirer as the merge gate for the Phase 3 loop; verify build costs, hirer debit, and expert credit from the same run. The hackathon does not require a Vercel deployment.
 
 ## Phase Details
 
@@ -46,10 +46,10 @@ Before parallel implementation, record the four owners in the project board and 
 **Depends on**: Nothing (first phase)
 **Requirements**: SHEL-01, SHEL-02, SHEL-03, AUTH-03, CRED-01, CRED-06
 **Success Criteria** (what must be TRUE):
-  1. The deployed URL opens straight into the shell (collapsible sidebar, breadcrumb bar) on the marketplace; every loop route (my agents, interview, persona, knowledge, test, publish, marketplace, listing, chat, wallet, earnings, insights, admin) renders a page with a title, empty state and working nav.
+  1. The local app opens straight into the shell (collapsible sidebar, breadcrumb bar) on the marketplace; every loop route (my agents, interview, persona, knowledge, test, publish, marketplace, listing, chat, wallet, earnings, insights, admin) renders a page with a title, seed content or empty state, and working nav.
   2. A "Viewing as" switcher in the sidebar footer swaps between the seeded expert and hirer (name, avatar, wallet), survives a reload, and the expert profile page shows seeded values that can be edited.
   3. Each identity starts with $50 (5,000 credits) visible in the shell; mock Subscribe and Buy pack add credits instantly and repeatably with ledger rows; the wallet and earnings pages show seeded history.
-  4. A deployed app and local setup work with the agreed database schema, seed data, and typed contracts for interview knowledge, retrieval, persona prompts, chat stream, wallet check (pre-call reservation, hard stop at zero), usage settlement, and per-category model and regulated-category config; every stub returns canned placeholder data.
+  4. The local setup builds with seed data and typed frontend contracts for interview knowledge, retrieval, persona prompts, chat stream, wallet check (pre-call reservation, hard stop at zero), usage settlement, and per-category model and regulated-category config; stubs return canned placeholder data. The database schema and real services are Phase 2 work.
 **Plans**: None — built directly on 2026-09-26 as a frontend-only app (see STATE.md "Phase 1 pivot"); unfinished plan drafts and the dropped Supabase schema are in `.planning/phases/01-shell-wallet-shared-contracts/drafts/`
 **UI hint**: yes
 **Context**: `.planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md`
@@ -76,7 +76,7 @@ Before parallel implementation, record the four owners in the project board and 
   2. A hirer can browse and search published agents, compare profiles and typical message cost, and start a conversation from a listing or example question.
   3. A hirer can stream a reply, return to the conversation later, see valid source citations and the cost of each answer, and get a clear refusal with the expert's contact link when the knowledge is weak.
   4. A hirer can supply one conversation file as untrusted context; regulated-category disclaimers persist, emergency or self-harm patterns receive a fixed resource reply, and long conversations continue with windowed history.
-  5. A deployed walkthrough that switches between the seeded hirer and expert charges the hirer by actual cost × expert multiplier and atomically records platform cost recovery, margin share, and expert wallet credit; mock funding is the only money-in path.
+  5. A local walkthrough that switches between the seeded hirer and expert charges the hirer by actual cost × expert multiplier and atomically records platform cost recovery, margin share, and expert wallet credit; mock funding is the only money-in path.
 **Plans**: TBD
 **UI hint**: yes
 
@@ -88,7 +88,7 @@ Before parallel implementation, record the four owners in the project board and 
   1. A hirer can rate an agent once after five messages, give thumbs feedback on answers, flag an agent, and choose per conversation whether the expert may read its transcript; sharing starts off.
   2. An expert can see aggregate questions, conversation and message counts, thumbs-down counts, only opted-in transcripts, a complete wallet history, and a per-conversation gross/platform/net earnings breakdown.
   3. An expert can request a mock cash-out that debits credits and records a requested payout; an admin can inspect agent and conversation flags and unpublish an agent with a note.
-  4. Outside users can complete the deployed loop using real seed content; cross-tenant access, transcript privacy, citation validity, weak-retrieval refusal, regulated-category safety, and streaming errors are checked with representative and adversarial cases.
+  4. Outside users can complete the local loop using real seed content; cross-tenant access, transcript privacy, citation validity, weak-retrieval refusal, regulated-category safety, and streaming errors are checked with representative and adversarial cases.
   5. End-to-end ledger checks reconcile build-time raw costs and use-time markup, platform share, expert credit, and cash-out without missing or duplicate entries.
 **Plans**: TBD
 **UI hint**: yes
@@ -106,7 +106,7 @@ Before parallel implementation, record the four owners in the project board and 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Merged into main, awaiting deploy | - |
+| 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Complete for local demo | 2026-09-26 |
 | 2. Interview-First Agent Building | 0/TBD | Not started | - |
 | 3. Publish, Discover & Use | 0/TBD | Not started | - |
 | 4. Trust, Insights & Launch Readiness | 0/TBD | Not started | - |

@@ -66,7 +66,7 @@ export default function ListingPage() {
               <h1 data-testid="page-title" className="mb-3 text-[28px] leading-[1.2] font-medium">{agent.persona.name}</h1>
               <p className="mb-5 leading-normal text-fg-tertiary">{agent.persona.description}</p>
               <div className="flex items-center gap-3">
-                <IdentityAvatar initial={owner.avatarInitial} color={owner.avatarColor} />
+                <IdentityAvatar initial={owner.avatarInitial} color={owner.avatarColor} photoUrl={profile.photoUrl} />
                 <div>
                   <div className="flex items-center gap-2 font-semibold">
                     {displayName(s, agent.ownerId)} <Pill>Self-reported</Pill>

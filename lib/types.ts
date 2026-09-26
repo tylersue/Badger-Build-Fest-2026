@@ -15,6 +15,7 @@ export type Identity = {
 export type Profile = {
   identityId: string;
   displayName: string;
+  photoUrl?: string;
   field: string;
   credentials: string;
   yearsExperience: number | null;

@@ -42,7 +42,7 @@ Current product scope and execution phases live in [`.planning/PROJECT.md`](.pla
 
 ## Stack (short version)
 
-Next.js 16 · Tailwind v4 + shadcn/ui · Supabase (Postgres + pgvector + Auth + Storage) · Vercel AI SDK 7 + Anthropic Claude · Voyage embeddings · Stripe Checkout + Connect · Vercel
+Current demo: Next.js 16 · Tailwind v4 + shadcn/ui · browser storage and seeded data. Planned real services: Supabase, Vercel AI SDK + Anthropic Claude, Voyage embeddings. The hackathon presentation runs locally; mock credits do not use Stripe.
 
 ## Team
 

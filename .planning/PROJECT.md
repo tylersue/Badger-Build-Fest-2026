@@ -83,7 +83,7 @@ An expert with no audience and no technical skill can put their knowledge into a
 
 - **Timeline**: 4 weeks to a working MVP — the loop must walk end-to-end (ugly) by week 2
 - **Team**: 4 people in parallel — one owner per folder, day-one stubbed contracts, the AI core never on one person
-- **Tech stack**: Next.js 16 single app, Supabase (Postgres + pgvector + Storage; Auth and RLS unused in the MVP), Vercel AI SDK 7 + Anthropic Claude, Voyage embeddings, Vercel — decided and verified 2026-09-26; no Python service, no monorepo tooling, no LangGraph
+- **Tech stack**: Next.js 16 single app; Phase 1 uses browser storage and seeded data. Supabase (Postgres + pgvector + Storage), Vercel AI SDK 7 + Anthropic Claude, and Voyage embeddings are planned for the real services in Phase 2. The hackathon demo runs locally; no Vercel deployment is planned. No Python service, monorepo tooling, or LangGraph.
 - **Budget**: LLM spend capped per day via env; cheapest capable model by default (Sonnet 5), set per category by the platform
 - **Money**: no real payment rails in the MVP; all purchases and cash-outs are mocked, all metering is real
 - **Safety**: regulated-category disclaimers and hard stops are non-negotiable and cannot be removed by the expert
@@ -112,6 +112,7 @@ An expert with no audience and no technical skill can put their knowledge into a
 | No authentication in the MVP; two seeded identities (expert, hirer) with a sidebar switcher | Presentation build; sign-in adds screens and gates that don't help the demo | Decided 2026-09-26 (Phase 1 context) |
 | Placeholder content, real mechanics | Seeded experts, agents, ratings, balances and history look lived-in; interview, chat, metering and ledger run for real | Decided 2026-09-26 |
 | Copy LangSmith's UI (sidebar shell + Agent Builder layout) with our own section names; open straight into the shell | Proven layout, no design debate, no landing page | Decided 2026-09-26 |
+| Run the hackathon demo locally without Vercel deployment | Local presentation is the team's chosen delivery setup | Decided 2026-09-26 |
 | Wallet reserves the estimated cost before a call and hard-stops at zero | Balance never goes negative; user preference over overdraft | Decided 2026-09-26 |
 | Regulated categories = health/PT and tax/finance, kept in config | Provisional; expected to change | Decided 2026-09-26 |
 

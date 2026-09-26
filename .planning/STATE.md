@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 1 built directly as a frontend-only Next.js app and merged into main. Next - deploy to Vercel (needs VERCEL_TOKEN), then /gsd-discuss-phase 2.
-last_updated: "2026-09-26T22:00:00.000Z"
-last_activity: 2026-09-26 — Phase 1 frontend-only app merged into main (PR from platform/skeleton-ui), together with the team's BuildFest and customer-research docs.
+stopped_at: Phase 1 complete for the local hackathon demo. Next - discuss and plan Phase 2 with the four owners.
+last_updated: "2026-09-26T22:49:13.000Z"
+last_activity: 2026-09-26 — Completed missing builder and insights routes, verified local build and checks, and removed Vercel as a hackathon gate.
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 0
   completed_plans: 0
-  percent: 0
+  percent: 25
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-26)
 
 **Core value:** An expert with no audience or technical skill can turn their knowledge into a cited agent and earn when others use it.
-**Current focus:** Phase 1: Shell, Wallet & Shared Contracts
+**Current focus:** Phase 2: Interview-First Agent Building
 
 ## Current Position
 
-Phase: 1 of 4 (Shell, Wallet & Shared Contracts)
-Plan: none — Phase 1 was built directly without PLAN.md files
-Status: Merged into main (typecheck, lint, 8 unit tests, production build pass); not yet deployed
-Last activity: 2026-09-26 — Phase 1 frontend-only app merged into main (PR from platform/skeleton-ui), together with the team's BuildFest and customer-research docs.
+Phase: 2 of 4 (Interview-First Agent Building)
+Plan: not yet written — Phase 1 was built directly without PLAN.md files
+Status: Phase 1 complete for local demo; Phase 2 ready for team discussion and planning
+Last activity: 2026-09-26 — Missing builder and insights routes added; lint, typecheck, 8 unit tests, and production build pass.
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██▌░░░░░░░░] 25%
 
 ## Performance Metrics
 
@@ -54,7 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 
 Decisions are logged in .planning/PROJECT.md. Current scope is interview-first, a single credit wallet, real metering, mock funding and cash-out, and no Stripe integration in v1. As of 2026-09-26 the MVP is a presentation build: no auth or RLS, two seeded identities with a sidebar switcher, placeholder seed content, UI copied from LangSmith. Phase 1 decisions: .planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md.
 
-Working branch: `platform/skeleton-ui` (off `main`, PR back). GSD branching_strategy stays `none`.
+Phase 1 landed on `main`; the team can use separate branches or worktrees for Phase 2. GSD branching_strategy stays `none`.
 
 Phase 1 pivot (2026-09-26): during `/gsd-plan-phase 1` the user redirected the planner to skip GSD plans and build Phase 1 directly as a **frontend-only** app — no backend, no Supabase, all state in the browser (localStorage) on top of placeholder data in `lib/data/seed.ts`. Credit mechanics (hire debit/credit with multiplier, interview and test charges, pre-call hard stop at zero, mock Subscribe and Buy pack with ledger rows) are real; chat and interview answers are canned. Shared contracts (`searchKnowledge`, `personaToSystemPrompt`, `buildPrompt`, chat stream event type, billing math) live in `features/` and return canned data; the regulated-category list is `lib/config/categories.ts`. Settings has a "Reset demo data" button. Known deviation from 01-UI-SPEC.md: Earnings stays visible (muted) when viewing as the hirer. The six unfinished GSD plan drafts and the dropped Supabase schema/wallet migrations and seed SQL are preserved under `.planning/phases/01-shell-wallet-shared-contracts/drafts/` for Phase 2, which will need a real backend.
 
@@ -72,7 +72,7 @@ Applied AI & Automation is confirmed. Badgers Building for Badgers and Art of th
 - Regulated-category list (health/PT, tax/finance) is provisional; revisit before Phase 3.
 - Tyler's roadmap assumed auth and RLS; the no-auth presentation MVP is now on main, so the team should review it at kickoff.
 - GSD subagents are not installed as harness agent types; plan-phase spawns general-purpose agents that load the definitions from the `get-shit-done-cc` npm cache. Install with `npx get-shit-done-cc@latest --global` to restore the named agents.
-- Phase 1 is not deployed: Vercel deploy needs a `VERCEL_TOKEN` on the machine. Roadmap success criterion 1 ("deployed URL") and 4 ("deployed app ... with the agreed database schema") are not met yet; criterion 4's schema half is deferred to Phase 2 by the frontend-only pivot.
+- The hackathon demo runs locally. The real database schema and shared services remain Phase 2 work. Verify the demo on the presentation machine before submission.
 - With no backend, a hire credits the expert only in the browser where it happened; the two seeded identities do not share a ledger across devices.
 - `.github/CODEOWNERS` owner names are still commented out until kickoff.
 
@@ -84,6 +84,6 @@ Applied AI & Automation is confirmed. Badgers Building for Badgers and Art of th
 
 ## Session Continuity
 
-Last session: 2026-09-26T22:00:00.000Z
-Stopped at: Phase 1 frontend-only app merged into main. Next: deploy to Vercel (VERCEL_TOKEN), then /gsd-discuss-phase 2 (backend returns in Phase 2; see drafts/unused-supabase).
+Last session: 2026-09-26T22:49:13.000Z
+Stopped at: Phase 1 complete for local demo. Next: discuss and plan Phase 2 (backend returns in Phase 2; see drafts/unused-supabase).
 Resume file: README.md ("Run the MVP" section) and .planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md

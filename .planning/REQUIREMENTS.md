@@ -9,10 +9,10 @@ Requirements for the working MVP loop (BUILD → PUBLISH → HIRE → USE). Each
 
 ### Shell, identity & profile (no sign-in)
 
-- [ ] **SHEL-01**: The app opens at `/` straight into a LangSmith-style shell (collapsible sidebar, breadcrumb bar, dense tables) with every route of the loop present as a page: my agents, interview, persona, knowledge, test, publish, marketplace, listing, chat, wallet, earnings, insights, admin
-- [ ] **SHEL-02**: Two seeded identities (an expert and a hirer) replace sign-in; a "Viewing as" switcher in the sidebar footer swaps name, avatar and wallet, highlights the active side, and survives reloads
-- [ ] **SHEL-03**: Seed data makes every page look lived-in on first load: experts, agents across the three seed categories, ratings, wallet balances, ledger history, past conversations
-- [ ] **AUTH-03**: User can fill an expert profile: display name, photo, field, credentials (labeled self-reported), years of experience, contact link; seeded for the demo expert and editable
+- [x] **SHEL-01**: The app opens at `/` straight into a LangSmith-style shell (collapsible sidebar, breadcrumb bar, dense tables) with every route of the loop present as a page: my agents, interview, persona, knowledge, test, publish, marketplace, listing, chat, wallet, earnings, insights, admin
+- [x] **SHEL-02**: Two seeded identities (an expert and a hirer) replace sign-in; a "Viewing as" switcher in the sidebar footer swaps name, avatar and wallet, highlights the active side, and survives reloads
+- [x] **SHEL-03**: Seed data makes every page look lived-in on first load: experts, agents across the three seed categories, ratings, wallet balances, ledger history, past conversations
+- [x] **AUTH-03**: User can fill an expert profile: display name, photo URL, field, credentials (labeled self-reported), years of experience, contact link; seeded for the demo expert and editable
 
 ### Interview (primary knowledge intake)
 
@@ -80,12 +80,12 @@ Requirements for the working MVP loop (BUILD → PUBLISH → HIRE → USE). Each
 
 ### Credits (purchases mocked, metering real)
 
-- [ ] **CRED-01**: Every identity has one wallet; 1 credit = 1 cent; the balance is visible in the app shell
+- [x] **CRED-01**: Every identity has one wallet; 1 credit = 1 cent; the balance is visible in the app shell
 - [ ] **CRED-02**: Every LLM call is logged with tokens in and out, model, purpose, latency, and computed cost
 - [ ] **CRED-03**: Building actions (interview turns, document embedding, sandbox messages) deduct real cost from the builder's wallet after the call completes
 - [ ] **CRED-04**: A chat message charges the hirer real cost × the agent's rate multiplier; the ledger records the hirer debit, the platform's cost recovery, the platform's margin share (configurable, default 15%), and the expert's credit
 - [ ] **CRED-05**: Before any metered call, the platform checks the wallet covers a typical call; if not, it shows a top-up prompt instead of running the call
-- [ ] **CRED-06**: User can "subscribe" to a mock monthly plan that grants a configured number of credits, and "buy" mock credit packs; both write ledger rows and update the balance with no real payment
+- [x] **CRED-06**: User can "subscribe" to a mock monthly plan that grants a configured number of credits, and "buy" mock credit packs; both write ledger rows and update the balance with no real payment
 - [ ] **CRED-08**: Expert sees an earnings page: per-conversation gross, platform share, and net credited, plus a wallet history of every debit and credit
 - [ ] **CRED-09**: Expert can request a mock cash-out that deducts credits and records a payout row at 1 cent per credit with status "requested"
 - [ ] **CRED-10**: A daily platform-wide LLM spend cap stops new metered calls when exceeded
@@ -150,10 +150,10 @@ Which phases cover which requirements. Each v1 requirement maps to exactly one p
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SHEL-01 | Phase 1 | Pending |
-| SHEL-02 | Phase 1 | Pending |
-| SHEL-03 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
+| SHEL-01 | Phase 1 | Complete |
+| SHEL-02 | Phase 1 | Complete |
+| SHEL-03 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
 | INTV-01 | Phase 2 | Pending |
 | INTV-02 | Phase 2 | Pending |
 | INTV-03 | Phase 2 | Pending |
@@ -194,12 +194,12 @@ Which phases cover which requirements. Each v1 requirement maps to exactly one p
 | CHAT-10 | Phase 3 | Pending |
 | CHAT-11 | Phase 3 | Pending |
 | CHAT-12 | Phase 3 | Pending |
-| CRED-01 | Phase 1 | Pending |
+| CRED-01 | Phase 1 | Complete |
 | CRED-02 | Phase 2 | Pending |
 | CRED-03 | Phase 2 | Pending |
 | CRED-04 | Phase 3 | Pending |
 | CRED-05 | Phase 2 | Pending |
-| CRED-06 | Phase 1 | Pending |
+| CRED-06 | Phase 1 | Complete |
 | CRED-08 | Phase 4 | Pending |
 | CRED-09 | Phase 4 | Pending |
 | CRED-10 | Phase 2 | Pending |
