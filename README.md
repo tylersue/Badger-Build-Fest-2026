@@ -8,6 +8,16 @@ A platform where people with real-world expertise turn their knowledge into an A
 BUILD an agent  →  PUBLISH it  →  HIRE it  →  USE it (chat grounded in the expert's own documents)
 ```
 
+## Run the MVP
+
+```bash
+pnpm install
+pnpm dev          # http://localhost:3000 opens straight into the marketplace
+pnpm test         # wallet math and seed-data checks
+```
+
+Phase 1 is frontend only: placeholder data in `lib/data/seed.ts`, and the switcher, wallet, chat and interview mechanics run in the browser (saved in localStorage). Use the "Viewing as" card in the sidebar footer to switch between Maria (expert) and Sam (hirer); Settings → Reset demo data returns everything to the seeded state.
+
 ## Docs
 
 Start here, in this order:

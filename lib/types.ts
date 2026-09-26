@@ -1,0 +1,145 @@
+import type { Category } from "@/lib/config/categories";
+import type { MeteredPurpose } from "@/lib/config/credits";
+
+export type IdentityKind = "expert" | "hirer";
+
+export type Identity = {
+  id: string;
+  kind: IdentityKind;
+  displayName: string;
+  avatarInitial: string;
+  avatarColor: string;
+  isSwitchable: boolean;
+};
+
+export type Profile = {
+  identityId: string;
+  displayName: string;
+  field: string;
+  credentials: string;
+  yearsExperience: number | null;
+  contactUrl: string;
+  bio: string;
+  location: string;
+};
+
+export type PersonaForm = {
+  name: string;
+  category: Category;
+  headline: string;
+  description: string;
+  howIWork: string;
+  always: string[];
+  never: string[];
+  exampleQuestions: string[];
+  greeting: string;
+};
+
+export type AgentStatus = "draft" | "published" | "unpublished";
+
+export type Agent = {
+  id: string;
+  ownerId: string;
+  slug: string;
+  icon: string;
+  persona: PersonaForm;
+  systemPromptOverride: string | null;
+  status: AgentStatus;
+  rateMultiplier: number;
+  consentAcceptedAt: string | null;
+  ratingAvg: number;
+  ratingCount: number;
+  usageCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SourceKind = "interview" | "pdf" | "docx" | "txt" | "md" | "text";
+export type SourceStatus = "queued" | "processing" | "ready" | "failed";
+
+export type Source = {
+  id: string;
+  agentId: string;
+  kind: SourceKind;
+  name: string;
+  status: SourceStatus;
+  chunkCount: number;
+  pageCount: number | null;
+  createdAt: string;
+};
+
+export type Chunk = {
+  id: string;
+  agentId: string;
+  sourceId: string;
+  page: number | null;
+  headingPath: string | null;
+  question: string | null;
+  content: string;
+};
+
+export type Citation = {
+  n: number;
+  chunkId: string | null;
+  sourceType: "interview" | "document";
+  sourceName: string;
+  question: string | null;
+  page: number | null;
+  headingPath: string | null;
+};
+
+export type InterviewTurn = {
+  id: string;
+  agentId: string;
+  position: number;
+  question: string;
+  answer: string | null;
+  createdAt: string;
+};
+
+export type Conversation = {
+  id: string;
+  agentId: string;
+  hirerId: string;
+  title: string;
+  shareTranscript: boolean;
+  createdAt: string;
+};
+
+export type Message = {
+  id: string;
+  conversationId: string;
+  role: "user" | "assistant";
+  content: string;
+  citations: Citation[];
+  feedback: "up" | "down" | null;
+  costCents: number | null;
+  retrieved?: { sourceName: string; score: number; page: number | null; question: string | null }[];
+  createdAt: string;
+};
+
+export type LedgerKind = "seed" | "subscription" | "pack" | "debit" | "earnings" | "cashout" | "platform_cost" | "platform_margin";
+
+export type LedgerEntry = {
+  id: string;
+  /** null for the platform's own rows */
+  identityId: string | null;
+  kind: LedgerKind;
+  amountCents: number;
+  balanceAfter: number | null;
+  purpose: MeteredPurpose | null;
+  refType: "conversation" | "agent" | "source" | "interview" | null;
+  refId: string | null;
+  note: string;
+  createdAt: string;
+};
+
+export type Flag = {
+  id: string;
+  targetType: "agent" | "conversation";
+  agentId: string;
+  conversationId: string | null;
+  reason: string;
+  status: "open" | "resolved";
+  createdAt: string;
+};
