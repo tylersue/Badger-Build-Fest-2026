@@ -5,7 +5,7 @@ total_phases: 4
 current_plan: 0
 status: Ready to plan
 progress: 0%
-last_activity: 2026-09-26 — BuildFest strategy recorded; submission timeline needs clarification.
+last_activity: 2026-09-26 — Open Venture and Art of the Break recorded as tentative challenge choices; awards reference added.
 ---
 
 # Project State
@@ -22,7 +22,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 Phase: 1 of 4 (Accounts, Wallet & Shared Contracts)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-09-26 — BuildFest strategy recorded; submission timeline needs clarification.
+Last activity: 2026-09-26 — Open Venture and Art of the Break recorded as tentative challenge choices; awards reference added.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -47,7 +47,7 @@ Progress: [░░░░░░░░░░] 0%
 
 Decisions are logged in .planning/PROJECT.md. Current scope is interview-first, a single credit wallet, real metering, mock funding and cash-out, and no Stripe integration in v1.
 
-Applied AI & Automation is confirmed. Art of the Break is tentative; Badgers Building for Badgers is the recommended second challenge, with Open Venture the alternative. See `docs/BUILDFEST-STRATEGY.md`.
+Applied AI & Automation is confirmed. Open Venture and Art of the Break are the team's current, tentative challenge pair. See `docs/TRACKS-AND-AWARDS.md` and `docs/BUILDFEST-STRATEGY.md`.
 
 ### Pending Todos
 
@@ -69,5 +69,5 @@ Applied AI & Automation is confirmed. Art of the Break is tentative; Badgers Bui
 ## Session Continuity
 
 Last session: 2026-09-26
-Stopped at: Challenge recommendations recorded; clarify the submission deadline before scheduling Phase 1.
+Stopped at: Challenge preferences and event awards recorded; clarify the submission deadline before scheduling Phase 1.
 Resume file: None

@@ -16,7 +16,8 @@ Current product scope and execution phases live in [`.planning/PROJECT.md`](.pla
 
 | Doc | What it is |
 |---|---|
-| [docs/BUILDFEST-STRATEGY.md](docs/BUILDFEST-STRATEGY.md) | Applied AI track, recommended challenges, stress-test experiment, two-minute submission video, and deadline clarification |
+| [docs/TRACKS-AND-AWARDS.md](docs/TRACKS-AND-AWARDS.md) | All three tracks, six optional challenges, award amounts, and judging rules from the supplied event brief |
+| [docs/BUILDFEST-STRATEGY.md](docs/BUILDFEST-STRATEGY.md) | Applied AI track, current challenge pair, stress-test experiment, two-minute submission video, and deadline clarification |
 | [docs/PRD.md](docs/PRD.md) | Product requirements: problem, users, journeys, requirements with IDs and priorities, trust/safety, success metrics, open questions |
 | [docs/MVP-SCOPE.md](docs/MVP-SCOPE.md) | The in/out list for each of the four functions, and what "presentable" means |
 | [docs/HOW-AGENTS-WORK.md](docs/HOW-AGENTS-WORK.md) | Plain-language explanation of how an agent is built and run, mapped to LangSmith / LangGraph concepts |

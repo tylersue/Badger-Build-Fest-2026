@@ -1,16 +1,16 @@
 # BuildFest track, challenges, and submission strategy
 
-Updated 2026-09-26 from the event brief supplied by the team. Track selection is confirmed; challenge selections below remain recommendations until the team chooses them. No challenge entry or project submission has been made.
+Updated 2026-09-26 from the event brief supplied by the team. The track is confirmed. The challenge pair below is the team's current preference and remains tentative; no challenge entry or project submission has been made. See [TRACKS-AND-AWARDS.md](TRACKS-AND-AWARDS.md) for the full event reference.
 
-## Recommended entries
+## Current entry plan
 
 **Track: Applied AI & Automation.** Demonstrate the automation of expert knowledge capture: an adaptive interview produces retrievable knowledge and a persona, which becomes a published agent that answers another person's questions with sources.
 
-**Challenge 1: The Art of the Break — tentative team preference.** Stress-testing the promise that answers come from the expert's material directly improves the product and creates the required Break Card.
+**Challenge 1: The Art of the Break — current preference.** Stress-testing the promise that answers come from the expert's material directly improves the product and creates the required Break Card.
 
-**Challenge 2: Badgers Building for Badgers — recommended.** Demonstrate a concrete UW student task: a student uploads a resume and gets feedback grounded in a consenting campus mentor's own interview answers or rubric. This matches the campus career/admissions beachhead recommended in [customer research](CUSTOMER-RESEARCH.md#4-beachhead-decision), while keeping the broader expert marketplace intact.
+**Challenge 2: Open Venture — current preference.** Present the broader expert marketplace as a venture: the underserved expert and hirer, interview-first differentiation, market signal, team fit, and a credible path beyond the event. Use completed observations and the [customer research](CUSTOMER-RESEARCH.md) as distinct kinds of evidence.
 
-Use a real, willing coach, alumni mentor, or experienced student and describe their experience accurately. Access to a UW staff coach has not been established. A campus logo or generic marketplace listing is insufficient evidence of a student benefit; show an actual student completing a useful task. Participation does not imply university endorsement.
+The campus career/admissions use case remains the product beachhead and a useful demo, even if the team does not enter Badgers Building for Badgers. Use a willing source expert and describe their experience accurately. Access to a UW staff coach has not been established; participation does not imply university endorsement.
 
 ## Second-challenge comparison
 
@@ -18,15 +18,15 @@ These are judgments about fit and added work under the supplied criteria, not pr
 
 | Option | Fit with this product | Evidence or additional work needed | Recommendation |
 |--------|-----------------------|-----------------------------------|----------------|
-| Badgers Building for Badgers | Strong fit for the campus career-advice entry point | One real mentor's material, a working student task, and observed student feedback | First choice if that campus demonstration is available |
-| Open Venture | Strong fit for the broader expert marketplace and the existing business research | Direct customer evidence, truthful founder-market fit, differentiation, and a credible continuation plan | Best alternative if the team's strongest evidence is expert demand and venture commitment |
+| Open Venture | Strong fit for the broader expert marketplace and the existing business research | Direct customer evidence, truthful founder-market fit, differentiation, and a credible continuation plan | Current team preference |
+| Badgers Building for Badgers | Strong fit for the campus career-advice entry point | One real mentor's material, a working student task, and observed student feedback | Alternative if the campus demonstration is stronger than the venture evidence |
 | Databricks Real-World Workflows | Current stack is Next.js/Supabase; sponsor requires an agentic system on Databricks for a specified problem | Obtain the full problem brief and deliver that workflow on Databricks | Substantial additional dependency; using a tool alone would not establish eligibility |
 | Veterinary cost-of-care | Could be a specialized expert agent, but a general advice marketplace does not yet address the specific conversation | Veterinary source material and a working care-cost explanation/shared-decision workflow | Consider only with a real domain partner and that use case |
 | Women's health | An expert agent could serve an unmet need, but the current prototype scope has not selected one | A specific underserved experience, relevant expertise, and evidence the workflow helps | Consider only with a real domain partner and that use case |
 
-Open Venture is a reasonable second choice even without revenue. However, the current repo's market research is secondary evidence; its expert interviews, user tests, and conversion targets are mostly future work. Report completed observations separately from targets. Mock credit purchases and expert credits are not paid traction or real revenue.
+Open Venture can be entered without revenue. The current repo's market research is secondary evidence; its expert interviews, user tests, and conversion targets are mostly future work. Collect direct observations if possible and report them separately from targets. Mock credit purchases and expert credits are not paid traction or real revenue.
 
-Decision rule: choose Badgers if the team can show a real UW student benefit with a credible source expert. Prefer Open Venture if actual expert commitments and a venture continuation story are stronger than the campus demonstration. The team may select only one of these alongside Art of the Break.
+The current pair is Open Venture and Art of the Break. Reconsider Badgers Building for Badgers only if the team chooses it in place of one of those two challenges.
 
 ## Art of the Break experiment
 
@@ -64,9 +64,9 @@ This is a proposed outline, not an organizer-provided template. Use the official
 | 0:40–1:00 | Publish and open the listing from another account | The two-sided loop works |
 | 1:00–1:30 | Student uploads a synthetic resume, receives feedback, and opens a supporting citation | Useful assistance and traceable evidence |
 | 1:30–1:45 | An unsupported question produces a refusal and contact link | The product has an observable knowledge boundary |
-| 1:45–2:00 | Actual measured stress-test finding and fix; a brief credit-cost view if implemented | Learning from failure and transparent metering |
+| 1:45–2:00 | An actual stress-test result and one observed customer signal, with the venture path in the written response | Learning from failure and early market evidence |
 
-Show completed behavior. Clearly label mocked funding and any preloaded demonstration data. Use actual test counts or omit numbers; do not borrow projected metrics from the customer-research pitch. If Open Venture is selected, prioritize one observed customer signal and the path beyond the event in the closing seconds and written responses.
+Show completed behavior. Clearly label mocked funding and any preloaded demonstration data. Use actual test counts or omit numbers; do not borrow projected metrics from the customer-research pitch. Support Open Venture with a specific market signal, honest founder-market fit, differentiation, and next steps in the written responses.
 
 ## Submission requirements from the supplied brief
 
@@ -85,6 +85,6 @@ Show completed behavior. Clearly label mocked funding and any preloaded demonstr
 | Capture the real mentor's knowledge and record the builder flow | Platform → Builder | Consent/source provenance, usable expert agent, video segment |
 | Prepare sources, attack fixtures, and citation evidence | Knowledge | Versioned knowledge set, retrieved-source logs, failure judgments |
 | Run the experiment and implement the mitigation | Runtime | Before/after runs, working student chat and upload path |
-| Observe student use and assemble submission materials | Marketplace → Credits | Task outcomes, honest customer evidence, video and written responses |
+| Gather market signal and assemble submission materials | Marketplace → Credits | Interview or usage evidence, venture responses, video |
 
 The runtime owner implements the mitigation; another lane reviews the measured outcomes. Start fixtures and logging alongside the first usable agent. The Break Card must be ready for challenge submission, so it cannot be deferred solely to Phase 4 hardening. The challenge choice and timeline do not mark any of the 58 v1 product requirements complete or remove them from scope.
