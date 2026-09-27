@@ -16,6 +16,7 @@ import { Orb, type OrbMood } from "@/components/app/orb";
 import { useOrbDesign, useVoice, type VoiceStatus } from "@/components/app/voice";
 import { answerInterview, controlInterview, getDraft, readDemoState, readInterview, saveDraft, useDemo } from "@/lib/demo-store";
 import { pasteAsOneLine } from "@/components/app/chat";
+import { answerChunkCount } from "@/lib/config/publish";
 import type { Agent } from "@/lib/types";
 import type { InterviewView as InterviewSnapshot } from "@/features/builder/interview";
 
@@ -196,7 +197,7 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
       </div>}
       {visibleView?.state === "paused" && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><h2 className="font-semibold">Interview paused</h2><p className="mt-1 text-sm text-fg-muted">Your saved answers are here. Continue when you&apos;re ready.</p>{isOwner && <button type="button" className={`${buttonClass("primary", "lg")} mt-3`} disabled={busy} onClick={() => void control("resume")}>Resume interview</button>}</div>}
       {DEMO_MODE && visibleView?.state === "completed" && !visibleView.pendingQuestion && isOwner && <BuildSequence agent={agent}
-        answers={visibleView.answers.length} chunks={visibleView.answers.reduce((sum, answer) => sum + (answer.progress?.indexedChunks || 2), 0)} />}
+        answers={visibleView.answers.length} chunks={visibleView.answers.reduce((sum, answer) => sum + (answer.progress?.indexedChunks || answerChunkCount(answer.text)), 0)} />}
       {visibleView && visibleView.state !== "paused" && !visibleView.pendingQuestion && isOwner && !(DEMO_MODE && visibleView.state === "completed") && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><h2 className="font-semibold">{hasAnswers ? "Continue your interview" : "Build your agent from your experience"}</h2><p className="mt-1 text-sm text-fg-muted">Answer one question at a time. You can skip a question or add detail later.</p><button type="button" className={`${buttonClass("primary", "lg")} mt-3`} disabled={busy} onClick={() => void control(hasAnswers ? "continue" : "start")}>{hasAnswers ? "Continue interview" : "Start interview"}</button></div>}
       {hasAnswers && <details className="rounded-xl border border-line-subtle bg-surface-1 p-4"><summary className="cursor-pointer text-sm font-semibold">Saved answers · {visibleView.answers.length}</summary><section aria-label="Saved answers" className="mt-4 space-y-3">{visibleView.answers.map(answer => <AnswerEditor key={answer.id} agentId={agent.id} answer={answer} isOwner={isOwner} onChange={refresh} />)}</section></details>}
       {creditRefusal && <div role="alert" className="rounded-xl border border-warning/40 bg-warning-surface p-4 text-sm"><h2 className="font-semibold">Not enough credits</h2><p className="mt-1">This needs about {formatCredits(creditRefusal.needed)}; you have {formatCredits(creditRefusal.available)}. Add credits to continue. Your draft is saved.</p><div className="mt-3 flex gap-2"><AddCreditsButton size="sm" /><button type="button" className={buttonClass()} onClick={() => setCreditRefusal(null)}>Keep draft</button></div></div>}

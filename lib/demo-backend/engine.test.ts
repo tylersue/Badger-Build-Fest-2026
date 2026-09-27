@@ -19,10 +19,10 @@ const ask = (question: string, styles?: Parameters<typeof composeAnswer>[0]["sty
   composeAnswer({ agent, expertName: "Cynthia Pham", question, knowledge, now: "2026-09-27T12:00:00Z", styles });
 
 describe("demo interview", () => {
-  it("asks three questions and echoes a statement, not a question", () => {
+  it("asks two questions and echoes a statement, not a question", () => {
     expect(interviewQuestion(agent, 0)).toContain("finding your first customers");
     expect(interviewQuestion(agent, 1, answers[0])).toMatch(/^You said "I tell founders to stop building and go where their customers already gather\." /);
-    expect(interviewQuestion(agent, 2, answers[1])).toContain("Where does that advice break?");
+    expect(interviewQuestion(agent, 1, answers[0])).toContain("Where does that advice break?");
   });
   it("drafts How I work from the first statement and tone from the answers", () => {
     expect(personaDraft(agent, "Cynthia Pham", answers).howIWork).toBe("I tell founders to stop building and go where their customers already gather.");

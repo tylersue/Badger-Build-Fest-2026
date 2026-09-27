@@ -8,7 +8,7 @@ import type { EvidenceCitation, PersonaFieldName, PersonaState, RetrievedChunk, 
 import { CHUNKS as SEED_CHUNKS, CONVERSATIONS, MESSAGES, SCRIPTED_REPLIES, WEB_FALLBACK } from "./seed";
 import { EXPERT_MEDIA, mediaById, mediaUrl, type ExpertMedia } from "./media";
 
-export const INTERVIEW_LENGTH = 3;
+export const INTERVIEW_LENGTH = 2;
 
 export function topicOf(agent: Agent): string {
   const name = agent.persona.name;
@@ -24,11 +24,10 @@ export function firstSentences(text: string, count = 1): string {
   return sentences.slice(0, count).map((sentence) => sentence.trim()).join(" ");
 }
 
-/** Three questions that push past the obvious answer; each follow-up echoes the last answer. */
+/** Two questions: the everyday answer, then a follow-up that echoes it and pushes on where it breaks. */
 export function interviewQuestion(agent: Agent, index: number, previousAnswer?: string): string {
   const topic = topicOf(agent);
   if (index === 0) return `Let's start with what founders bring you most about ${topic}. What's the question you hear every week, and how do you actually answer it?`;
-  if (index === 1) return `${echo(previousAnswer)}Walk me through a real founder you worked with on this. What did you notice first, and what did you tell them to do?`;
   return `${echo(previousAnswer)}Now the hard part. Where does that advice break? Tell me about a time it would have been wrong, or a red flag that means a founder needs more than a playbook.`;
 }
 function echo(answer?: string): string {
@@ -57,8 +56,6 @@ export function personaDraft(agent: Agent, expertName: string, answers: string[]
     const statements = answers[0].replace(/\s+/g, " ").match(/[^.!?]+[.!?]+/g)?.map((x) => x.trim()).filter((x) => !x.endsWith("?")) ?? [];
     draft.howIWork = (statements[0] ?? firstSentences(answers[0])).slice(0, 240);
     draft.exampleQuestions = [...draft.exampleQuestions!, `Can you review my plan for ${topic}?`];
-  }
-  if (answers.length >= 3) {
     draft.always = ["Cite the interview answer it came from", "Name the riskiest assumption"];
     draft.never = ["Guarantee an outcome", "Give legal or investment advice"];
     draft.exampleQuestions = [...draft.exampleQuestions!, "What's a red flag I should watch for?"];

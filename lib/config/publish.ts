@@ -2,6 +2,8 @@
 
 /** Minimum knowledge chunks (interview answers + ready document chunks) before an agent can publish (PUB-03). */
 export const MIN_PUBLISH_CHUNKS = 5;
+/** Demo indexing: about one chunk per 100 characters, at least 3, so two interview answers clear the publish minimum. */
+export const answerChunkCount = (text: string) => Math.max(3, Math.ceil(text.trim().length / 100));
 
 /** Rate multiplier on raw LLM cost (PUB-01). */
 export const RATE_MIN = 1;

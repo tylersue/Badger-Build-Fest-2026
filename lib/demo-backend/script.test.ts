@@ -34,12 +34,11 @@ describe("buyer lines (Austin Han)", () => {
 
 describe("expert lines (Cynthia Pham)", () => {
   it("the interview echoes each answer back", () => {
-    expect(interviewQuestion(built, 1, SCRIPT.interview[0])).toMatch(/^You said "Stop building and go where your customers already hang out\." Walk me through/);
-    expect(interviewQuestion(built, 2, SCRIPT.interview[1])).toMatch(/^You said "Had a student building a tutoring app who spent like four months on features\." Now the hard part/);
+    expect(interviewQuestion(built, 1, SCRIPT.interview[0])).toMatch(/^You said "Stop building and go where your customers already hang out\." Now the hard part\. Where does that advice break\?/);
   });
   it("the persona and tone are drafted from the answers", () => {
     expect(personaDraft(built, "Cynthia Pham", [...SCRIPT.interview]).howIWork).toBe("Stop building and go where your customers already hang out.");
-    expect(toneFromAnswers([...SCRIPT.interview])).toEqual(expect.arrayContaining(["Direct", "Teaches with real stories", "Honest about limits"]));
+    expect(toneFromAnswers([...SCRIPT.interview])).toEqual(expect.arrayContaining(["Direct", "Honest about limits"]));
   });
   it("the test question is answered by quoting Cynthia", () => {
     const answer = ask(built, builtKnowledge, SCRIPT.test);

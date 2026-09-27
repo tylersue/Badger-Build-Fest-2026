@@ -14,6 +14,7 @@ import { personaToSystemPrompt } from "@/features/builder/prompt-template";
 import { modelForCategory } from "@/lib/config/models";
 import { PLATFORM_MARGIN_SHARE, SUBSCRIPTION_GRANT_CENTS, PACK_GRANT_CENTS } from "@/lib/config/credits";
 import { PURCHASE_EXPERT_SHARE, agentPriceCredits } from "@/lib/config/purchase";
+import { answerChunkCount } from "@/lib/config/publish";
 import * as seed from "./seed";
 import { INTERVIEW_LENGTH, STYLE_LABELS, applyDraft, composeAnswer, formOf, interviewQuestion, parseFeedback, personaDraft, personaState, rawCostCredits, seedKnowledge, toneFromAnswers, type AnswerStyle, type ComposedAnswer, type KnowledgeChunk } from "./engine";
 
@@ -286,7 +287,7 @@ function interviewSubmit(agentId: string, body: { questionId: string; text: stri
   const interview = interviewOf(agentId);
   if (!interview.pending || interview.pending.id !== body.questionId) throw new DemoError("conflict", "Interview changed. Reload and try again.", 409);
   const text = body.text.trim();
-  const chunks = Math.max(2, Math.ceil(text.length / 200));
+  const chunks = answerChunkCount(text);
   const answer = { ...answerRecord(interview.pending.id, interview.pending.text, text, iso(), chunks, id("ans")), readyAt: Date.now() + 2500 };
   interview.answers.push(answer);
   post(state().identityId, "debit", -2, `${agent.persona.name} · interview answer`, { purpose: "interview_turn", refType: "interview", refId: agentId });
