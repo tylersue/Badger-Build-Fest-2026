@@ -238,16 +238,21 @@ export function Composer({
   const [sendError, setSendError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const submit = async () => {
-    const t = textRef.current.trim();
+    const sent = textRef.current;
+    const t = sent.trim();
     if (!t || busy || disabled) return;
     setBusy(true);
+    // Empty the box as soon as the message goes, pasted trailing newline and all; a failed send puts it back.
+    const restore = (acknowledged: boolean) => {
+      if (textRef.current !== "") return;
+      const next = retainDraftOnResult(acknowledged, sent);
+      textRef.current = next; setText(next);
+    };
+    textRef.current = ""; setText("");
     try {
-      const acknowledged = (await onSend(t)) !== false;
-      if (textRef.current === t) {
-        const next = retainDraftOnResult(acknowledged, textRef.current);
-        textRef.current = next; setText(next);
-      }
+      restore((await onSend(t)) !== false);
     } catch (error) {
+      restore(false);
       if (onError) onError(error);
       else setSendError(error instanceof Error ? error.message : "Could not send. Your draft is still here.");
     } finally {
