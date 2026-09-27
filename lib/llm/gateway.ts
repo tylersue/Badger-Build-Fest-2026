@@ -115,17 +115,20 @@ async function call<T>(input: MeteredStreamInput, mode: "structured" | "stream",
   if (hold === null) return fail("invalid_input", "Provider envelope exceeds configured limits.", input.operation.id);
   const adapter: ServiceResult<AnthropicAdapter> = deps.anthropic ? { ok: true, data: deps.anthropic } : anthropicAdapter();
   if (!adapter.ok) return adapter;
+  let partialFailure = false;
   const result = await runMeteredStage({ operation: input.operation, stageKey: input.stageKey, provider: "anthropic",
     model: input.model as ModelId, inputChars: input.instructions.length + input.input.length,
     maxOutputTokens: input.limits.maxOutputTokens, holdUnits: hold, settle: options.settle }, async () => {
       const response: AnthropicResponse = mode === "structured"
         ? await adapter.data.structured({ ...input, schema: schema! }, schema!)
         : await adapter.data.stream(input, { web: options.web === true, onEvent: options.onEvent });
+      partialFailure = response.failed === true;
       const usage = normalizeUsage(response.steps, response.successfulSearchCount);
       if (!usage) return { value: response.value, usage: null, providerRequestId: response.providerRequestId };
       return { value: response.value, usage, providerRequestId: response.providerRequestId };
     }, deps);
   if (!result.ok) return result;
+  if (partialFailure) return fail("provider", "Provider response ended before completion; known usage was charged.", input.operation.id);
   if (mode === "structured") {
     const parsed = schema!.safeParse(result.data.value);
     if (!parsed.success) return fail("provider", "Provider output failed validation.", input.operation.id);

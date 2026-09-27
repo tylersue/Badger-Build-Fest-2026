@@ -84,6 +84,17 @@ describe("metered provider gateway", () => {
     expect(result).toMatchObject({ ok: false, error: { code: "provider" } });
     expect(log.at(-1)).toBe("settle_operation");
   });
+  it("settles measured usage from a partial provider failure", async () => {
+    const log: string[] = [];
+    const adapter: AnthropicAdapter = { structured: vi.fn(), stream: async () => ({ value: "partial",
+      steps: [{ inputTokens: 10, outputTokens: 3, inputTokenDetails: { noCacheTokens: 10,
+        cacheReadTokens: 0, cacheWriteTokens: 0 } }], providerRequestId: "req-partial",
+      successfulSearchCount: 0, failed: true }) };
+    const result = await meteredStream({ operation: op, stageKey: "partial", model: "claude-sonnet-5",
+      instructions: "rules", input: "question", limits }, {}, { billing: billing(log), anthropic: adapter });
+    expect(result).toMatchObject({ ok: false, error: { code: "provider" } });
+    expect(log).toEqual(["record_provider_attempt", "record_provider_attempt", "record_provider_attempt", "settle_operation"]);
+  });
   it("streams with explicit adapter and blocks an oversized envelope", async () => {
     const adapter: AnthropicAdapter = { structured: vi.fn(), stream: async () => ({ value: "hello",
       steps: [{ inputTokens: 1, outputTokens: 2, inputTokenDetails: { noCacheTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 } }],
