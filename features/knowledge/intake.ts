@@ -5,6 +5,7 @@ import type { ConfirmSourceInput, IndexResult, KnowledgeSource, ServiceResult, S
 import { getServiceDb } from "@/lib/server/db";
 import { reserveOperation, settleOperation } from "@/features/billing/service";
 import { PRICE_VERSION, costUnitsFromUsage } from "@/features/billing/pricing";
+import { EMBEDDING_MODEL } from "@/lib/config/models";
 import { parseSource, type ParsedSource } from "./parse";
 import { enqueueIndexRevision, indexRevision } from "./index";
 
@@ -265,10 +266,10 @@ function cost(byteCount: number, kind: Kind): { estimate: bigint; max: bigint } 
   // until confirmed parsing; reserve a bounded worst-case 100k-character envelope.
   const guessedChars = kind === "pdf" || kind === "docx" ? Math.min(LIMITS.maxExtractedChars, byteCount * 3)
     : byteCount;
-  const estimate = costUnitsFromUsage({ model: "voyage-4-lite", embeddingTokens: Math.ceil(guessedChars / 2) });
-  // Up to 1,000 chunks produce at most 125 eight-chunk batches; each Voyage
+  const estimate = costUnitsFromUsage({ model: EMBEDDING_MODEL, embeddingTokens: Math.ceil(guessedChars / 2) });
+  // Up to 1,000 chunks produce at most 125 eight-chunk batches; each provider
   // batch accepts at most 32,000 bytes. Reserve that full dispatch envelope.
-  const max = costUnitsFromUsage({ model: "voyage-4-lite", embeddingTokens: 4_000_000 });
+  const max = costUnitsFromUsage({ model: EMBEDDING_MODEL, embeddingTokens: 4_000_000 });
   return { estimate, max };
 }
 async function preflight(input: SourceInput, deps: IntakeDependencies, retrySourceId: string | null): Promise<ServiceResult<SourceEstimate>> {

@@ -105,7 +105,7 @@ export async function recordAttempt(attempt: PreparedAttempt, injected?: Billing
   if (!/^att_[0-9a-f-]{36}$/.test(attempt.id) || !/^op_[0-9a-f-]{36}$/.test(attempt.operationId) ||
     !attempt.stageKey || attempt.stageKey.length > 120 || !Number.isSafeInteger(attempt.attempt) || attempt.attempt < 1 ||
     !["prepared","dispatched","completed","failed","unknown"].includes(attempt.state) ||
-    !["anthropic","voyage"].includes(attempt.provider) ||
+    !["anthropic","voyage","openai"].includes(attempt.provider) ||
     !Number.isSafeInteger(attempt.requestMetadata.inputChars) || attempt.requestMetadata.inputChars < 0 ||
     !Number.isSafeInteger(attempt.requestMetadata.maxOutputTokens) || attempt.requestMetadata.maxOutputTokens < 0 ||
     counts.some((value) => value !== null && (!Number.isSafeInteger(value) || value < 0)) ||

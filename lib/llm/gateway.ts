@@ -4,8 +4,9 @@ import { expandReservation, recordAttempt, settleOperation, type BillingRpc } fr
 import { PRICE_VERSION, PRICING_UNITS_PER_MTOK, SEARCH_FEE_UNITS, priceUsage } from "@/features/billing/pricing";
 import type { ModelId } from "@/lib/config/models";
 import { anthropicAdapter, type AnthropicAdapter, type AnthropicEvent, type AnthropicResponse, type ProviderUsage } from "./anthropic";
+import { openaiAdapter } from "./openai";
 
-export type GatewayDependencies = { billing?: BillingRpc; anthropic?: AnthropicAdapter };
+export type GatewayDependencies = { billing?: BillingRpc; anthropic?: AnthropicAdapter; openai?: AnthropicAdapter };
 export type MeteredOptions = { settle?: boolean; web?: boolean; onEvent?: (event: AnthropicEvent) => Promise<void> | void };
 type Counts = { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; embeddingTokens: number; successfulSearchCount: number };
 export type MeteredResult<T> = { value: T; attempt: ProviderAttempt; operation: Operation; usage: Counts; price: ReturnType<typeof priceUsage> };
@@ -33,7 +34,7 @@ export function normalizeUsage(steps: ProviderUsage[], searches = 0): Counts | n
   return Object.values(result).every(validCount) ? result : null;
 }
 
-export type StageInput = { operation: Operation; stageKey: string; provider: "anthropic" | "voyage"; model: ModelId | "voyage-4-lite";
+export type StageInput = { operation: Operation; stageKey: string; provider: "anthropic" | "voyage" | "openai"; model: string;
   inputChars: number; maxOutputTokens: number; holdUnits: bigint; settle?: boolean };
 export type StageOutput<T> = { value: T; usage: Counts | null; providerRequestId?: string | null };
 
@@ -88,7 +89,7 @@ export async function runMeteredStage<T>(input: StageInput, dispatch: () => Prom
     return fail("unknown_usage", "Provider usage is incomplete; the hold remains pending.", operation.id);
   }
   const usage = response.usage;
-  const price = priceUsage({ model, tokensIn: usage.inputTokens, tokensOut: usage.outputTokens,
+  const price = priceUsage({ model: model as keyof typeof PRICING_UNITS_PER_MTOK, tokensIn: usage.inputTokens, tokensOut: usage.outputTokens,
     cacheReadTokens: usage.cacheReadTokens, cacheWriteTokens: usage.cacheWriteTokens,
     embeddingTokens: usage.embeddingTokens, successfulSearchCount: usage.successfulSearchCount });
   const completed = await recordAttempt({ ...base, state: "completed", providerRequestId: response.providerRequestId ?? null,
@@ -105,25 +106,29 @@ export async function runMeteredStage<T>(input: StageInput, dispatch: () => Prom
 
 function bound(input: MeteredStreamInput, web: boolean): bigint | null {
   const { limits, instructions, input: prompt, model } = input;
-  if (!(model in PRICING_UNITS_PER_MTOK) || model === "voyage-4-lite" ||
+  if (!(model in PRICING_UNITS_PER_MTOK) || model === "voyage-4-lite" || model === "text-embedding-3-small" ||
     !Number.isSafeInteger(limits.maxInputChars) || !Number.isSafeInteger(limits.maxOutputTokens) ||
     !Number.isSafeInteger(limits.maxContextTokens) || !Number.isSafeInteger(limits.timeoutMs) ||
     limits.timeoutMs < 1 || limits.maxOutputTokens < 1 || limits.maxContextTokens < 1 ||
     instructions.length + prompt.length > limits.maxInputChars ||
     Buffer.byteLength(instructions + prompt, "utf8") > limits.maxContextTokens) return null;
-  const rate = PRICING_UNITS_PER_MTOK[model as ModelId];
+  const rate = PRICING_UNITS_PER_MTOK[model as keyof typeof PRICING_UNITS_PER_MTOK];
   const inputRate = rate.input > rate.cacheWrite ? rate.input : rate.cacheWrite;
   const numerator = BigInt(limits.maxContextTokens) * inputRate + BigInt(limits.maxOutputTokens) * rate.output;
-  return (numerator + BigInt(999999)) / BigInt(1000000) + (web ? SEARCH_FEE_UNITS : BigInt(0));
+  const searchContent = web && model.startsWith("gpt-") ? BigInt(8000) * inputRate : BigInt(0);
+  return (numerator + searchContent + BigInt(999999)) / BigInt(1000000) + (web ? SEARCH_FEE_UNITS : BigInt(0));
 }
 async function call<T>(input: MeteredStreamInput, mode: "structured" | "stream", schema: MeteredStructuredInput<T>["schema"] | undefined,
   options: MeteredOptions = {}, deps: GatewayDependencies = {}): Promise<ServiceResult<MeteredResult<T | string>>> {
   const hold = bound(input, options.web === true);
   if (hold === null) return fail("invalid_input", "Provider envelope exceeds configured limits.", input.operation.id);
-  const adapter: ServiceResult<AnthropicAdapter> = deps.anthropic ? { ok: true, data: deps.anthropic } : anthropicAdapter();
+  const useOpenAI = input.model.startsWith("gpt-");
+  const adapter: ServiceResult<AnthropicAdapter> = useOpenAI
+    ? (deps.openai ? { ok: true, data: deps.openai } : openaiAdapter())
+    : (deps.anthropic ? { ok: true, data: deps.anthropic } : anthropicAdapter());
   if (!adapter.ok) return adapter;
   let partialFailure = false;
-  const result = await runMeteredStage({ operation: input.operation, stageKey: input.stageKey, provider: "anthropic",
+  const result = await runMeteredStage({ operation: input.operation, stageKey: input.stageKey, provider: useOpenAI ? "openai" : "anthropic",
     model: input.model as ModelId, inputChars: input.instructions.length + input.input.length,
     maxOutputTokens: input.limits.maxOutputTokens, holdUnits: hold, settle: options.settle }, async () => {
       const response: AnthropicResponse = mode === "structured"

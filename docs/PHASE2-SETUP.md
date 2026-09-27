@@ -4,11 +4,11 @@ Phase 2 offline tests use injected adapters. They prove service handoffs but do 
 
 ## Configuration and diagnostics
 
-Copy `.env.example` to `.env.local` and set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, and `VOYAGE_API_KEY`. Keep the service role and provider keys server side; never put them in `NEXT_PUBLIC_` variables. The demo identity switcher is not authentication. `SUPABASE_ANON_KEY` is needed only for the explicit public access denial test. Configure `PHASE2_APP_URL=http://127.0.0.1:3000` for the local paid runner.
+Copy `.env.example` to `.env.local` and set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `OPENAI_API_KEY`. The single OpenAI key powers answers, web search, and 1,024 dimension embeddings. Keep the service role and provider key server side; never put them in `NEXT_PUBLIC_` variables. The demo identity switcher is not authentication. `SUPABASE_ANON_KEY` is needed only for the explicit public access denial test. Configure `PHASE2_APP_URL=http://127.0.0.1:3000` for the local paid runner. `.env` and `.env.local` are ignored by Git; `.env.example` contains names only and is tracked.
 
 Run `node --experimental-strip-types scripts/check-phase2-env.ts --offline` to see variable names and `set`/`missing` statuses without a network call. Run `pnpm check:phase2-env` to check Supabase REST reachability. The checker reads `.env.local` and process environment, prints no values, and reports reachability only as a status. Hosted Supabase may be checked this way without modifying it.
 
-`LLM_PRICE_VERSION` must be `2026-09-26-standard-v1`; `LLM_PRICE_POLICY` must be `standard`. The displayed unit cost is computed from versioned published model rates and observed provider usage. It is **not an invoice reconciliation**. Account discounts are unsupported until a verified discount policy is implemented. Confirm that Anthropic permits the configured `claude-sonnet-5` model and web search/fetch tools, and Voyage permits `voyage-4-lite` with 1,024 dimensions. Successful live calls and stored attempts are the entitlement proof.
+`LLM_PRICE_VERSION` must be `2026-09-26-standard-v1`; `LLM_PRICE_POLICY` must be `standard`. The displayed unit cost is computed from versioned published model rates and observed provider usage. It is **not an invoice reconciliation**. Account discounts are unsupported until a verified discount policy is implemented. Confirm that the OpenAI project permits `gpt-4.1-mini`, Responses web search, and `text-embedding-3-small` with 1,024 dimensions. Successful live calls and stored attempts are the entitlement proof.
 
 ## Migration gate
 
@@ -24,10 +24,13 @@ Apply the migrations in this exact order. Every file is required, including seed
 8. `20260927000600_phase2_interview.sql`
 9. `20260927000650_phase2_answer_recovery.sql`
 10. `20260927000700_phase3_integration.sql`
+11. `20260927000800_openai_provider.sql`
 
-For a fresh disposable **local** project, run `supabase start` to apply the full chain. Inspect `supabase migration list --local` and require all ten versions. For a hosted project already linked to the correct Supabase project, inspect `supabase migration list --linked`, run `supabase db push --dry-run`, review the SQL/version list, then run `supabase db push` and verify with `supabase migration list --linked`. Do not use `db reset` on hosted data. Review the target project before applying migrations.
+For a fresh disposable **local** project, run `supabase start` to apply the full chain. Inspect `supabase migration list --local` and require all eleven versions. For a hosted project already linked to the correct Supabase project, inspect `supabase migration list --linked`, run `supabase db push --dry-run`, review the SQL/version list, then run `supabase db push` and verify with `supabase migration list --linked`. Do not use `db reset` on hosted data. Review the target project before applying migrations.
 
 The knowledge migration creates the private `expert-sources` Storage bucket. Verify that it exists and `public=false`. Generate database types after applying migrations: `supabase gen types typescript --local > /tmp/phase2-db.types.ts` (or `--linked` for hosted), compare that file with `lib/server/db.types.ts`, and merge intentional changes. Seed presentation fixtures with `node --env-file=.env.local --experimental-strip-types scripts/seed.ts`. The seed is idempotent and its opening grant uses a locked SQL RPC; run it only after all migrations.
+
+The OpenAI migration tags existing Voyage vectors with their original model and excludes them from OpenAI retrieval. It unpublishes agents with fewer than five current OpenAI chunks. On an existing database, reindex the active answers and sources with OpenAI, then run the publish checklist again before live acceptance. Use a fresh disposable local database for the first OpenAI acceptance run.
 
 ## Local SQL and paid acceptance
 

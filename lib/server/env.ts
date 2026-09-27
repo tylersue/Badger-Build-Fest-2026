@@ -15,6 +15,7 @@ const domainList = z.string().default("").transform((value) => value.split(",").
 const databaseSchema = z.strictObject({ SUPABASE_URL: httpUrl, SUPABASE_SERVICE_ROLE_KEY: secret });
 const anthropicSchema = z.strictObject({ ANTHROPIC_API_KEY: secret });
 const voyageSchema = z.strictObject({ VOYAGE_API_KEY: secret });
+const openaiSchema = z.strictObject({ OPENAI_API_KEY: secret });
 const policySchema = z.strictObject({
   LLM_DAILY_SPEND_CAP_USD: z.string().regex(/^(0|[1-9]\d{0,8})(\.\d{1,9})?$/).default("20"),
   LLM_PRICE_VERSION: z.string().min(1).max(100).default("2026-09-26-standard-v1"),
@@ -49,6 +50,7 @@ function configurationFailure(names: string[]): { ok: false; error: { code: "con
 export function getDatabaseEnv(env: Environment = process.env) { return read(databaseSchema, env); }
 export function getAnthropicEnv(env: Environment = process.env) { return read(anthropicSchema, env); }
 export function getVoyageEnv(env: Environment = process.env) { return read(voyageSchema, env); }
+export function getOpenAIEnv(env: Environment = process.env) { return read(openaiSchema, env); }
 export function getPolicyEnv(env: Environment = process.env) {
   const result = read(policySchema, env);
   if (!result.ok) return result;
@@ -60,14 +62,12 @@ export function getPolicyEnv(env: Environment = process.env) {
 }
 export function getServerEnv(env: Environment = process.env) {
   const database = getDatabaseEnv(env);
-  const anthropic = getAnthropicEnv(env);
-  const voyage = getVoyageEnv(env);
+  const openai = getOpenAIEnv(env);
   const policy = getPolicyEnv(env);
   if (!database.ok) return database;
-  if (!anthropic.ok) return anthropic;
-  if (!voyage.ok) return voyage;
+  if (!openai.ok) return openai;
   if (!policy.ok) return policy;
-  return { ok: true as const, data: { ...database.data, ...anthropic.data, ...voyage.data, ...policy.data } };
+  return { ok: true as const, data: { ...database.data, ...openai.data, ...policy.data } };
 }
 export type PolicyEnv = z.output<typeof policySchema>;
 export function sourceLimitsFromEnv(p: PolicyEnv): SourceLimits {

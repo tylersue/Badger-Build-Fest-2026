@@ -1,7 +1,7 @@
 import "server-only";
 import type { IndexResult, Operation, ServiceResult, TextSegment } from "@/lib/contracts/phase2";
 import { getServiceDb } from "@/lib/server/db";
-import { embedTexts } from "@/lib/llm/voyage";
+import { embedTexts } from "@/lib/llm/openai-embedding";
 import { settleOperation } from "@/features/billing/service";
 import { chunkSegments, type ChunkSegment } from "./chunk";
 

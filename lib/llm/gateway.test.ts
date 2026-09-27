@@ -132,4 +132,19 @@ describe("metered provider gateway", () => {
     expect(oversized).toMatchObject({ ok: false, error: { code: "invalid_input" } });
     expect(events).toEqual([]);
   });
+  it("routes GPT stages to OpenAI while keeping the durable attempt sequence", async () => {
+    const log: string[] = [];
+    const openai: AnthropicAdapter = { structured: vi.fn(), stream: async () => {
+      log.push("openai");
+      return { value: "answer", steps: [{ inputTokens: 20, outputTokens: 5,
+        inputTokenDetails: { noCacheTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 } }],
+        providerRequestId: "resp-1", successfulSearchCount: 0 };
+    } };
+    const result = await meteredStream({ operation: op, stageKey: "openai-answer", model: "gpt-4.1-mini",
+      instructions: "rules", input: "question", limits }, {}, { billing: billing(log), openai });
+    expect(result).toMatchObject({ ok: true, data: { attempt: { provider: "openai", model: "gpt-4.1-mini" },
+      value: "answer" } });
+    expect(log).toEqual(["record_provider_attempt", "record_provider_attempt", "openai",
+      "record_provider_attempt", "settle_operation"]);
+  });
 });

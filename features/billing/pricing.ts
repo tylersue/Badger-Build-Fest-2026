@@ -3,7 +3,10 @@ import type { ModelId } from "@/lib/config/models";
 
 export const PRICE_VERSION = "2026-09-26-standard-v1";
 /** Nanodollars per million tokens; immutable versioned standard-rate snapshot. */
-export const PRICING_UNITS_PER_MTOK: Record<ModelId | "voyage-4-lite", { input: bigint; output: bigint; cacheRead: bigint; cacheWrite: bigint; embedding: bigint }> = {
+export const PRICING_UNITS_PER_MTOK: Record<ModelId | "text-embedding-3-small" | "voyage-4-lite" | "claude-sonnet-5" | "claude-opus-5-5" | "claude-haiku-4-5", { input: bigint; output: bigint; cacheRead: bigint; cacheWrite: bigint; embedding: bigint }> = {
+  "gpt-4.1-mini": { input: BigInt("400000000"), output: BigInt("1600000000"), cacheRead: BigInt("100000000"), cacheWrite: BigInt("400000000"), embedding: BigInt("0") },
+  "gpt-4.1": { input: BigInt("2000000000"), output: BigInt("8000000000"), cacheRead: BigInt("500000000"), cacheWrite: BigInt("2000000000"), embedding: BigInt("0") },
+  "text-embedding-3-small": { input: BigInt("0"), output: BigInt("0"), cacheRead: BigInt("0"), cacheWrite: BigInt("0"), embedding: BigInt("20000000") },
   "claude-sonnet-5": { input: BigInt("2000000000"), output: BigInt("10000000000"), cacheRead: BigInt("200000000"), cacheWrite: BigInt("2500000000"), embedding: BigInt("0") },
   "claude-opus-5-5": { input: BigInt("4000000000"), output: BigInt("20000000000"), cacheRead: BigInt("200000000"), cacheWrite: BigInt("5000000000"), embedding: BigInt("0") },
   "claude-haiku-4-5": { input: BigInt("1000000000"), output: BigInt("5000000000"), cacheRead: BigInt("100000000"), cacheWrite: BigInt("1250000000"), embedding: BigInt("0") },

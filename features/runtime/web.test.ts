@@ -66,4 +66,18 @@ describe("sufficiency and isolated web fallback", () => {
     expect(data(result)).toMatchObject({ evidence: [], failed: true });
     expect(steps).toEqual(["running", "failed"]);
   });
+  it("records OpenAI web sources and keeps the provider summary distinct from expert knowledge", async () => {
+    const stream = vi.fn(async (_input, options) => {
+      await options.onEvent({ type: "tool-call", toolCallId: "search-1", toolName: "web_search", input: {} });
+      await options.onEvent({ type: "tool-result", toolCallId: "search-1", toolName: "web_search",
+        output: { action: { type: "search", queries: ["budgeting guidance"] }, sources: [
+          { type: "url", url: "https://example.org/guide" }, { type: "url", url: "http://127.0.0.1/private" }] } });
+      return { ok: true, data: { value: "Summary of current public guidance.", usage: { successfulSearchCount: 1 } } };
+    });
+    const result = await researchWeb({ operation, missingParts: ["budgeting guidance"] }, async () => {}, { stream: stream as never });
+    expect(data(result).steps).toMatchObject([{ kind: "search", status: "complete", url: "https://example.org/guide" }]);
+    expect(data(result).evidence).toMatchObject([{ citation: { sourceType: "web", url: "https://example.org/guide" },
+      content: "Summary of current public guidance." }]);
+    expect(data(result).evidence).toHaveLength(1);
+  });
 });

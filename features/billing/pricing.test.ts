@@ -7,6 +7,9 @@ describe("billing math", () => {
     expect(costUnitsFromUsage({ model: "voyage-4-lite", embeddingTokens: 1_000_000 })).toBe(BigInt("20000000"));
     expect(costUnitsFromUsage({ model: "claude-sonnet-5", cacheReadTokens: 1_000_000, cacheWriteTokens: 1_000_000, successfulSearchCount: 2 })).toBe(BigInt("2720000000"));
     expect(costUnitsFromUsage({ model: "claude-haiku-4-5", tokensIn: 1 })).toBe(BigInt("1000"));
+    expect(costUnitsFromUsage({ model: "gpt-4.1-mini", tokensIn: 1000, tokensOut: 100, successfulSearchCount: 1 }))
+      .toBe(BigInt("10560000"));
+    expect(costUnitsFromUsage({ model: "text-embedding-3-small", embeddingTokens: 1000 })).toBe(BigInt("20000"));
     expect(priceUsage({ model: "claude-haiku-4-5", tokensIn: 1 })).toMatchObject({ policy: "standard", grossUnits: BigInt("1000"), effectiveUnits: BigInt("1000") });
     expect(() => costUnitsFromUsage({ model: "claude-sonnet-5", tokensIn: -1 })).toThrow(RangeError);
   });
