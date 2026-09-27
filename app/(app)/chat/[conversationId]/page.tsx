@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Flag, MessageSquareOff, Share2 } from "lucide-react";
+import { MessageSquareOff } from "lucide-react";
 import { toast } from "sonner";
 import { AssistantMessage, ChatColumn, Composer, CostCaption, NotEnoughCredits, UserMessage } from "@/components/app/chat";
-import { AgentTile, Breadcrumbs, EmptyState, Pill, buttonClass } from "@/components/app/ui";
+import { AgentTile, Breadcrumbs, EmptyState, Pill } from "@/components/app/ui";
 import { AgentTurn, turnPhase, useVoice, type Utterance } from "@/components/app/voice";
+import { AnswerFeedback } from "@/components/trust/answer-feedback";
+import { ConversationControls } from "@/components/trust/conversation-controls";
 import {
   agentById, allConversations, attachConversationFile, balanceOf, currentIdentity, displayName, isFreshMessage, markStreamed, messagesFor, profileFor,
   removeConversationFile, sendChatMessage, useDemo, type Refusal,
@@ -103,7 +105,14 @@ export default function ChatPage() {
   };
 
   const captionFor = (m: (typeof messages)[number]) =>
-    m.refusal ? <span data-testid="no-charge">No charge · not in {expertFirst}&apos;s knowledge</span> : <CostCaption message={m} />;
+    m.refusal ? (
+      <>
+        <span data-testid="no-charge">No charge · not in {expertFirst}&apos;s knowledge</span>
+        <AnswerFeedback message={m} />
+      </>
+    ) : (
+      <CostCaption message={m} />
+    );
 
   return (
     <div className="flex h-svh flex-col">
@@ -122,13 +131,7 @@ export default function ChatPage() {
           )}
         </span>
         <span className="ml-auto flex items-center gap-2">
-          <button className={buttonClass("secondary")} onClick={() => toast("Transcript sharing lands in Phase 4.")}>
-            <Share2 />
-            Share transcript: {conversation.shareTranscript ? "on" : "off"}
-          </button>
-          <button className={buttonClass("secondary")} aria-label="Flag this agent" onClick={() => toast("Flagging lands in Phase 4.")}>
-            <Flag />
-          </button>
+          <ConversationControls conversation={conversation} agent={agent} />
           <Pill className="bg-selected text-selected-fg">
             <span data-testid="chat-balance">{formatCredits(balanceOf(s, conversation.hirerId))}</span>
           </Pill>
