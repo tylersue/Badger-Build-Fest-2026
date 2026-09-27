@@ -6,7 +6,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
-    exclude: ["node_modules/**", ".next/**"],
+    // .claude/ holds Claude Code worktrees (each with its own node_modules); never a test source.
+    exclude: ["**/node_modules/**", ".next/**", ".claude/**"],
   },
   resolve: {
     alias: { "@": path.dirname(fileURLToPath(import.meta.url)) },

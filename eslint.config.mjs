@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // shadcn-generated code is add-only (CONTRIBUTING.md); lint our code, not the vendored copies.
     "components/ui/**",
     "hooks/use-mobile.ts",
+    // Claude Code worktrees live inside the repo; they are full checkouts, not our source.
+    ".claude/**",
   ]),
 ]);
 

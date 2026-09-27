@@ -146,3 +146,75 @@
     @apply font-sans;
   }
 }
+
+/*
+ * Flowing text (components/app/flow.tsx FlowWords): each word eases in from a soft blur as it
+ * arrives. The fade outlasts the gap between words, so several are mid-fade at once and a
+ * reply reads as one continuous stream instead of words popping in.
+ */
+@keyframes flow-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(0.18em);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+@layer components {
+  .flow-word {
+    display: inline-block;
+    white-space: pre;
+    animation: flow-in 620ms cubic-bezier(0.22, 0.7, 0.2, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .flow-word {
+      animation: none;
+    }
+  }
+}
+
+/*
+ * Status shimmer for the thinking pill (components/app/voice.tsx ThinkingPill), as in the
+ * thinking-orbs demo (libraries.dev/orbs): the label sits at half white and a white band
+ * sweeps across it every two seconds. The element carries its text in data-text.
+ */
+@keyframes shimmer-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
+}
+
+@layer components {
+  .shimmer {
+    position: relative;
+    display: inline-block;
+    color: rgb(251 251 251 / 0.5);
+  }
+  .shimmer::before {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: linear-gradient(90deg, transparent 0%, transparent 40%, #fff 50%, transparent 60%, transparent 100%);
+    background-size: 400% 100%;
+    background-repeat: no-repeat;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer-sweep 2s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shimmer::before {
+      animation: none;
+    }
+  }
+}

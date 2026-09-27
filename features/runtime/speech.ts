@@ -1,11 +1,12 @@
 /**
- * Reveal timing for agent replies: a reply is "typed" or "spoken" one word at a
- * time at a speaking pace, with a beat at the end of each sentence. Pure
- * functions so the schedule is testable without timers.
+ * Reveal timing for agent replies: a reply flows in word by word at an even,
+ * brisk pace with only a short breath at the end of a clause or sentence, so
+ * the text reads as one continuous stream rather than a stop-start typist.
+ * Each word also fades in on screen (the flow-word class), so several words
+ * are mid-fade at once. Pure functions so the schedule is testable without timers.
  *
- * Words are located in the original text, so a reveal can slice the text
- * itself (keeping paragraph breaks and [n] citation markers for the
- * transcript) or be regrouped into caption lines (which drop the markers).
+ * Words are located in the original text, so a reveal slices the text itself
+ * and keeps paragraph breaks and [n] citation markers.
  */
 
 export type SpeechPlan = {
@@ -18,33 +19,27 @@ export type SpeechPlan = {
   totalMs: number;
 };
 
-export type CaptionWindow = {
-  /** The sentence spoken before the current one, or null at the start. */
-  previous: string | null;
-  /** The sentence in progress, revealed up to the last shown word. */
-  current: string;
-};
 
-const MS_PER_WORD = 230;
-const MAX_TOTAL_MS = 9000;
-const SENTENCE_PAUSE_MS = 260;
-const CLAUSE_PAUSE_MS = 110;
+const MS_PER_WORD = 72;
+const MAX_TOTAL_MS = 6000;
+const SENTENCE_PAUSE_MS = 120;
+const CLAUSE_PAUSE_MS = 45;
 
 const SENTENCE_END = /[.!?]["')\]]*$/;
 const CLAUSE_END = /[,;:]["')\]]*$/;
-const CITATION = /^\[\d+\]$/;
+const CITATION = /^\[(?:\d+|(?:expert|web):[^\]\s]+)\]$/;
 
 /** Citation markers belong to the transcript's chips, not to spoken captions. */
 export function stripCitations(text: string): string {
   return text
-    .replace(/\s*\[\d+\]/g, "")
+    .replace(/\s*\[(?:\d+|(?:expert|web):[^\]\s]+)\]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 function wordMs(word: string): number {
-  // Longer words take longer to say; clamp so single letters and long compounds stay natural.
-  const factor = Math.min(1.6, Math.max(0.8, 0.55 + word.length * 0.09));
+  // Longer words take a little longer; the clamp is narrow so the stream stays even.
+  const factor = Math.min(1.3, Math.max(0.85, 0.7 + word.length * 0.06));
   let ms = MS_PER_WORD * factor;
   if (SENTENCE_END.test(word)) ms += SENTENCE_PAUSE_MS;
   else if (CLAUSE_END.test(word)) ms += CLAUSE_PAUSE_MS;
@@ -80,34 +75,15 @@ export function planSpeech(text: string, opts: { maxTotalMs?: number } = {}): Sp
   };
 }
 
+/** How many words are showing `elapsedMs` after speech started (words are in time order). */
+export function shownAt(plan: SpeechPlan, elapsedMs: number): number {
+  let n = 0;
+  while (n < plan.startsAt.length && plan.startsAt[n] <= elapsedMs) n++;
+  return n;
+}
+
 /** The original text up to and including the last shown word. */
 export function spokenPrefix(text: string, plan: SpeechPlan, shown: number): string {
   const n = Math.min(Math.max(0, shown), plan.words.length);
   return n === 0 ? "" : text.slice(0, plan.ends[n - 1]);
-}
-
-/** Group words into sentences by their closing punctuation; the last word always closes one. */
-function sentences(words: string[]): string[][] {
-  const out: string[][] = [];
-  let group: string[] = [];
-  words.forEach((word, i) => {
-    group.push(word);
-    if (SENTENCE_END.test(word) || i === words.length - 1) {
-      out.push(group);
-      group = [];
-    }
-  });
-  return out;
-}
-
-/** The two caption lines for a reveal that has shown `shown` words so far. */
-export function captionWindow(words: string[], shown: number): CaptionWindow {
-  const n = Math.min(Math.max(0, shown), words.length);
-  const visible = words.slice(0, n).filter((w) => !CITATION.test(w));
-  if (visible.length === 0) return { previous: null, current: "" };
-
-  const groups = sentences(visible);
-  const current = groups[groups.length - 1];
-  const previous = groups.length > 1 ? groups[groups.length - 2] : null;
-  return { previous: previous ? previous.join(" ") : null, current: current.join(" ") };
 }

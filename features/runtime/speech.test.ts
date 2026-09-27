@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { captionWindow, planSpeech, spokenPrefix, stripCitations } from "./speech";
+import { planSpeech, shownAt, spokenPrefix, stripCitations } from "./speech";
 
 describe("stripCitations", () => {
   it("drops [n] markers and collapses the whitespace they leave behind", () => {
     expect(stripCitations("From Maria: rest it. [1]\n\nAlso [2] elevate.")).toBe("From Maria: rest it. Also elevate.");
+  });
+  it("also drops persisted expert and web evidence IDs", () => {
+    expect(stripCitations("Rest. [expert:chunk-1] Read more. [web:result-2]"))
+      .toBe("Rest. Read more.");
+    const plan = planSpeech("Rest. [expert:chunk-1] Read more.");
+    expect(plan.startsAt[1]).toBe(plan.startsAt[0]);
   });
 });
 
@@ -35,12 +41,51 @@ describe("planSpeech", () => {
 
   it("caps a long reply so captions never drag on", () => {
     const plan = planSpeech(Array.from({ length: 200 }, (_, i) => `word${i}`).join(" "));
-    expect(plan.totalMs).toBeLessThanOrEqual(9000);
+    expect(plan.totalMs).toBeLessThanOrEqual(6000);
     expect(plan.words).toHaveLength(200);
+  });
+
+  it("flows at an even pace: brisk on average, and no beat long enough to read as a stall", () => {
+    const text =
+      "Swelling after a run is common. Ice it for fifteen minutes, keep it raised, and skip tomorrow's run; if it still hurts on stairs after two days, get it looked at.";
+    const plan = planSpeech(text);
+    const gaps = plan.startsAt.slice(1).map((at, i) => at - plan.startsAt[i]);
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(220);
+    expect(plan.totalMs / plan.words.length).toBeLessThanOrEqual(110);
   });
 
   it("handles an empty reply", () => {
     expect(planSpeech("")).toEqual({ words: [], ends: [], startsAt: [], totalMs: 0 });
+  });
+});
+
+describe("shownAt", () => {
+  const plan = planSpeech("rest it. [1] Also elevate.");
+
+  it("shows nothing before speech starts", () => {
+    expect(shownAt(plan, -1)).toBe(0);
+  });
+
+  it("shows the first word the moment speech starts", () => {
+    expect(shownAt(plan, 0)).toBe(1);
+  });
+
+  it("brings a citation marker in on the same frame as the word it cites", () => {
+    expect(shownAt(plan, plan.startsAt[1])).toBe(3);
+  });
+
+  it("never goes backwards as time moves forward", () => {
+    let last = 0;
+    for (let ms = -50; ms <= plan.totalMs + 50; ms += 7) {
+      const n = shownAt(plan, ms);
+      expect(n).toBeGreaterThanOrEqual(last);
+      last = n;
+    }
+    expect(last).toBe(plan.words.length);
+  });
+
+  it("handles an empty reply", () => {
+    expect(shownAt(planSpeech(""), 500)).toBe(0);
   });
 });
 
@@ -61,38 +106,5 @@ describe("spokenPrefix", () => {
   it("returns the whole text once every word is shown, clamping past the end", () => {
     expect(spokenPrefix(text, plan, plan.words.length)).toBe(text);
     expect(spokenPrefix(text, plan, 99)).toBe(text);
-  });
-});
-
-describe("captionWindow", () => {
-  const words = planSpeech("Ice it tonight. Call me tomorrow.").words;
-
-  it("shows nothing before the first word", () => {
-    expect(captionWindow(words, 0)).toEqual({ previous: null, current: "" });
-  });
-
-  it("reveals the current sentence word by word", () => {
-    expect(captionWindow(words, 2)).toEqual({ previous: null, current: "Ice it" });
-  });
-
-  it("keeps the finished sentence above the one being spoken", () => {
-    expect(captionWindow(words, 4)).toEqual({ previous: "Ice it tonight.", current: "Call" });
-  });
-
-  it("holds the last two sentences once speaking ends, clamping past the end", () => {
-    expect(captionWindow(words, 6)).toEqual({ previous: "Ice it tonight.", current: "Call me tomorrow." });
-    expect(captionWindow(words, 99)).toEqual({ previous: "Ice it tonight.", current: "Call me tomorrow." });
-  });
-
-  it("treats a question mark or exclamation as a sentence end too", () => {
-    const w = planSpeech("Ready? Go!").words;
-    expect(captionWindow(w, 2)).toEqual({ previous: "Ready?", current: "Go!" });
-  });
-
-  it("leaves citation markers out of the captions", () => {
-    const w = planSpeech("Ice it tonight. [1] Call me tomorrow. [2]").words;
-    expect(captionWindow(w, 4)).toEqual({ previous: null, current: "Ice it tonight." });
-    expect(captionWindow(w, 5)).toEqual({ previous: "Ice it tonight.", current: "Call" });
-    expect(captionWindow(w, 8)).toEqual({ previous: "Ice it tonight.", current: "Call me tomorrow." });
   });
 });

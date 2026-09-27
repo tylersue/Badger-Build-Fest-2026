@@ -152,8 +152,8 @@ export default function ChatPage() {
       <ChatColumn>
         {messages.length === 0 && (
           <>
-            <AgentTurn name={agent.persona.name} phase={phase} label={turnLabel} onSkip={voice.skip}>
-              {voice.spoken ? <AssistantMessage content={voice.spoken} /> : null}
+            <AgentTurn name={agent.persona.name} phase={phase} label={turnLabel} listening onSkip={voice.skip}>
+              {voice.spoken ? <AssistantMessage content={voice.spoken} flow /> : null}
             </AgentTurn>
             {disclaimer && <p className="mb-5 text-xs text-fg-muted">{disclaimer}</p>}
           </>
@@ -165,10 +165,10 @@ export default function ChatPage() {
             <AgentTurn key={m.id} name={agent.persona.name} phase={phase} label={turnLabel} onSkip={voice.skip}>
               {!!m.steps?.length && <ToolSteps steps={m.steps} />}
               {!!m.retrieved?.length && <RetrievedSources items={m.retrieved} />}
-              {voice.spoken ? <AssistantMessage content={voice.spoken} citations={m.citations} gap={m.gap} /> : null}
+              {voice.spoken ? <AssistantMessage content={voice.spoken} citations={m.citations} gap={m.gap} flow /> : null}
             </AgentTurn>
           ) : (
-            <AgentTurn key={m.id} name={agent.persona.name} phase="done">
+            <AgentTurn key={m.id} name={agent.persona.name} phase="done" listening={m.id === latest?.id}>
               {!!m.steps?.length && <ToolSteps steps={m.steps} />}
               {!!m.retrieved?.length && <RetrievedSources items={m.retrieved} />}
               <AssistantMessage content={m.content} citations={m.citations} gap={m.gap} caption={captionFor(m)} />
@@ -181,7 +181,7 @@ export default function ChatPage() {
           {!!liveAnswer?.steps.length && <ToolSteps steps={liveAnswer.steps} />}
           {!!liveAnswer?.sources.length && <RetrievedSources items={liveAnswer.sources} />}
           {liveAnswer?.text && <AssistantMessage content={liveAnswer.text} citations={liveAnswer.citations}
-            gap={liveAnswer.gap} caption={<StreamCostCaption cost={liveAnswer.cost} />} />}
+            gap={liveAnswer.gap} flow caption={<StreamCostCaption cost={liveAnswer.cost} />} />}
         </AgentTurn>}
         {sendError && <div role="alert" className="mb-5 text-sm text-danger">
           <p>{sendError}</p>

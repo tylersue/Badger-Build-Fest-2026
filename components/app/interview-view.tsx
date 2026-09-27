@@ -1,17 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowUp } from "lucide-react";
 import { AddCreditsButton } from "@/components/app/add-credits";
 import { ApiClientError } from "@/lib/api-client";
 import { formatCredits } from "@/lib/format";
 import { AnswerEditor } from "@/components/app/answer-editor";
 import { BuilderSplit } from "@/components/app/builder";
-import { PageHeader, buttonClass } from "@/components/app/ui";
-import { VoiceStage, useVoice } from "@/components/app/voice";
+import { buttonClass } from "@/components/app/ui";
+import { FlowWords } from "@/components/app/flow";
+import { Orb, type OrbMood } from "@/components/app/orb";
+import { useOrbDesign, useVoice, type VoiceStatus } from "@/components/app/voice";
 import { answerInterview, controlInterview, getDraft, readDemoState, readInterview, saveDraft, useDemo } from "@/lib/demo-store";
 import type { Agent } from "@/lib/types";
 import type { InterviewView as InterviewSnapshot } from "@/features/builder/interview";
+
+const ORB: Record<VoiceStatus, { mood: OrbMood; label: string }> = {
+  idle: { mood: "listening", label: "Your turn" },
+  listening: { mood: "listening", label: "Listening" },
+  thinking: { mood: "thinking", label: "Thinking" },
+  speaking: { mood: "talking", label: "Asking" },
+};
 
 export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boolean }) {
   const state = useDemo();
@@ -24,9 +34,15 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
   const [creditRefusal, setCreditRefusal] = useState<{ needed: number; available: number } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [focused, setFocused] = useState(false);
+  const field = useRef<HTMLTextAreaElement>(null);
   const speakingQuestion = loadedFor === `${state.identityId}:${agent.id}` ? view?.pendingQuestion : null;
   const voice = useVoice(speakingQuestion ? { id: speakingQuestion.id, text: speakingQuestion.text, speak: true, leadMs: 500 } : null,
     { busy, focused });
+  const design = useOrbDesign();
+
+  useEffect(() => {
+    if (voice.done && speakingQuestion?.id) field.current?.focus();
+  }, [voice.done, speakingQuestion?.id]);
 
   useEffect(() => {
     let active = true;
@@ -88,27 +104,46 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
   const hasAnswers = !!visibleView?.answers.length;
   const canSend = isOwner && state.status === "ready" && visibleView?.state === "active" && !!visibleView.pendingQuestion;
   const base = `/build/${agent.id}`;
-  return <BuilderSplit agent={agent} thread="· Interview" composer={<div className="shrink-0 border-t border-line-faint bg-surface-1 px-4 py-3">
-    <div className="mx-auto max-w-[752px] rounded-xl border border-line-subtle bg-surface-2 p-4">
-      <label htmlFor={`interview-answer-${agent.id}`} className="sr-only">Your answer</label>
-      <textarea id={`interview-answer-${agent.id}`} aria-label="Your answer" rows={3} value={draft} onChange={event => {
-        setDraft(event.target.value); saveDraft("interview", agent.id, event.target.value);
-      }} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-      onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submit(); } }}
-      placeholder="Write your answer…" disabled={!canSend || busy} className="min-h-24 w-full resize-y bg-transparent text-sm outline-none placeholder:text-fg-muted disabled:opacity-60" />
-      <div className="flex items-center justify-between gap-3 text-xs text-fg-muted"><span>Enter to send · Shift+Enter for a new line</span>
-        <button type="button" aria-label="Send answer" className={buttonClass("primary", "lg")} disabled={!canSend || busy || !draft.trim()} onClick={() => void submit()}>{busy && status === "Saving answer" ? "Saving answer" : "Send answer"}</button>
-      </div>
-    </div>
-  </div>}>
-    <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6"><div className="mx-auto max-w-[752px] space-y-5">
-      <PageHeader title="Interview" subtitle="Answer one question at a time. You can skip a question or add detail later." />
-      {speakingQuestion && <VoiceStage status={voice.status} caption={voice.caption} name={agent.persona.name}
-        icon={agent.icon} onSkip={voice.skip}
-        labels={{ idle: "Your turn. Type your answer below", thinking: "Thinking about your answer…", speaking: "Asking…" }} />}
+  return <BuilderSplit agent={agent} thread="Interview" composer={null}>
+    <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6"><div className="mx-auto max-w-[752px] space-y-5">
+      <h1 className="sr-only">Interview</h1>
       {state.status !== "ready" && <p role="alert" className="rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm">{state.error ?? "Loading interview…"}</p>}
       {!isOwner && <p className="rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm text-fg-muted">Interview answers are available to the agent owner.</p>}
       {state.status === "ready" && !visibleView && !error && isOwner && <p className="text-sm text-fg-muted">Loading interview…</p>}
+      {visibleView?.pendingQuestion && <section className="flex min-h-[55vh] flex-col items-center justify-center pb-8 text-center">
+        <button type="button" onClick={voice.skip} disabled={!voice.speaking}
+          aria-label={voice.speaking ? "Show the whole question now" : undefined}
+          className="rounded-full disabled:cursor-default">
+          <Orb state={design} mood={ORB[voice.status].mood} size={220}
+            label={`${agent.persona.name}: ${ORB[voice.status].label}`} />
+        </button>
+        <p className="sr-only" aria-live="polite">{visibleView.pendingQuestion.text}</p>
+        <h2 aria-hidden data-testid="interview-question"
+          className="mt-8 min-h-[2lh] max-w-[640px] text-[22px] leading-[1.45] font-medium text-balance">
+          <FlowWords key={visibleView.pendingQuestion.id} text={visibleView.pendingQuestion.text}
+            flowing upTo={voice.spoken.length} />
+        </h2>
+        {canSend && <div className="mt-6 w-full max-w-[640px]">
+          <div className="flex items-end gap-3 border-b border-line-subtle pb-2 focus-within:border-brand-border">
+            <textarea ref={field} data-testid="composer-input" aria-label="Your answer" rows={1}
+              value={draft} onChange={event => { setDraft(event.target.value); saveDraft("interview", agent.id, event.target.value); }}
+              onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+              onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submit(); } }}
+              placeholder="Type your answer…" disabled={busy}
+              className="max-h-48 min-h-9 flex-1 resize-none bg-transparent py-1 text-center text-[17px] leading-[1.6] outline-none [field-sizing:content] placeholder:text-fg-muted disabled:opacity-60" />
+            <button type="button" data-testid="composer-send" aria-label="Send answer" onClick={() => void submit()}
+              disabled={busy || !draft.trim()}
+              className="mb-1 grid size-7 shrink-0 place-items-center rounded-full bg-brand text-white transition-opacity disabled:opacity-0">
+              <ArrowUp className="size-4" />
+            </button>
+          </div>
+          <p className="mt-3 text-xs text-fg-muted">Enter to send · Shift+Enter for a new line</p>
+        </div>}
+        {isOwner && visibleView.state === "active" && <div className="mt-5 flex gap-2">
+          <button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("skip")}>Skip question</button>
+          <button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("pause")}>Pause interview</button>
+        </div>}
+      </section>}
       {visibleView?.readiness.suggested && <div className="rounded-xl border border-success/40 bg-surface-1 p-4">
         <div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold">Ready for a first test</h2><p className="mt-1 text-sm text-fg-muted">You have examples and working principles to try. Review the draft persona or keep adding detail.</p></div>
           {isOwner && <button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("dismiss-ready")}>Dismiss</button>}</div>
@@ -116,8 +151,7 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
       </div>}
       {visibleView?.state === "paused" && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><h2 className="font-semibold">Interview paused</h2><p className="mt-1 text-sm text-fg-muted">Your saved answers are here. Continue when you&apos;re ready.</p>{isOwner && <button type="button" className={`${buttonClass("primary", "lg")} mt-3`} disabled={busy} onClick={() => void control("resume")}>Resume interview</button>}</div>}
       {visibleView && visibleView.state !== "paused" && !visibleView.pendingQuestion && isOwner && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><h2 className="font-semibold">{hasAnswers ? "Continue your interview" : "Build your agent from your experience"}</h2><p className="mt-1 text-sm text-fg-muted">Answer one question at a time. You can skip a question or add detail later.</p><button type="button" className={`${buttonClass("primary", "lg")} mt-3`} disabled={busy} onClick={() => void control(hasAnswers ? "continue" : "start")}>{hasAnswers ? "Continue interview" : "Start interview"}</button></div>}
-      {visibleView?.pendingQuestion && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><p className="text-xs font-semibold text-fg-muted">Current question</p><h2 className="mt-2 whitespace-pre-wrap text-base font-semibold">{visibleView.pendingQuestion.text}</h2>{isOwner && visibleView.state === "active" && <div className="mt-4 flex flex-wrap gap-2"><button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("skip")}>Skip question</button><button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("pause")}>Pause interview</button></div>}</div>}
-      {hasAnswers && <section aria-label="Saved answers" className="space-y-3"><h2 className="text-base font-semibold">Saved answers</h2>{visibleView?.answers.map(answer => <AnswerEditor key={answer.id} agentId={agent.id} answer={answer} isOwner={isOwner} onChange={refresh} />)}</section>}
+      {hasAnswers && <details className="rounded-xl border border-line-subtle bg-surface-1 p-4"><summary className="cursor-pointer text-sm font-semibold">Saved answers · {visibleView.answers.length}</summary><section aria-label="Saved answers" className="mt-4 space-y-3">{visibleView.answers.map(answer => <AnswerEditor key={answer.id} agentId={agent.id} answer={answer} isOwner={isOwner} onChange={refresh} />)}</section></details>}
       {creditRefusal && <div role="alert" className="rounded-xl border border-warning/40 bg-warning-surface p-4 text-sm"><h2 className="font-semibold">Not enough credits</h2><p className="mt-1">This needs about {formatCredits(creditRefusal.needed)}; you have {formatCredits(creditRefusal.available)}. Add credits to continue. Your draft is saved.</p><div className="mt-3 flex gap-2"><AddCreditsButton size="sm" /><button type="button" className={buttonClass()} onClick={() => setCreditRefusal(null)}>Keep draft</button></div></div>}
       {error && <div role="alert" className="rounded-xl border border-danger/40 bg-danger-surface p-4 text-sm">{error}<button type="button" className={`${buttonClass()} ml-3`} disabled={refreshing} onClick={() => void refresh()}>Refresh interview</button></div>}
       <p className="sr-only" aria-live="polite">{status}</p>

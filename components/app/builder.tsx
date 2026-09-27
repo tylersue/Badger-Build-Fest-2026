@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, useSyncExternalStore, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { BookOpen, ChevronDown, ChevronRight, Ellipsis, Eye, FileText, Menu, Mic, Plus, Rocket, Settings2, UserRound, X } from "lucide-react";
-import { AgentTile, PlaceholderNote, StatusPill, buttonClass } from "@/components/app/ui";
+import { AgentTile, StatusPill, buttonClass } from "@/components/app/ui";
 import { agentById, currentIdentity, displayName, knowledgeStats, useDemo, type DemoState } from "@/lib/demo-store";
 import { categoryLabel } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
@@ -22,12 +22,12 @@ export function sourcesFor(s: DemoState, agentId: string) {
   return (s.snapshot?.sources ?? []).filter((x) => x.agentId === agentId);
 }
 
-/** Answers captured so far: the seeded count plus anything answered in this session. */
+/** Answers captured in the selected identity's server snapshot. */
 export function answerCount(s: DemoState, agentId: string) {
   return knowledgeStats(s, agentId).answers;
 }
 
-/* Fleet builder split: chat column + 480px Configure drawer (D-05). */
+/* Fleet builder split: chat column + Configure drawer (D-05), 480px by default and resizable from its left edge. */
 export function BuilderSplit({ agent, thread, children, composer }: { agent: Agent; thread: string; children: ReactNode; composer: ReactNode }) {
   const [drawer, setDrawer] = useState(true);
   return (
@@ -58,61 +58,157 @@ function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void
   const base = `/build/${agent.id}`;
   const sources = sourcesFor(s, agent.id);
   const answers = answerCount(s, agent.id);
+  const drawerWidth = useDrawerWidth();
   return (
-    <aside className="hidden w-[480px] shrink-0 flex-col overflow-y-auto border-l border-line-faint bg-surface-1 lg:flex">
-      <div className="flex items-center gap-3 border-b border-line-muted px-4 py-3">
-        <AgentTile icon={agent.icon} />
-        <div className="min-w-0">
-          <div className="truncate text-base font-semibold">{agent.persona.name}</div>
-          <div className="truncate text-xs text-fg-tertiary">{agent.persona.headline || "No headline yet"}</div>
+    <div className="relative hidden shrink-0 lg:flex" style={{ width: drawerWidth }}>
+      <DrawerResizeHandle width={drawerWidth} />
+      <aside className="flex w-full flex-col overflow-y-auto border-l border-line-faint bg-surface-1">
+        <div className="flex items-center gap-3 border-b border-line-muted px-4 py-3">
+          <AgentTile icon={agent.icon} />
+          <div className="min-w-0">
+            <div className="truncate text-base font-semibold">{agent.persona.name}</div>
+            <div className="truncate text-xs text-fg-tertiary">{agent.persona.headline || "No headline yet"}</div>
+          </div>
+          <span className="ml-auto flex items-center gap-1.5">
+            <Link href={`/agents/${agent.slug}`} className={buttonClass("secondary")}>
+              <Eye />
+              View
+            </Link>
+            <button onClick={onClose} aria-label="Close" className="text-fg-muted hover:text-foreground">
+              <X className="size-4" />
+            </button>
+          </span>
         </div>
-        <span className="ml-auto flex items-center gap-1.5">
-          <Link href={`/agents/${agent.slug}`} className={buttonClass("secondary")}>
-            <Eye />
-            View
+
+        <DrawerSection icon={UserRound} title="Persona">
+          <DrawerRow href={`${base}/persona`} title="Headline" sub={agent.persona.headline || "Not set"} />
+          <DrawerRow href={`${base}/persona`} title="Category" sub={categoryLabel(agent.persona.category)} />
+          <DrawerRow href={`${base}/persona`} title="How I work" sub={agent.persona.howIWork || "Not set"} />
+          <DrawerRow href={`${base}/persona`} title="Always / Never" sub={[agent.persona.always[0], agent.persona.never[0]].filter(Boolean).join(" · ") || "Not set"} />
+          <DrawerRow href={`${base}/persona`} title="Advanced: system prompt" sub={agent.systemPromptOverride ? "Edited by hand" : "Generated from the form · editable"} />
+        </DrawerSection>
+
+        <DrawerSection icon={BookOpen} title="Knowledge" count={answers + sources.filter((x) => x.kind !== "interview").reduce((n, x) => n + x.chunkCount, 0)}>
+          <DrawerRow href={`${base}/interview`} icon={Mic} title="Interview answers" sub={`${answers} answers · re-embedded on edit`} />
+          {sources
+            .filter((x) => x.kind !== "interview")
+            .map((x) => (
+              <DrawerRow key={x.id} href={`${base}/knowledge`} icon={FileText} title={x.name} sub={x.status === "ready" ? `Ready · ${x.chunkCount} chunks${x.pageCount ? ` · ${x.pageCount} pages` : ""}` : "Processing…"} menu />
+            ))}
+          <Link href={`${base}/knowledge`} className="mx-3 mt-2 mb-3 flex h-9 items-center justify-center gap-1.5 rounded-lg border border-dashed border-line-default text-[13px] text-selected-fg">
+            <Plus className="size-3.5" />
+            Add document
           </Link>
-          <button onClick={onClose} aria-label="Close" className="text-fg-muted hover:text-foreground">
-            <X className="size-4" />
-          </button>
-        </span>
-      </div>
+        </DrawerSection>
 
-      <DrawerSection icon={UserRound} title="Persona">
-        <DrawerRow href={`${base}/persona`} title="Headline" sub={agent.persona.headline || "Not set"} />
-        <DrawerRow href={`${base}/persona`} title="Category" sub={categoryLabel(agent.persona.category)} />
-        <DrawerRow href={`${base}/persona`} title="How I work" sub={agent.persona.howIWork || "Not set"} />
-        <DrawerRow href={`${base}/persona`} title="Always / Never" sub={[agent.persona.always[0], agent.persona.never[0]].filter(Boolean).join(" · ") || "Not set"} />
-        <DrawerRow href={`${base}/persona`} title="Advanced: system prompt" sub={agent.systemPromptOverride ? "Edited by hand" : "Generated from the form · editable"} />
-      </DrawerSection>
-
-      <DrawerSection icon={BookOpen} title="Knowledge" count={answers + sources.filter((x) => x.kind !== "interview").reduce((n, x) => n + x.chunkCount, 0)}>
-        <DrawerRow href={`${base}/interview`} icon={Mic} title="Interview answers" sub={`${answers} answers · re-embedded on edit`} />
-        {sources
-          .filter((x) => x.kind !== "interview")
-          .map((x) => (
-            <DrawerRow key={x.id} href={`${base}/knowledge`} icon={FileText} title={x.name} sub={x.status === "ready" ? `Ready · ${x.chunkCount} chunks${x.pageCount ? ` · ${x.pageCount} pages` : ""}` : "Processing…"} menu />
-          ))}
-        <Link href={`${base}/knowledge`} className="mx-3 mt-2 mb-3 flex h-9 items-center justify-center gap-1.5 rounded-lg border border-dashed border-line-default text-[13px] text-selected-fg">
-          <Plus className="size-3.5" />
-          Add document
-        </Link>
-      </DrawerSection>
-
-      <DrawerSection icon={Rocket} title="Publishing">
-        <DrawerRow href={`${base}/publish`} title="Rate multiplier" sub={`${agent.rateMultiplier}× · about ${typicalMessageCents(agent.rateMultiplier)} credits per message`} />
-        <DrawerRow href={`${base}/publish`} title="Content consent" sub={agent.consentAcceptedAt ? `Accepted ${agent.consentAcceptedAt.slice(0, 10)}` : "Not accepted yet"} />
-        <div className="flex flex-col gap-2 px-3 pt-2 pb-3">
-          <StatusPill status={agent.status} />
-          <Link href={`${base}/publish`} className={cn(buttonClass(agent.status === "published" ? "destructive" : "primary", "lg"), "w-full")}>
-            {agent.status === "published" ? "Unpublish" : "Publish agent"}
-          </Link>
+        <DrawerSection icon={Rocket} title="Publishing">
+          <DrawerRow href={`${base}/publish`} title="Rate multiplier" sub={`${agent.rateMultiplier}× · about ${typicalMessageCents(agent.rateMultiplier)} credits per message`} />
+          <DrawerRow href={`${base}/publish`} title="Content consent" sub={agent.consentAcceptedAt ? `Accepted ${agent.consentAcceptedAt.slice(0, 10)}` : "Not accepted yet"} />
+          <div className="flex flex-col gap-2 px-3 pt-2 pb-3">
+            <StatusPill status={agent.status} />
+            <Link href={`${base}/publish`} className={cn(buttonClass(agent.status === "published" ? "destructive" : "primary", "lg"), "w-full")}>
+              {agent.status === "published" ? "Unpublish" : "Publish agent"}
+            </Link>
+          </div>
+        </DrawerSection>
+        <div className="mx-4 mb-4">
+          <p className="text-xs text-fg-muted">Owner: {displayName(s, agent.ownerId)}</p>
         </div>
-      </DrawerSection>
-      <div className="mx-4 mb-4">
-        <PlaceholderNote feature="interview and persona drafting" phase={2} />
-        <p className="mt-1 text-xs text-fg-muted">Owner: {displayName(s, agent.ownerId)}</p>
-      </div>
-    </aside>
+      </aside>
+    </div>
+  );
+}
+
+/* Drawer width, remembered per browser. A tiny external store so the server render and the first
+   client render agree on the default, then the saved width takes over without a hydration mismatch. */
+const DRAWER_DEFAULT = 480;
+const DRAWER_MIN = 320;
+const DRAWER_MAX = 720;
+const DRAWER_STEP = 16;
+const DRAWER_KEY = "builder-drawer-width";
+let drawerMemory = DRAWER_DEFAULT;
+const drawerListeners = new Set<() => void>();
+
+function clampDrawer(w: number) {
+  // Never squeeze the conversation column below ~480px on narrower screens.
+  const room = typeof window === "undefined" ? DRAWER_MAX : window.innerWidth - 480 - 240;
+  return Math.round(Math.min(Math.max(DRAWER_MIN, room), DRAWER_MAX, Math.max(DRAWER_MIN, w)));
+}
+
+function readDrawerWidth() {
+  try {
+    const saved = Number(window.localStorage.getItem(DRAWER_KEY));
+    return saved ? clampDrawer(saved) : drawerMemory;
+  } catch {
+    return drawerMemory;
+  }
+}
+
+function setDrawerWidth(w: number) {
+  drawerMemory = clampDrawer(w);
+  try {
+    window.localStorage.setItem(DRAWER_KEY, String(drawerMemory));
+  } catch {
+    // Private windows and blocked storage keep the width for this page view only.
+  }
+  drawerListeners.forEach((l) => l());
+}
+
+function subscribeDrawer(listener: () => void) {
+  drawerListeners.add(listener);
+  return () => {
+    drawerListeners.delete(listener);
+  };
+}
+
+function useDrawerWidth() {
+  return useSyncExternalStore(subscribeDrawer, readDrawerWidth, () => DRAWER_DEFAULT);
+}
+
+/* The drawer's left edge: drag to resize, arrow keys to nudge, double-click to reset. */
+function DrawerResizeHandle({ width }: { width: number }) {
+  const drag = useRef<{ x: number; width: number } | null>(null);
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { x: e.clientX, width };
+  };
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (drag.current) setDrawerWidth(drag.current.width + (drag.current.x - e.clientX));
+  };
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    drag.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const next =
+      e.key === "ArrowLeft" ? width + DRAWER_STEP : e.key === "ArrowRight" ? width - DRAWER_STEP : e.key === "Home" ? DRAWER_MIN : e.key === "End" ? DRAWER_MAX : null;
+    if (next === null) return;
+    e.preventDefault();
+    setDrawerWidth(next);
+  };
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize the Configure panel"
+      aria-valuenow={width}
+      aria-valuemin={DRAWER_MIN}
+      aria-valuemax={DRAWER_MAX}
+      tabIndex={0}
+      data-testid="drawer-resize"
+      title="Drag to resize · double-click to reset"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onKeyDown={onKeyDown}
+      onDoubleClick={() => setDrawerWidth(DRAWER_DEFAULT)}
+      className="group absolute inset-y-0 -left-1.5 z-10 w-3 cursor-col-resize touch-none outline-none"
+    >
+      <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 transition-colors group-hover:bg-brand-border group-focus-visible:bg-brand-border group-active:bg-brand-border" />
+      <span className="absolute top-1/2 left-1/2 h-9 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-line-default transition-colors group-hover:bg-brand-border group-focus-visible:bg-brand-border group-active:bg-brand-border" />
+    </div>
   );
 }
 

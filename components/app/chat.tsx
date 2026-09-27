@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { ArrowUp, ChevronDown, ChevronRight, Database, FileText, Paperclip, Plus, Search, ThumbsDown, ThumbsUp, X, type LucideIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddCreditsButton } from "@/components/app/add-credits";
+import { FlowWords } from "@/components/app/flow";
 import { formatCredits, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Citation, Message } from "@/lib/types";
@@ -24,50 +25,29 @@ export function UserMessage({ content }: { content: string }) {
   );
 }
 
-/* Word-by-word reveal for a fresh provider reply. Older messages render at once. */
-const REVEAL_TOKENS_PER_TICK = 2;
-const REVEAL_TICK_MS = 28;
-
-/* Assistant turns are plain text, no bubble; [n] markers become citation chips with a hover card. */
+/* Arriving words ease in while citation chips retain their stable evidence IDs. */
 export function AssistantMessage({
-  content, citations = [], caption, stream = false, onStreamed, gap,
-}: { content: string; citations?: Citation[] | EvidenceCitation[]; caption?: ReactNode; stream?: boolean; onStreamed?: () => void; gap?: string | null }) {
-  const tokens = useMemo(() => content.split(/(?<=\s)/), [content]);
-  const [revealed, setRevealed] = useState(stream ? 0 : tokens.length);
-  useEffect(() => {
-    if (!stream) return;
-    const id = window.setInterval(() => {
-      setRevealed((n) => {
-        const next = Math.min(tokens.length, n + REVEAL_TOKENS_PER_TICK);
-        if (next >= tokens.length) window.clearInterval(id);
-        return next;
-      });
-    }, REVEAL_TICK_MS);
-    return () => window.clearInterval(id);
-  }, [stream, tokens.length]);
-  const done = !stream || revealed >= tokens.length;
-  useEffect(() => {
-    if (stream && done) onStreamed?.();
-  }, [stream, done, onStreamed]);
-  const visible = done ? content : tokens.slice(0, revealed).join("");
-  const parts = visible.split(/(\[(?:\d+|(?:expert|web):[^\]\s]+)\])/g);
+  content, citations = [], caption, flow = false, gap,
+}: { content: string; citations?: Citation[] | EvidenceCitation[]; caption?: ReactNode; flow?: boolean; gap?: string | null }) {
+  const [flowing] = useState(flow);
+  const parts = content.split(/(\[(?:\d+|(?:expert|web):[^\]\s]+)\])/g);
   const modern = citations.filter((item): item is EvidenceCitation => "evidenceId" in item);
   const legacy = citations.filter((item): item is Citation => "n" in item);
   return (
-    <div className="mb-5" data-testid="assistant-message" data-streaming={done ? undefined : "true"} aria-busy={!done}>
+    <div className="mb-5" data-testid="assistant-message">
       <div className="text-base leading-[1.6] whitespace-pre-line">
         {parts.map((part, i) => {
           const m = part.match(/^\[([^\]]+)\]$/);
-          if (!m) return <span key={i}>{part}</span>;
+          if (!m) return <FlowWords key={i} text={part} flowing={flowing} />;
           const c = modern.find(item => item.evidenceId === m[1]) ?? legacy.find(item => String(item.n) === m[1]);
-          if (!c) return <span key={i}>{part}</span>;
+          if (!c) return <FlowWords key={i} text={part} flowing={flowing} />;
           const number = "ordinal" in c ? c.ordinal : c.n;
           const online = "evidenceId" in c && c.sourceType === "web";
           const url = online ? safeExternalUrl(c.url) : null;
           return (
             <Tooltip key={i}>
               <TooltipTrigger asChild>
-                <sup data-testid="citation" className="mx-0.5 cursor-help rounded bg-surface-3 px-[5px] text-xs text-selected-fg">{number}</sup>
+                <sup data-testid="citation" className={cn("mx-0.5 cursor-help rounded bg-surface-3 px-[5px] text-xs text-selected-fg", flowing && "flow-word")}>{number}</sup>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <div className="font-medium">{online ? "Online source" : c.sourceType === "document" ? "Expert document" : "Expert interview"} · {c.sourceName}</div>
@@ -81,7 +61,7 @@ export function AssistantMessage({
       </div>
       {gap && <p className="mt-3 rounded-lg border border-warning/40 bg-warning-surface/20 p-3 text-sm">Knowledge gap: {gap} Online sources are separate from the expert&apos;s views.</p>}
       {modern.length > 0 && <div className="mt-3 text-xs text-fg-muted">{([['Expert sources', evidenceGroups(modern).expert], ['Online sources', evidenceGroups(modern).online]] as const).map(([label, group]) => group.length > 0 && <span key={label} className="mr-3">{label}: {group.map(item => item.sourceName).join(", ")}</span>)}</div>}
-      {caption && done && <div className="mt-1.5 flex items-center gap-2 text-xs text-fg-muted">{caption}</div>}
+      {caption && <div className="mt-1.5 flex items-center gap-2 text-xs text-fg-muted">{caption}</div>}
     </div>
   );
 }
