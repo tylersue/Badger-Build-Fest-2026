@@ -628,9 +628,9 @@ async function route(method: string, url: URL, init?: RequestInit): Promise<Resp
         const rerun = lastQuestion ? composeAnswer({ agent, expertName: expertName(agent), question: lastQuestion,
           knowledge: knowledgeFor(agent.id), now: iso(), styles }) : null;
         const saved = [...fix.always.map((rule) => `Always: "${rule}"`), ...fix.never.map((rule) => `Never: "${rule}"`)];
-        const text = `Fixed. Here's what I changed in ${agent.persona.name}:\n${fix.changes.map((change) => `- ${change}`).join("\n")}${
-          saved.length ? `\n- Saved to the persona: ${saved.join(" · ")}` : ""}${
-          rerun ? `\n\nHere's your last test question again with the change.\nQ: ${lastQuestion}\n\n${rerun.text}` : "\n\nAsk a test question to see the change."}`;
+        const text = `Got it, fixed. Here's what changed:\n${fix.changes.map((change) => `- ${change}`).join("\n")}${
+          saved.length ? "\n\nI saved this to the persona too, so it sticks for every founder who hires the agent." : ""}${
+          rerun ? `\n\nHere's your last question again: "${lastQuestion}"\n\n${rerun.text}` : "\n\nAsk a test question to see the change."}`;
         const override: ComposedAnswer = { text, citations: rerun?.citations ?? [], sources: rerun?.sources ?? [], steps: [], gap: rerun?.gap ?? null };
         const { events, commit } = runAnswer({ mode: "sandbox", agent, text: input.text, requestKey: input.requestKey, override,
           onCommit: () => {
@@ -677,7 +677,6 @@ async function route(method: string, url: URL, init?: RequestInit): Promise<Resp
       post(d.identityId, "debit", -price, `Bought ${agent.persona.name}`, ref);
       post(agent.ownerId, "earnings", expertShare, `Sale · ${agent.persona.name}`, ref);
       post(null, "platform_margin", Math.round((price - expertShare) * 100) / 100, "15% of sale", ref);
-      agent.usageCount += 1;
       const purchase = { agentId: agent.id, conversationId: conversation.id, credits: price, purchasedAt: iso() };
       mine.push(purchase);
       save();

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowDownUp, Plus, Search, Store, X } from "lucide-react";
+import { ArrowDownUp, Plus, Search, ShoppingBag, Star, Store, X } from "lucide-react";
 import { Breadcrumbs, EmptyState, PageBody, PageHeader, Pill, buttonClass } from "@/components/app/ui";
 import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
-import { allAgents, currentIdentity, displayName, profileFor, useDemo } from "@/lib/demo-store";
+import { allAgents, currentIdentity, displayName, profileFor, purchasesFor, useDemo } from "@/lib/demo-store";
+import { buyerCount } from "@/lib/config/purchase";
 import { CATEGORIES, categoryLabel, type Category } from "@/lib/config/categories";
 import { BenchmarkScoreBadge } from "@/components/benchmark/benchmark-ui";
 import { typicalMessageCents } from "@/features/billing/pricing";
@@ -13,7 +14,7 @@ import { cn } from "@/lib/utils";
 import type { Agent } from "@/lib/types";
 
 type Sort = "rating" | "newest" | "used";
-const SORT_LABELS: Record<Sort, string> = { rating: "Rating", newest: "Newest", used: "Most used" };
+const SORT_LABELS: Record<Sort, string> = { rating: "Highest rated", newest: "Newest", used: "Most bought" };
 const NEXT_SORT: Record<Sort, Sort> = { rating: "newest", newest: "used", used: "rating" };
 
 /* Marketplace: one wide search field, category chips, then a grid of agent cards in the Kore.ai marketplace shape. */
@@ -37,7 +38,8 @@ export function MarketplaceView() {
             .includes(q),
       )
       .sort((a, b) =>
-        sort === "rating" ? b.ratingAvg - a.ratingAvg : sort === "used" ? b.usageCount - a.usageCount : b.createdAt.localeCompare(a.createdAt),
+        sort === "rating" ? b.ratingAvg - a.ratingAvg || b.ratingCount - a.ratingCount
+          : sort === "used" ? buyerCount(b, false) - buyerCount(a, false) : b.createdAt.localeCompare(a.createdAt),
       );
   }, [s, query, category, sort]);
 
@@ -128,27 +130,38 @@ function AgentCard({ agent: a }: { agent: Agent }) {
   const s = useDemo();
   const profile = profileFor(s, a.ownerId);
   const company = companyFor(a.ownerId);
+  const title = a.persona.name.includes("·") ? a.persona.name.split("·").slice(1).join("·").trim() : a.persona.name;
+  const bought = purchasesFor(s).some((p) => p.agentId === a.id);
   return (
     <Link
       href={`/agents/${a.slug}`}
       data-testid="agent-card"
       className="group flex min-w-0 w-full flex-col rounded-xl border border-line-subtle bg-surface-1 p-4 transition-colors hover:border-line-outline focus-visible:border-brand-border focus-visible:outline-none"
     >
-      <div className="flex items-center gap-3">
-        <IdentityLogo identityId={a.ownerId} size={40} />
-        <div className="min-w-0">
-          <h2 className="truncate text-[15px] leading-tight font-semibold">
-            {displayName(s, a.ownerId)}
-            {company && <span className="font-normal text-fg-muted"> · {company}</span>}
-          </h2>
-          <p className="mt-1 truncate text-xs text-fg-muted">{[profile.field, profile.credentials].filter(Boolean).join(" · ")}</p>
-        </div>
+      {/* The agent leads; the expert behind it sits underneath. */}
+      <h2 className="truncate text-[16px] leading-tight font-semibold">{title}</h2>
+      <div className="mt-2 flex items-center gap-2">
+        <IdentityLogo identityId={a.ownerId} size={22} />
+        <p className="min-w-0 truncate text-[13px]">
+          <span className="font-medium text-fg-secondary">{displayName(s, a.ownerId)}</span>
+          {company && <span className="text-fg-muted"> · {company}</span>}
+        </p>
       </div>
+      <p className="mt-1 truncate text-xs text-fg-muted">{[profile.field, profile.credentials].filter(Boolean).join(" · ")}</p>
       <p className="mt-3 text-sm leading-snug font-medium">{a.persona.headline || a.persona.name}</p>
       <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-fg-muted">{a.persona.description}</p>
-      <div className="mt-auto flex items-center gap-2 pt-4">
-        <Pill>{categoryLabel(a.persona.category)}</Pill>
+      <div className="mt-auto flex items-center gap-3 pt-4 text-xs text-fg-muted tabular-nums">
         <BenchmarkScoreBadge agent={a} />
+        <span className="inline-flex items-center gap-1" title={`${a.ratingAvg.toFixed(1)} stars from ${a.ratingCount} reviews`}>
+          <Star className="size-3.5 fill-warning text-warning" aria-hidden />
+          <span className="font-medium text-fg-secondary">{a.ratingCount ? a.ratingAvg.toFixed(1) : "New"}</span>
+          {a.ratingCount > 0 && <span>({a.ratingCount})</span>}
+        </span>
+        <span className="inline-flex items-center gap-1"><ShoppingBag className="size-3.5" aria-hidden />{buyerCount(a, bought).toLocaleString()} bought</span>
+      </div>
+      <div className="mt-3 flex items-center gap-2 border-t border-line-subtle pt-3">
+        <Pill>{categoryLabel(a.persona.category)}</Pill>
+        {bought && <span className="text-xs text-success">In My agents</span>}
         <span className="ml-auto text-xs text-fg-muted tabular-nums">{typicalMessageCents(a.rateMultiplier)} credits / msg</span>
       </div>
     </Link>

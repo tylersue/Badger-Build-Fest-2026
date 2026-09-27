@@ -1,111 +1,125 @@
-# Proxier demo script
+# Proxier: one-minute demo script
 
-Everything in this demo is hardcoded and runs in the browser. There's no database, no API key and no network, and the same input always gives the same result. Mock funding and preloaded data are labeled in the app.
+Everything in this demo is hardcoded and runs in the browser. The lines below produce the same result every time. Paste them exactly; `lib/demo-backend/script.test.ts` checks each one.
 
-## Before you record (5 minutes)
+**Cast**
 
-1. Run `pnpm install`, then `pnpm demo`, and open <http://localhost:3000>. `pnpm demo` turns on demo mode for you; the alternative is `NEXT_PUBLIC_DEMO_MODE=1` in `.env.local` with `pnpm dev`.
-2. Nothing else is needed: no database, no keys. Use Chrome at about 1440 px wide and 100% zoom, with devtools closed.
-3. Open **Settings → Reset demo data**. This restores every agent, chat and wallet to the starting state. Do it before every take.
-4. Use the switcher at the bottom of the sidebar to switch to **Austin Han (buyer)**.
-5. Have `docs/demo/Proxier-one-pager.md` ready in Finder for the upload.
+- **Austin Han** is the buyer: a first-time founder building Proxier.
+- **Cynthia Pham** is the expert: a two-time founder at Sequoia who sells agents on Proxier.
 
-The cast:
+## Before you record
 
-- **Austin Han** is the buyer: a first-time founder building Proxier itself. In the demo, the team stress-tests its own startup on Proxier.
-- **Cynthia Pham** is the expert: a 2x founder and angel investor who sells agents on Proxier.
-
----
-
-## Scene 1: The problem (0:00–0:20)
-
-**Show:** the Marketplace, scrolling slowly.
-
-**Voiceover:**
-> AI helps startups build software fast. It doesn't help founders make the right decisions: how an investor will see the idea, what a customer will actually pay for. Accelerators and mentors give that guidance, but founders without backing don't have it. That's why we built Proxier. Think Fiverr, but you hire agents: agents built by experts and founders who've been through it, grounded in their own knowledge.
-
-## Scene 2: A founder hires an expert (0:20–0:55), as Austin Han
-
-**Voiceover:** "We're building a startup for the first time. We need to stress-test the idea, find product-market fit and get feedback. So I'll hire some experts through Proxier."
-
-1. On **Marketplace**, click the **Validation & research** filter.
-2. Open **Cynthia Pham · Idea stress test**. Point at the rating, reviews, credentials and benchmark score.
-3. Click **Buy · 2,000 credits**. The checkout shows what's included, the price and Austin's balance before and after. Click **Buy now**. You'll see **Added to My agents**, and the agent appears under **My agents** in the sidebar marked *Bought*.
-4. Click **Start using it**, then type:
-   > Stress-test my idea: a marketplace where founders hire AI agents built by experts
-
-   The answer streams in with numbered citations, including one of Cynthia's own essays, and the caption reads **Included with your purchase**. Click a citation chip, for example **[2]**, to show the exact interview answer it came from. Open the essay citation and click **Read the full essay** to show Cynthia's published piece.
-5. Click **Attach a file** and choose `docs/demo/Proxier-one-pager.md`. Type:
-   > Review our one-pager
-
-   The agent reads the file, picks out the strongest evidence in it ("6 hours a week…"), and lists what Cynthia would push on, each point cited.
-6. Show the knowledge boundary. Type:
-   > How do we research our competitors?
-
-   Cynthia's knowledge doesn't cover it, so the agent says so, searches online, and labels the answer as an online source that is **not** Cynthia's knowledge. The tool steps show the search.
-7. Open **My agents** to show the bought agent, then **Wallet** to show the purchase.
-
-## Scene 3: Who builds the agents? (0:55–1:05)
-
-**Voiceover:** "Who's actually selling these agents, and why trust them? Industry experts and experienced founders who want to earn from what they know. No technical skill needed: Proxier interviews them and builds an agent that thinks like them, a proxy that represents them."
-
-1. Switch to **Cynthia Pham (expert)** with the sidebar switcher.
-
-## Scene 4: The interview builds the agent (1:05–1:30), as Cynthia Pham
-
-1. Click **New agent**. Set the name to `Cynthia Pham · Finding your first customers` and the category to **Validation & research**, then click **Start interview**.
-2. Click **Start interview** again. The interviewer asks three questions, and each follow-up quotes the last answer back. Paste these answers and press Enter after each one.
-
-   **Answer 1**
-   > Where do I find my first customers? I tell founders to stop building and go where their customers already gather. Every founder I mentor has to name ten real people with a phone number before writing more code.
-
-   **Answer 2**
-   > A student building a tutoring app spent four months on features. I asked who had paid for tutoring last semester and the founder couldn't name anyone. We made a list of twenty parents in one week, called all of them, and six signed up for a paid pilot.
-
-   **Answer 3**
-   > It breaks for deep tech. If you're building a new battery, you can't pre-sell ten customers in a week. The red flag is a founder who uses that as an excuse for a scheduling app. If your product takes a weekend to prototype, customers come first, always.
-
-3. After the third answer, the **Building…** panel runs step by step: **knowledge base** (answers indexed as chunks) → **task system** (tasks mapped from the answers) → **agent VM** (isolated runtime provisioned) → **hosting** (live URL).
-
-## Scene 5: Persona, test and "just say it" fixes (1:30–1:45)
-
-1. Open the **Persona** tab. **Voice & tone** was drafted from how Cynthia answered: tone traits such as *Direct* and *Teaches with real stories*, and how the agent talks back, with a sample reply.
-2. Open the **Test** tab and type:
-   > Where do I find my first customers for a study app?
-
-   The answer quotes Cynthia's interview, with citations.
-3. **Voiceover:** "Don't like something? Just say it."
-
-   Type:
-   > I don't like that it quotes me word for word. Talk like me, keep it short, and end with a next step.
-
-   The agent replies **"Fixed."**, lists what changed and saves the rules to the persona. It then re-answers the last question in Cynthia's own voice, shorter, ending with *Next step: …*. The persona's Voice & tone now shows the new settings.
-
-## Scene 6: Publish, price and credibility (1:45–2:00)
-
-1. Open the **Publish** tab. Set the rate multiplier to **3×** (the price), tick the content consent, and click **Publish**.
-2. Click **View** (or open the Marketplace) to show the live listing.
-3. Open **Benchmarks** to show Proxier agents, including Cynthia's new one, scored and ranked.
-4. Open **Earnings** to show the money Cynthia's agents have earned.
-
-**Closing line:** "Experts earn from what they know. Founders get guidance they couldn't get before. That's Proxier."
+1. Run `pnpm install`, then `pnpm demo`, and open <http://localhost:3000> in Chrome at about 1440 px wide.
+2. Go to **Settings** and click **Reset demo data**. Do this before every take.
+3. At the bottom of the sidebar, click the name and switch to **Austin Han — Hirer**.
+4. Keep this page open in a second window so you can copy and paste each line.
+5. Keep the Chrome window in front while recording, because Chrome slows animations in background windows. Paste the typed lines instead of typing them live, and cut the waits in the edit.
 
 ---
 
-## Live demo (finalists, 1–3 PM)
+## 0:00–0:08 · The problem (Austin)
 
-Follow the same scenes at a slower pace. Good extra questions for Cynthia's **Idea stress test** listing:
+**Screen:** Marketplace. Scroll slowly and click the **Validation & research** filter.
 
-- "What would make an investor pass on this?" (a scripted answer with citations)
-- "Who should my first ten customers be?" (a scripted answer with a citation)
+**Say:**
+> We're building our first startup. We need to stress-test the idea, find product-market fit, and figure out go-to-market. So we're hiring experts on Proxier.
 
-For Dev Patel's **Fundraising** agent:
+## 0:08–0:25 · Hire an expert (Austin)
 
-- "Should we raise a pre-seed now or wait?"
+1. Click the **Cynthia Pham · Idea stress test** card.
+2. Top right, click **Buy · 2,000 credits**, then **Buy now**. You'll see **Added to My agents**, and the agent appears in the sidebar under **My agents**.
+3. Click **Start using it**.
+4. Click **Write your message…**, paste this line, and press Enter:
+
+```
+hey, we're building proxier. it's a marketplace where first-time founders hire AI agents built by real experts. can you poke holes in it?
+```
+
+5. When the answer finishes, hover a blue number such as **2** to show where it came from.
+
+**Say (over the answer):**
+> Cynthia's a two-time founder. We bought Cynthia's agent, and it pokes holes in our idea the way Cynthia would, and every point shows exactly where it came from.
+
+## 0:25–0:31 · Who sells the agents (Cynthia)
+
+**Screen:** at the bottom of the sidebar, switch to **Cynthia Pham — Expert**.
+
+**Say:**
+> So who's actually selling these agents? Experts and founders who want to get paid for what they know. No code needed.
+
+## 0:31–0:47 · The interview builds the agent (Cynthia)
+
+1. In the sidebar, click **New agent**. After "Cynthia Pham · " in the name box, type `Finding your first customers`. Leave the category on **Validation & research** and click **Start interview**.
+2. Click **Start interview** again. Answer each question by pasting the line and pressing Enter. Speed this part up in the edit.
+
+**Answer 1**
+```
+Stop building and go where your customers already hang out. Every week someone asks me where to find their first customers, and that's always my answer. I make every founder I work with write down ten real people with phone numbers before they touch more code.
+```
+
+**Answer 2** (the question quotes Answer 1 back: *You said "Stop building…"*)
+```
+Had a student building a tutoring app who spent like four months on features. I asked who paid for tutoring last semester and they couldn't name one person. So we made a list of twenty parents in a week, called every single one, and six signed up for a paid pilot.
+```
+
+**Answer 3** (the question pushes back: *Where does that advice break?*)
+```
+It breaks for deep tech. If you're building a new battery, you're not pre-selling ten customers in a week. The red flag is someone using that as an excuse for a scheduling app. If you can prototype it in a weekend, customers come first.
+```
+
+3. The **Building…** panel ticks through: **Knowledge base**, **Task system**, **Agent VM**, **Hosting**.
+
+**Say:**
+> Proxier interviews you. It grills you with a few questions, then builds the knowledge base and the task system, and hosts the agent on its own machine.
+
+## 0:47–0:53 · Test it, and just say what to change (Cynthia)
+
+1. Click **Test agent**. Paste this line and press Enter:
+
+```
+I have zero customers right now. where do I even find the first ones?
+```
+
+   The answer quotes Cynthia word for word.
+
+2. Paste this line and press Enter:
+
+```
+hmm, I don't love that it just quotes me word for word. talk like me, keep it short, and end with something they can actually do this week.
+```
+
+   It replies **"Got it, fixed."** and lists what changed. It then answers the question again in Cynthia's own voice, shorter, ending with *Next step: Write down ten real people…*
+
+**Say:**
+> Don't like how it sounds? Just tell it. It fixes itself.
+
+## 0:53–1:00 · Price it and publish (Cynthia)
+
+1. Click the **Publish** tab at the top.
+2. Drag **Rate multiplier** to **3×**, tick the **Content consent** box, and click **Publish agent**.
+3. Click **Benchmarks** in the sidebar. **Your agents** shows the new agent scored next to Cynthia's established one (4.9 stars from 31 founders).
+
+**Say:**
+> Set your price, publish, and founders start hiring you. That's Proxier.
+
+---
+
+## Extra lines for the live demo
+
+Paste these in Austin's chat with Cynthia's agent:
+
+- `ok, what would make an investor pass on us?` Cynthia's three reasons, with sources.
+- Click **Attach a file**, choose `docs/demo/Proxier-one-pager.md`, then paste `here's our one-pager. what would you change before we send it to investors?` The agent reads the file, quotes the strongest line ("6 hours a week…"), and lists what Cynthia would push on.
+
+Other screens worth showing:
+
+- **Wallet** has the purchase.
+- **Earnings** (as Cynthia) has the sale.
+- Answers cite Cynthia's own essay. Click **Read the full essay** to open it.
 
 ## If something goes wrong
 
-- **The page looks stuck or a chat didn't open:** refresh. Everything is saved in the browser.
-- **The data looks wrong, or you need to redo a take:** go to **Settings → Reset demo data**.
-- **You're on the wrong identity:** use the switcher at the bottom of the sidebar.
-- **An answer is slow:** Chrome slows timers in background windows, so keep the demo window in front.
+- **The page looks stuck:** refresh. Everything is saved in the browser.
+- **The data looks wrong, or you're redoing a take:** go to **Settings → Reset demo data**.
+- **You're on the wrong person:** use the switcher at the bottom of the sidebar.
+- **An answer is slow to type out:** bring the Chrome window to the front.

@@ -226,7 +226,6 @@ export const INTERVIEW_TURNS: InterviewTurn[] = [
 export const INTERVIEW_ANSWER_COUNTS: Record<string, number> = { [MARIA_IDEA]: 34, [MARIA_PRICING]: 2 };
 
 export const CONVERSATIONS: Conversation[] = [
-  { id: "c-proxier-stress-test", agentId: MARIA_IDEA, hirerId: SAM, title: "Stress-test Proxier", shareTranscript: false, createdAt: ago(40) },
   { id: "c-preseed-timing", agentId: DEV, hirerId: SAM, title: "Raise now or wait?", shareTranscript: true, createdAt: ago(DAY + 20) },
   { id: "c-interview-script", agentId: PRIYA, hirerId: SAM, title: "Customer interview script", shareTranscript: false, createdAt: ago(3 * DAY + 25) },
   { id: "c-first-customers", agentId: MARIA_IDEA, hirerId: "jordan", title: "First ten customers for a B2B tool", shareTranscript: true, createdAt: ago(4 * DAY + 30) },
@@ -253,19 +252,6 @@ function msg(conversationId: string, role: "user" | "assistant", content: string
 const [DV1, DV2, DV3, PR1, PR2] = CHUNKS.slice(6, 11);
 
 export const MESSAGES: Message[] = [
-  msg("c-proxier-stress-test", "user", "Stress-test my idea: a marketplace where founders hire AI agents built by experts", 40),
-  msg("c-proxier-stress-test", "assistant",
-    "Cynthia would start with the problem, not the product [1]. Before building more of Proxier, name three first-time founders who needed expert advice last month and ask how they got it and what it cost them.\n\nThe riskiest assumption here is that the person with the problem is the person who pays [2]. Founders feel the pain, but early founders have little cash. The budget might sit with an accelerator, a university program, or the experts who want the distribution. Find out who pays this week.\n\nOn Cynthia's checklist, frequency and reachability pass easily: founders make decisions every week and you can reach ten of them at one campus pitch night [3]. Severity is the open question. If they're coping fine with ChatGPT and one mentor's calendar link, that's your real competitor.\n\nCynthia goes deeper on this in the essay \"Circle the assumption you can't prove\" [4].",
-    39, { citations: [cite(1, MC1), cite(2, MC2), cite(3, CHUNKS[4]), pub(4, "cynthia-circle-the-assumption")], feedback: "up", costCents: 4 }),
-  msg("c-proxier-stress-test", "user", "What would make an investor pass on this?", 30),
-  msg("c-proxier-stress-test", "assistant",
-    "In Cynthia's experience investors pass for three reasons: a market that looks small, no answer to \"why now,\" or a product that's a feature a bigger company will ship [1]. Proxier has a clear why-now, since agents can finally answer from an expert's own knowledge. The real risk is the third reason. Size it bottom-up from founders you can reach rather than as a percentage of the consulting market [2], and lead with the wedge a general AI assistant won't copy: answers from named experts, with citations.\n\nA good test before your next investor meeting: write one sentence for each of the three reasons and see which one you can't back with evidence yet. Cynthia walks through that exercise in the essay \"Circle the assumption you can't prove\" [3].",
-    29, { citations: [cite(1, MC4), cite(2, CHUNKS[5]), pub(3, "cynthia-circle-the-assumption")], costCents: 4 }),
-  msg("c-proxier-stress-test", "user", "Who should my first ten customers be?", 21),
-  msg("c-proxier-stress-test", "assistant",
-    "Ten named people you can reach this week who feel the problem every week [1]. For Proxier that's ten founders in your campus accelerator cohort, not \"early-stage startups\" as a segment. If you can't write down their names and numbers today, finding customers is the real risk, not the product.\n\nOnce you have the list, call all ten in the same week so you can compare answers while they're fresh. Cynthia tells the story of three founders who did exactly that in the talk \"Ten names before code\" [2].",
-    20, { citations: [cite(1, MC3), pub(2, "cynthia-ten-names-before-code")], feedback: "up", costCents: 4 }),
-
   msg("c-preseed-timing", "user", "Should we raise a pre-seed now or wait?", DAY + 20),
   msg("c-preseed-timing", "assistant",
     "Dev's rule: raise when money buys a specific milestone you can't reach without it, like a first paid pilot or a key hire [1]. If you can reach the next milestone on savings and part-time work, wait and raise on better terms with evidence. When you do raise, plan for 18 to 24 months of runway, plus 20 percent for surprises [2].\n\nThe test Dev uses: write down the milestone that would make your next round easy, then ask whether savings, a part-time job, or early revenue can get you there. If they can, waiting is the cheaper way to raise. Dev goes deeper on this in the essay \"Raise for a milestone, not a feeling\" [3].",
@@ -295,6 +281,27 @@ export const MESSAGES: Message[] = [
     2 * DAY, { citations: [cite(1, MC4)], costCents: 4 }),
 ];
 
+/**
+ * Hand-written replies for Cynthia's Idea stress test that aren't part of any seeded chat,
+ * so Austin's first conversation happens live in the demo. The engine matches typed
+ * questions against these (see lib/demo-backend/engine.ts, SCRIPT_ALIASES).
+ */
+export const SCRIPTED_REPLIES: Message[] = [
+  msg("script-stress-test", "user", "Stress-test my idea: a marketplace where founders hire AI agents built by experts", 40),
+  msg("script-stress-test", "assistant",
+    "Cynthia would start with the problem, not the product [1]. Before building more of Proxier, name three first-time founders who needed expert advice last month and ask how they got it and what it cost them.\n\nThe riskiest assumption here is that the person with the problem is the person who pays [2]. Founders feel the pain, but early founders have little cash. The budget might sit with an accelerator, a university program, or the experts who want the distribution. Find out who pays this week.\n\nOn Cynthia's checklist, frequency and reachability pass easily: founders make decisions every week and you can reach ten of them at one campus pitch night [3]. Severity is the open question. If they're coping fine with ChatGPT and one mentor's calendar link, that's your real competitor.\n\nCynthia goes deeper on this in the essay \"Circle the assumption you can't prove\" [4].",
+    39, { citations: [cite(1, MC1), cite(2, MC2), cite(3, CHUNKS[4]), pub(4, "cynthia-circle-the-assumption")], feedback: "up", costCents: 4 }),
+  msg("script-stress-test", "user", "What would make an investor pass on this?", 30),
+  msg("script-stress-test", "assistant",
+    "In Cynthia's experience investors pass for three reasons: a market that looks small, no answer to \"why now,\" or a product that's a feature a bigger company will ship [1]. Proxier has a clear why-now, since agents can finally answer from an expert's own knowledge. The real risk is the third reason. Size it bottom-up from founders you can reach rather than as a percentage of the consulting market [2], and lead with the wedge a general AI assistant won't copy: answers from named experts, with citations.\n\nA good test before your next investor meeting: write one sentence for each of the three reasons and see which one you can't back with evidence yet. Cynthia walks through that exercise in the essay \"Circle the assumption you can't prove\" [3].",
+    29, { citations: [cite(1, MC4), cite(2, CHUNKS[5]), pub(3, "cynthia-circle-the-assumption")], costCents: 4 }),
+  msg("script-stress-test", "user", "Who should my first ten customers be?", 21),
+  msg("script-stress-test", "assistant",
+    "Ten named people you can reach this week who feel the problem every week [1]. For Proxier that's ten founders in your campus accelerator cohort, not \"early-stage startups\" as a segment. If you can't write down their names and numbers today, finding customers is the real risk, not the product.\n\nOnce you have the list, call all ten in the same week so you can compare answers while they're fresh. Cynthia tells the story of three founders who did exactly that in the talk \"Ten names before code\" [2].",
+    20, { citations: [cite(1, MC3), pub(2, "cynthia-ten-names-before-code")], feedback: "up", costCents: 4 }),
+
+];
+
 let ledgerSeq = 0;
 function row(identityId: string | null, kind: LedgerEntry["kind"], amountCents: number, minutesAgo: number, note: string, extra: Partial<LedgerEntry> = {}): LedgerEntry {
   ledgerSeq += 1;
@@ -312,20 +319,16 @@ const rawLedger: LedgerEntry[] = [
   row(MARIA, "debit", -6, 3 * DAY, "Sandbox · 2 test messages", { purpose: "sandbox_message", refType: "agent", refId: MARIA_IDEA }),
   row(MARIA, "earnings", 3, 2 * DAY, "Why investors keep passing · net", { refType: "conversation", refId: "c-investor-pass" }),
   row(MARIA, "debit", -4, DAY, "Pricing interview · 2 answers", { purpose: "interview_turn", refType: "interview", refId: MARIA_PRICING }),
-  row(MARIA, "earnings", 5, 19, "Stress-test Proxier · net", { refType: "conversation", refId: "c-proxier-stress-test" }),
   row(SAM, "seed", 2000, 25 * DAY, "Starting balance"),
   row(SAM, "subscription", 2000, 14 * DAY, "Mock monthly plan · no payment taken"),
   row(SAM, "pack", 1000, 6 * DAY, "Mock credit pack · no payment taken"),
   row(SAM, "debit", -8, 3 * DAY, "Priya Nair · Customer discovery · 2 messages", chat("c-interview-script")),
   row(SAM, "debit", -12, DAY, "Dev Patel · Fundraising & pitch decks · 2 messages", chat("c-preseed-timing")),
-  row(SAM, "debit", -12, 20, "Cynthia Pham · Idea stress test · 3 messages", chat("c-proxier-stress-test")),
   ...["dev", "priya", "luis", "hannah", "tom", "jordan", "alex"].map((id) => row(id, "seed", 5000, 25 * DAY, "Starting balance")),
   row("jordan", "debit", -4, 4 * DAY + 10, "Cynthia Pham · Idea stress test · 1 message", chat("c-first-customers")),
   row("alex", "debit", -4, 2 * DAY + 10, "Cynthia Pham · Idea stress test · 1 message", chat("c-investor-pass")),
   row("dev", "earnings", 7, DAY, "Raise now or wait? · net", { refType: "conversation", refId: "c-preseed-timing" }),
   row("priya", "earnings", 4, 3 * DAY, "Customer interview script · net", { refType: "conversation", refId: "c-interview-script" }),
-  row(null, "platform_cost", 6, 19, "Raw LLM cost", chat("c-proxier-stress-test")),
-  row(null, "platform_margin", 1, 19, "15% of margin", chat("c-proxier-stress-test")),
   row(null, "platform_cost", 4, DAY, "Raw LLM cost", chat("c-preseed-timing")),
   row(null, "platform_margin", 1, DAY, "15% of margin", chat("c-preseed-timing")),
   row(null, "platform_cost", 4, 3 * DAY, "Raw LLM cost", chat("c-interview-script")),

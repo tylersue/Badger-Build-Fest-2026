@@ -5,7 +5,7 @@
  */
 import type { Agent, Chunk, Message, PersonaForm } from "@/lib/types";
 import type { EvidenceCitation, PersonaFieldName, PersonaState, RetrievedChunk, ToolStep } from "@/lib/contracts/phase2";
-import { CHUNKS as SEED_CHUNKS, CONVERSATIONS, MESSAGES, WEB_FALLBACK } from "./seed";
+import { CHUNKS as SEED_CHUNKS, CONVERSATIONS, MESSAGES, SCRIPTED_REPLIES, WEB_FALLBACK } from "./seed";
 import { EXPERT_MEDIA, mediaById, mediaUrl, type ExpertMedia } from "./media";
 
 export const INTERVIEW_LENGTH = 3;
@@ -140,12 +140,28 @@ const asCitation = (chunk: KnowledgeChunk, ordinal: number): EvidenceCitation =>
   revisionId: chunk.revisionId, chunkId: chunk.id, question: chunk.question, page: chunk.page, headingPath: chunk.headingPath, historical: false });
 
 /** Seeded founder questions keep their hand-written answers so the showcase questions read best. */
-const SCRIPTED = MESSAGES.flatMap((message, index) => {
-  const reply = MESSAGES[index + 1];
-  const conversation = CONVERSATIONS.find((c) => c.id === message.conversationId);
-  return message.role === "user" && reply?.role === "assistant" && reply.conversationId === message.conversationId && conversation
-    ? [{ agentId: conversation.agentId, question: message.content, reply }] : [];
+const pairs = (messages: Message[], agentFor: (conversationId: string) => string | undefined) => messages.flatMap((message, index) => {
+  const reply = messages[index + 1];
+  const agentId = agentFor(message.conversationId);
+  return message.role === "user" && reply?.role === "assistant" && reply.conversationId === message.conversationId && agentId
+    ? [{ agentId, question: message.content, reply }] : [];
 });
+const STRESS_TEST = "cynthia-pham-idea-stress-test";
+const SEEDED = [
+  ...pairs(MESSAGES, (id) => CONVERSATIONS.find((c) => c.id === id)?.agentId),
+  ...pairs(SCRIPTED_REPLIES, () => STRESS_TEST),
+];
+/** The lines typed in docs/DEMO-SCRIPT.md, the way a founder actually types, mapped to their hand-written answers. */
+export const SCRIPT_ALIASES: { agentId: string; line: string; question: string }[] = [
+  { agentId: STRESS_TEST, line: "hey, we're building proxier. it's a marketplace where first-time founders hire AI agents built by real experts. can you poke holes in it?",
+    question: "Stress-test my idea: a marketplace where founders hire AI agents built by experts" },
+  { agentId: STRESS_TEST, line: "can you poke holes in our idea?", question: "Stress-test my idea: a marketplace where founders hire AI agents built by experts" },
+  { agentId: STRESS_TEST, line: "ok, what would make an investor pass on us?", question: "What would make an investor pass on this?" },
+];
+const SCRIPTED = [...SEEDED, ...SCRIPT_ALIASES.flatMap((alias) => {
+  const target = SEEDED.find((item) => item.agentId === alias.agentId && item.question === alias.question);
+  return target ? [{ agentId: alias.agentId, question: alias.line, reply: target.reply }] : [];
+})];
 function scripted(agentId: string, question: string): Message | null {
   const words = new Set(terms(question));
   let best: { reply: Message; score: number } | null = null;
@@ -184,12 +200,12 @@ export function toneFromAnswers(answers: string[]): string[] {
 }
 
 export type FeedbackFix = { styles: AnswerStyle[]; always: string[]; never: string[]; tone: string[]; changes: string[] };
-const FEEDBACK = /(i don'?t like|don'?t like|i hate|i'?d rather|too (long|wordy|short|formal|robotic|vague|generic)|make (it|the|your|answers?|responses?)|it should|should (be|always|never|sound)|^stop |^don'?t |^never |^always |shorter|more (direct|concise|actionable|specific|casual|friendly)|less (formal|wordy)|instead of|keep it|talk like|sound more|fix (it|this|that)|change (it|this|the)|sounds? (like|robotic)|word for word)/i;
+const FEEDBACK = /(i don'?t (like|love)|don'?t (like|love)|not a fan|i hate|i'?d rather|too (long|wordy|short|formal|robotic|vague|generic)|make (it|the|your|answers?|responses?)|it should|should (be|always|never|sound)|^stop |^don'?t |^never |^always |shorter|more (direct|concise|actionable|specific|casual|friendly)|less (formal|wordy)|instead of|keep it|talk like|sound more|fix (it|this|that)|change (it|this|the)|sounds? (like|robotic)|word for word)/i;
 /** Plain-language feedback from the expert in Test ("I don't like…") becomes persona and style changes. */
 export function parseFeedback(text: string, expertName: string): FeedbackFix | null {
   const t = text.trim().toLowerCase();
   if (!FEEDBACK.test(t)) return null;
-  if (/^(who|what|where|when|why|how|should i|can i|do i|is |are |will )/.test(t) && t.endsWith("?") && !/don'?t like/.test(t)) return null;
+  if (/^(who|what|where|when|why|how|should i|can i|do i|is |are |will )/.test(t) && t.endsWith("?") && !/don'?t (like|love)/.test(t)) return null;
   const first = firstName(expertName);
   const fix: FeedbackFix = { styles: [], always: [], never: [], tone: [], changes: [] };
   if (/(quot|word for word|verbatim|robotic|first person|like i would|like me|my voice|sound like)/.test(t)) {
@@ -204,7 +220,7 @@ export function parseFeedback(text: string, expertName: string): FeedbackFix | n
     fix.styles.push("bullets"); fix.always.push("Format advice as a short list");
     fix.changes.push("Answers are now formatted as a short list");
   }
-  if (/(action|next step|what to do|homework|concrete|practical)/.test(t)) {
+  if (/(action|next step|what to do|homework|concrete|practical|actually do|can do|this week)/.test(t)) {
     fix.styles.push("action"); fix.always.push("End with one concrete next step"); fix.tone.push("Action-oriented");
     fix.changes.push("Every answer now ends with one concrete next step");
   }
@@ -225,7 +241,7 @@ function nextStep(content: string, shown: string): string {
   for (const sentence of sentences) {
     const rule = sentence.match(/^(?:Every|Each) founder I (?:mentor|work with|coach) (?:has to|must|needs to) (.+)$/i);
     if (rule) return rule[1][0].toUpperCase() + rule[1].slice(1);
-    const told = sentence.match(/^I (?:tell|ask|want|make) (?:founders|them|people|everyone|every founder)(?: to)? (.+)$/i);
+    const told = sentence.match(/^I (?:tell|ask|want|make) (?:founders|them|people|everyone|every founder)(?: I (?:work with|mentor|coach))?(?: to)? (.+)$/i);
     // "I tell founders to stop building…" becomes advice addressed to the founder reading it.
     if (told) return (told[1][0].toUpperCase() + told[1].slice(1)).replace(/\btheir\b/g, "your").replace(/\bthey\b/g, "you").replace(/\bthem\b/g, "you");
     if (NEXT_VERBS.test(sentence.split(" ")[0])) return sentence;
