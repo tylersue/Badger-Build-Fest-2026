@@ -7,7 +7,7 @@ Deliver one interview-first BUILD → PUBLISH → HIRE → USE loop in four week
 ## Phases
 
 - [x] **Phase 1: Shell, Wallet & Shared Contracts** - The local app opens straight into a LangSmith-style shell with every loop route stubbed, two seeded identities, a funded credit wallet, and typed frontend service contracts. The database schema is Phase 2 work.
-- [ ] **Phase 2: Interview-First Agent Building** - Experts can create knowledge through an adaptive interview, add documents, edit their agent, and test grounded answers at real build cost.
+- [ ] **Phase 2: Interview-First Agent Building** - Experts can create knowledge through an adaptive interview, add documents, edit their agent, and test cited answers and the online fallback at real build cost.
 - [ ] **Phase 3: Publish, Discover & Use** - An expert can publish an agent; another account can find it, chat safely with citations, and pay credits that generate expert earnings.
 - [ ] **Phase 4: Trust, Insights & Launch Readiness** - Hirers control feedback and transcript sharing; experts see earnings and insights; admins handle flags; the full loop is verified.
 
@@ -55,7 +55,7 @@ Before parallel implementation, record the four owners in the project board and 
 **Context**: `.planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md`
 
 ### Phase 2: Interview-First Agent Building
-**Goal**: An expert can turn their own answers into a grounded agent, add optional material, and verify what the agent knows before publishing.
+**Goal**: An expert can turn their own answers into a grounded agent, add optional material, and verify both its expert knowledge and clearly labeled online fallback before publishing.
 **Depends on**: Phase 1
 **Requirements**: INTV-01, INTV-02, INTV-03, INTV-04, INTV-05, INTV-06, INTV-07, PERS-01, PERS-02, PERS-03, DOCS-01, DOCS-02, DOCS-03, DOCS-04, RETR-01, RETR-02, RETR-03, SBOX-01, SBOX-02, CRED-02, CRED-03, CRED-05, CRED-10
 **Success Criteria** (what must be TRUE):
@@ -98,8 +98,8 @@ Before parallel implementation, record the four owners in the project board and 
 - Applied AI & Automation is the confirmed track. Badgers Building for Badgers and Art of the Break are the team's tentative challenge pair. Prepare stress-test fixtures during Phase 1 and collect real before/after evidence as soon as the agent runs in Phases 2–3. Show an actual UW student completing a campus career task; the submission Break Card cannot wait solely for Phase 4. Challenge registration and timing remain to be confirmed.
 - Phase 1 must freeze the wallet and service contracts before parallel implementation. Decided in Phase 1 context: margin share stays a configurable 15%; each seeded identity starts with $50; the wallet reserves the estimated cost before a call and hard-stops at zero.
 - Authentication, RLS and the admin allowlist are out of the MVP (presentation build). Admin pages are open. Seed content is placeholder; the interview, chat, metering and ledger are real. Work lands on branch `platform/skeleton-ui` and merges to `main` by PR.
-- Phase 2 planning needs focused research on interview turn-taking, answer segmentation, and persona drafting. Hirer-uploaded files need a prompt-injection threat model before Phase 3 delivery.
-- Health/PT and tax/finance get the regulated-category treatment; career/admissions does not. This list is provisional and must live in config so it can change in one line. Safety checks and grounded refusal are part of the first published-chat release, then verified more deeply in Phase 4.
+- Phase 2 planning needs focused research on interview turn-taking, answer segmentation, persona drafting, and scoped web fallback with source provenance and visible tool steps. Hirer-uploaded files need a prompt-injection threat model before Phase 3 delivery.
+- Health/PT and tax/finance get the regulated-category treatment; career/admissions does not. This list is provisional and must live in config so it can change in one line. Safety checks and refusal when neither expert nor online evidence supports an answer are part of the first published-chat release, then verified more deeply in Phase 4.
 - After this roadmap is accepted, reconcile the older `docs/` scope and the existing GitHub issues with these phases; remove obsolete Stripe, trial, and document-first assumptions before implementation issues are assigned.
 
 ## Progress

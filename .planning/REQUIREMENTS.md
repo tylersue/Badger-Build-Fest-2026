@@ -1,7 +1,7 @@
 # Requirements: Expert Agent Platform
 
 **Defined:** 2026-09-26
-**Core Value:** An expert with no audience and no technical skill can put their knowledge into an agent that answers in their words, grounded only in what they actually said and wrote, and earn from it.
+**Core Value:** An expert with no audience and no technical skill can put their knowledge into an agent that answers from their material and earn from it; gaps may be answered from clearly labeled, cited online sources that never become expert knowledge.
 
 ## v1 Requirements
 
@@ -45,8 +45,8 @@ Requirements for the working MVP loop (BUILD → PUBLISH → HIRE → USE). Each
 
 ### Sandbox
 
-- [ ] **SBOX-01**: Expert can chat with their own agent before publishing, through the same pipeline hirers use, charged at raw cost with no multiplier
-- [ ] **SBOX-02**: The sandbox shows, for each answer, which chunks were retrieved and their relevance scores
+- [ ] **SBOX-01**: Expert can chat with their own agent before publishing through the same pipeline hirers use, including online fallback when expert material is insufficient, charged at raw cost with no multiplier
+- [ ] **SBOX-02**: The sandbox shows retrieved excerpts and relevance scores, plus expandable web-search and page-read steps when online fallback runs
 
 ### Publish
 
@@ -66,8 +66,8 @@ Requirements for the working MVP loop (BUILD → PUBLISH → HIRE → USE). Each
 ### Chat
 
 - [ ] **CHAT-01**: Hirer sends a message and sees the agent's answer stream in
-- [ ] **CHAT-02**: Answers are grounded in the agent's knowledge and cite sources inline; hovering a citation shows the source name and page or question
-- [ ] **CHAT-03**: When retrieval is weak, the agent says it does not have that in its knowledge and points to the expert's contact link instead of guessing
+- [ ] **CHAT-02**: Answers cite their evidence inline, distinguishing expert interview/document sources from external web sources; citation details show the source name, page or question, or external link
+- [ ] **CHAT-03**: When expert knowledge is insufficient, the shared pipeline searches online, answers from cited sources, notes what expert material did not cover, and shows expandable search/page-read steps. External findings are not saved as expert knowledge; if no usable source is found, the agent says it cannot answer rather than guessing
 - [ ] **CHAT-04**: Hirer can upload one file (PDF, DOCX, or TXT) into a conversation; its text is extracted and included in that conversation's prompt as untrusted content
 - [ ] **CHAT-05**: Agents in regulated categories (health, tax/finance, legal, mental health) show a fixed disclaimer in the first reply, and the disclaimer rule is present in the system prompt on every turn
 - [ ] **CHAT-06**: Messages matching emergency or self-harm patterns get a fixed resource reply instead of an agent answer, and the conversation is flagged
@@ -132,7 +132,7 @@ Deferred. Tracked but not in the current roadmap.
 | Feature | Reason |
 |---------|--------|
 | Voice, video, or avatar clones | Expensive, not the value; Delphi's most costly feature |
-| Visual workflow or graph builder; agent tools or web access | The visual-builder tier collapsed in 2026; our agent is persona + knowledge + fixed pipeline |
+| Visual workflow or graph builder; arbitrary agent tools | The agent has a fixed pipeline with a scoped web-search fallback, not expert-configurable tools |
 | Per-agent subscriptions, allowances, or free trials | Replaced by the single wallet and seeded balances |
 | Authentication (email + Google sign-in), RLS, admin allowlist (AUTH-01, AUTH-02, AUTH-04) | Presentation MVP: two seeded identities with a switcher stand in for accounts; reinstate when strangers use the platform |
 | Free credit grant for new accounts (CRED-07) | No accounts without auth; each seeded identity starts with $50 (5,000 credits) |
