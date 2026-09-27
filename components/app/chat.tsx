@@ -278,7 +278,7 @@ export function Composer({
           disabled={disabled}
           rows={2}
           placeholder={busy ? "Send a message to queue it up…" : placeholder}
-          className="resize-none bg-transparent text-[15px] leading-6 text-foreground outline-none placeholder:text-fg-muted disabled:opacity-60"
+          className="max-h-60 min-h-12 resize-none bg-transparent text-[15px] leading-6 text-foreground outline-none [field-sizing:content] placeholder:text-fg-muted disabled:opacity-60"
         />
         <div className="mt-auto flex flex-wrap items-center gap-2 text-fg-muted">
           {onAttach ? (
