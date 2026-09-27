@@ -121,7 +121,8 @@ export function interviewRig() {
       activeText.set(answer.id, `${answer.question}\n\n${answer.text}`);
     }
     if (name === "fail_index_job") { job.state = "failed"; job.error = { code: String(args.p_code) };
-      view.answers.find(a => a.id === job!.answer_id)!.state = "failed"; }
+      const answer = view.answers.find(a => a.id === job!.answer_id)!;
+      answer.state = "failed"; answer.jobErrorCode = job.error.code; }
     return { data: job, error: null };
   };
   const embed = vi.fn(async (input: { stageKey: string; texts: string[] }) => {
