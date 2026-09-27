@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowUp, ChevronDown, ChevronRight, Database, FileText, Paperclip, Plus, Search, ThumbsDown, ThumbsUp, X, type LucideIcon } from "lucide-react";
+import { ArrowUp, ChevronDown, ChevronRight, Database, FileText, Paperclip, Plus, Search, X, type LucideIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddCreditsButton } from "@/components/app/add-credits";
+import { AnswerFeedback } from "@/components/trust/answer-feedback";
 import { formatCredits, formatNumber } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { Citation, Message } from "@/lib/types";
 
 export function UserMessage({ content }: { content: string }) {
@@ -107,8 +107,7 @@ export function CostCaption({ message }: { message: Message }) {
   return (
     <>
       <span data-testid="message-cost">{formatCredits(message.costCents ?? 0)}</span>
-      <ThumbsUp className={cn("size-3", message.feedback === "up" && "text-success")} />
-      <ThumbsDown className={cn("size-3", message.feedback === "down" && "text-danger")} />
+      <AnswerFeedback message={message} />
     </>
   );
 }

@@ -123,6 +123,7 @@ describe("store-level: toggleAnswerFeedback and setShareTranscript", () => {
 
   it("as Sam, toggling feedback and setting share persist across a reload", async () => {
     const { store, storage } = await loadDemoStore();
+    store.switchIdentity("sam");
     const { toggleAnswerFeedback, setShareTranscript } = await import("./conversation");
     const answer = store.messagesFor(store.readDemo(), "c-knee-swelling").find((m) => m.role === "assistant")!;
     const feedbackResult = toggleAnswerFeedback(answer.id, "down");
