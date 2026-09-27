@@ -62,7 +62,7 @@ Before parallel implementation, record the four owners in the project board and 
   1. An expert can complete a typed, adaptive interview, pause and resume it, and review, edit, or delete the embedded answers and their source questions.
   2. The interview drafts a persona; the expert can edit its short form and advanced prompt, while the platform assigns the model by category.
   3. The expert can add and remove supported documents or pasted text, see source status and limits, and retrieve cited chunks from both interview and document knowledge.
-  4. The expert can test the draft agent through the same grounded answer pipeline used for hirers and inspect retrieved chunks and scores; a cross-tenant test proves agent A cannot retrieve agent B's chunks.
+  4. The expert can test the draft agent through the same pipeline used for hirers, inspect retrieved chunks and scores, and see external citations, a knowledge-gap note, and expandable web tool steps when expert material is insufficient; a cross-tenant test proves agent A cannot retrieve agent B's chunks.
   5. Interview, embedding, and sandbox calls log actual usage and charge raw cost; insufficient balance prompts a mock top-up before the call, and the daily platform spend cap stops further calls.
 **Plans**: TBD
 **UI hint**: yes
@@ -74,7 +74,7 @@ Before parallel implementation, record the four owners in the project board and 
 **Success Criteria** (what must be TRUE):
   1. An expert accepts content consent, sets a 1x–5x rate, publishes an eligible agent instantly, sees its generated listing, and can unpublish it immediately.
   2. A hirer can browse and search published agents, compare profiles and typical message cost, and start a conversation from a listing or example question.
-  3. A hirer can stream a reply, return to the conversation later, see valid source citations and the cost of each answer, and get a clear refusal with the expert's contact link when the knowledge is weak.
+  3. A hirer can stream a reply, return later, and see valid expert or labeled external citations, web tool steps, a knowledge-gap note when online fallback runs, and the cost of each answer. If neither expert nor online evidence supports an answer, the agent says so rather than guessing.
   4. A hirer can supply one conversation file as untrusted context; regulated-category disclaimers persist, emergency or self-harm patterns receive a fixed resource reply, and long conversations continue with windowed history.
   5. A local walkthrough that switches between the seeded hirer and expert charges the hirer by actual cost × expert multiplier and atomically records platform cost recovery, margin share, and expert wallet credit; mock funding is the only money-in path.
 **Plans**: TBD
@@ -88,7 +88,7 @@ Before parallel implementation, record the four owners in the project board and 
   1. A hirer can rate an agent once after five messages, give thumbs feedback on answers, flag an agent, and choose per conversation whether the expert may read its transcript; sharing starts off.
   2. An expert can see aggregate questions, conversation and message counts, thumbs-down counts, only opted-in transcripts, a complete wallet history, and a per-conversation gross/platform/net earnings breakdown.
   3. An expert can request a mock cash-out that debits credits and records a requested payout; an admin can inspect agent and conversation flags and unpublish an agent with a note.
-  4. Outside users can complete the local loop using real seed content; cross-tenant access, transcript privacy, citation validity, weak-retrieval refusal, regulated-category safety, and streaming errors are checked with representative and adversarial cases.
+  4. Outside users can complete the local loop using real seed content; cross-tenant access, transcript privacy, expert-versus-web citation validity, online fallback and unsupported-answer refusal, regulated-category safety, and streaming errors are checked with representative and adversarial cases.
   5. End-to-end ledger checks reconcile build-time raw costs and use-time markup, platform share, expert credit, and cash-out without missing or duplicate entries.
 **Plans**: TBD
 **UI hint**: yes
