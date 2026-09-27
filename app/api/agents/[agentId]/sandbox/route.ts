@@ -62,7 +62,7 @@ export async function POST(request: Request, context: Context): Promise<Response
           if (!first.done) write(first.value);
           if (!first.done) for await (const event of { [Symbol.asyncIterator]: () => producer }) write(event);
         } catch { /* Persisted events remain available through replay. */ }
-        finally { controller.close(); }
+        finally { try { controller.close(); } catch { /* Client cancelled the stream. */ } }
       },
       async cancel() { await producer.return?.(); },
     });

@@ -19,15 +19,13 @@ export function useBuilderAgent(): { s: DemoState; agent: Agent | undefined; isO
   return { s, agent, isOwner: !!agent && agent.ownerId === currentIdentity(s).id };
 }
 
-export function sourcesFor(agentId: string) {
-  return SOURCES.filter((x) => x.agentId === agentId);
+export function sourcesFor(s: DemoState, agentId: string) {
+  return (s.snapshot?.identityId === s.identityId ? s.snapshot.sources : SOURCES).filter(x => x.agentId === agentId);
 }
 
 /** Answers captured so far: the seeded count plus anything answered in this session. */
 export function answerCount(s: DemoState, agentId: string) {
-  const seededShown = interviewTurnsFor({ ...s, interviewTurns: [], answeredTurns: {} }, agentId).filter((t) => t.answer).length;
-  const now = interviewTurnsFor(s, agentId).filter((t) => t.answer).length;
-  return (INTERVIEW_ANSWER_COUNTS[agentId] ?? seededShown) + (now - seededShown);
+  return s.snapshot ? interviewTurnsFor(s, agentId).filter(t => t.answer).length : (INTERVIEW_ANSWER_COUNTS[agentId] ?? 0);
 }
 
 /* Fleet builder split: chat column + 480px Configure drawer (D-05). */
@@ -59,7 +57,7 @@ export function BuilderSplit({ agent, thread, children, composer }: { agent: Age
 function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   const { s } = useBuilderAgent();
   const base = `/build/${agent.id}`;
-  const sources = sourcesFor(agent.id);
+  const sources = sourcesFor(s, agent.id);
   const answers = answerCount(s, agent.id);
   return (
     <aside className="hidden w-[480px] shrink-0 flex-col overflow-y-auto border-l border-line-faint bg-surface-1 lg:flex">

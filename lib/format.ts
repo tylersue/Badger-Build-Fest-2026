@@ -1,6 +1,6 @@
-const nf = new Intl.NumberFormat("en-US");
+const nf = new Intl.NumberFormat("en-US", { maximumFractionDigits: 7 });
 
-/** 5000 -> "5,000 credits" */
+/** Credits may include fractions as small as one nanodollar (0.0000001 credit). */
 export function formatCredits(cents: number): string {
   return `${nf.format(cents)} ${Math.abs(cents) === 1 ? "credit" : "credits"}`;
 }
@@ -10,6 +10,16 @@ export function formatSignedCredits(cents: number): string {
   if (cents > 0) return `+${nf.format(cents)}`;
   if (cents < 0) return `−${nf.format(Math.abs(cents))}`;
   return "0";
+}
+
+/** Exact SQL nanodollar amount to display credits without floating-point rounding. */
+export function formatCreditUnits(units: string): string {
+  const amount = BigInt(units);
+  const negative = amount < BigInt(0);
+  const absolute = negative ? -amount : amount;
+  const whole = absolute / BigInt(10_000_000);
+  const fraction = (absolute % BigInt(10_000_000)).toString().padStart(7, "0").replace(/0+$/, "");
+  return `${negative ? "−" : ""}${new Intl.NumberFormat("en-US").format(whole)}${fraction ? `.${fraction}` : ""} ${absolute === BigInt(10_000_000) ? "credit" : "credits"}`;
 }
 
 export function formatNumber(n: number): string {

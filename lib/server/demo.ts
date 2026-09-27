@@ -61,9 +61,9 @@ function units(raw: string | number): MoneyAmount {
 }
 function displayCents(raw: string | number | null): number | null {
   if (raw === null) return null;
-  // Legacy cent selectors are display only; settlement uses decimal units.
-  const result = Number(BigInt(units(raw))) / 100_000;
-  return Number.isSafeInteger(result) ? result : null;
+  // Legacy numeric selectors are credit display values; settlement uses decimal units.
+  const result = Number(BigInt(units(raw))) / 10_000_000;
+  return Number.isFinite(result) && Math.abs(result) <= Number.MAX_SAFE_INTEGER ? result : null;
 }
 function stableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;

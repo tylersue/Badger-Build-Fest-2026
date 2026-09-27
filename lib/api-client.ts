@@ -95,7 +95,9 @@ export async function* decodeNdjson(stream: ReadableStream<Uint8Array>, signal?:
   const reader = stream.getReader(); const decoder = new TextDecoder();
   let pending = ""; let sequence = -1; let operationId: string | null = null;
   const decode = (line: string): ChatStreamEvent | null => {
-    const event = JSON.parse(line) as ChatStreamEvent;
+    let event: ChatStreamEvent;
+    try { event = JSON.parse(line) as ChatStreamEvent; }
+    catch { throw new ApiClientError({ ...fallback, message: "Invalid answer stream event." }, 502); }
     if (!event || !Number.isSafeInteger(event.sequence) || event.sequence < 0 || !event.operationId || !event.eventId || !event.type)
       throw new ApiClientError({ ...fallback, message: "Invalid answer stream event." }, 502);
     if (operationId && event.operationId !== operationId)

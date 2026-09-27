@@ -6,6 +6,7 @@ import { Field, TextInput } from "@/components/app/form";
 import { Breadcrumbs, PageBody, PageHeader, buttonClass } from "@/components/app/ui";
 import { CATEGORIES, type Category } from "@/lib/config/categories";
 import { createAgent, currentIdentity, useDemo } from "@/lib/demo-store";
+import { toast } from "sonner";
 
 export default function NewAgentPage() {
   const router = useRouter();
@@ -14,11 +15,13 @@ export default function NewAgentPage() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<Category>("career_admissions");
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (me.kind !== "expert" || !name.trim()) return;
-    const id = createAgent({ name: name.trim(), category });
-    router.push(`/build/${id}/interview`);
+    try {
+      const id = await createAgent({ name: name.trim(), category });
+      router.push(`/build/${id}/interview`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Could not create agent."); }
   }
 
   return (

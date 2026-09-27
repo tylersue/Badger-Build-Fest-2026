@@ -47,12 +47,14 @@ function InterviewSection({ agent, isOwner }: { agent: Agent; isOwner: boolean }
   const turns = interviewTurnsFor(s, agent.id);
   const pending = pendingInterviewQuestion(s, agent.id);
   return (
-    <BuilderSplit agent={agent} thread="· Interview" composer={<Composer placeholder="Write your answer…" disabled={!isOwner} onSend={(text) => {
-      const result = answerInterview(agent.id, text);
-      if (!result.ok) { setRefusal({ needed: result.neededCents, available: result.availableCents }); return false; }
-      setRefusal(null);
-      toast(`Answer saved · ${formatCredits(result.chargedCents)}`);
-      return true;
+    <BuilderSplit agent={agent} thread="· Interview" composer={<Composer placeholder="Write your answer…" disabled={!isOwner} onSend={async (text) => {
+      try {
+        const result = await answerInterview(agent.id, text);
+        if (!result.ok) { setRefusal({ needed: result.neededCents, available: result.availableCents }); return false; }
+        setRefusal(null);
+        toast("Answer saved");
+        return true;
+      } catch (error) { toast.error(error instanceof Error ? error.message : "Interview unavailable."); return false; }
     }} />}>
       <div className="mx-auto w-full max-w-[752px] flex-1 overflow-y-auto px-4 py-6">
         <PageHeader title="Interview" subtitle="You'll be asked about what you know and how you work. Every answer becomes knowledge." />
@@ -71,10 +73,12 @@ function TestSection({ agent, isOwner }: { agent: Agent; isOwner: boolean }) {
   const messages = messagesFor(s, sandboxConversationId(agent.id));
   return (
     <BuilderSplit agent={agent} thread="· Test" composer={<Composer placeholder="Write your message…" disabled={!isOwner} onSend={async (text) => {
-      const result = await sendSandboxMessage(agent.id, text);
-      if (!result.ok) { setRefusal({ needed: result.neededCents, available: result.availableCents }); return false; }
-      setRefusal(null);
-      return true;
+      try {
+        const result = await sendSandboxMessage(agent.id, text);
+        if (!result.ok) { setRefusal({ needed: result.neededCents, available: result.availableCents }); return false; }
+        setRefusal(null);
+        return true;
+      } catch (error) { toast.error(error instanceof Error ? error.message : "Sandbox unavailable."); return false; }
     }} />}>
       <div className="mx-auto w-full max-w-[752px] flex-1 overflow-y-auto px-4 py-6">
         <PageHeader title="Test" subtitle="Ask what a hirer would ask. Retrieved sources show under each answer." />
@@ -88,8 +92,9 @@ function TestSection({ agent, isOwner }: { agent: Agent; isOwner: boolean }) {
 }
 
 function DetailsSection({ agent, section }: { agent: Agent; section: "persona" | "knowledge" | "publish" }) {
+  const { s } = useBuilderAgent();
   const base = `/build/${agent.id}`;
-  const sources = sourcesFor(agent.id);
+  const sources = sourcesFor(s, agent.id);
   const icon = section === "persona" ? UserRound : section === "knowledge" ? BookOpen : Rocket;
   return (
     <PageBody>

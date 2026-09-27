@@ -12,9 +12,11 @@ import { formatCredits, formatNumber, formatUsd } from "@/lib/format";
 /* Mock funding (D-11, CRED-06): instant, repeatable, a ledger row per click, no payment taken. */
 export function AddCreditsButton({ size = "lg" }: { size?: "sm" | "lg" }) {
   const [open, setOpen] = useState(false);
-  const grant = (kind: "subscription" | "pack") => {
-    const r = addCredits(kind);
-    toast(`Credits added · +${formatNumber(r.grantedCents)} (mock)`);
+  const grant = async (kind: "subscription" | "pack") => {
+    try {
+      const r = await addCredits(kind);
+      toast(`Credits added · +${formatNumber(r.grantedCents)} (mock)`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Funding unavailable."); }
   };
   return (
     <>

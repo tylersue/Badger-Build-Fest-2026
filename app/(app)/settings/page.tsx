@@ -22,12 +22,12 @@ export default function SettingsPage() {
         <ProfileForm key={me.id} profile={profile} expert={me.kind === "expert"} />
         <div className="mt-10 max-w-[640px] rounded-xl border border-line-subtle bg-surface-1 p-4">
           <div className="text-sm font-semibold">Demo data</div>
-          <p className="mt-1 text-[13px] text-fg-muted">Everything you do in this demo is saved in this browser. Reset to return balances, chats and edits to the seeded state.</p>
+          <p className="mt-1 text-[13px] text-fg-muted">Reset presentation fixtures. Your real usage and wallet history remain saved.</p>
           <button
             data-testid="reset-demo"
-            onClick={() => {
-              resetDemo();
-              toast("Demo data reset");
+            onClick={async () => {
+              try { await resetDemo(); toast("Presentation fixtures restored"); }
+              catch (error) { toast.error(error instanceof Error ? error.message : "Reset unavailable."); }
             }}
             className={buttonClass("secondary", "lg") + " mt-3"}
           >
@@ -43,9 +43,11 @@ export default function SettingsPage() {
 function ProfileForm({ profile, expert }: { profile: Profile; expert: boolean }) {
   const [p, setP] = useState(profile);
   const set = <K extends keyof Profile>(k: K) => (v: Profile[K]) => setP({ ...p, [k]: v });
-  const save = () => {
-    saveProfile(p.identityId, { ...p, displayName: p.displayName.trim() || profile.displayName });
-    toast("Profile saved");
+  const save = async () => {
+    try {
+      await saveProfile(p.identityId, { ...p, displayName: p.displayName.trim() || profile.displayName });
+      toast("Profile saved");
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Profile was not saved."); }
   };
   return (
     <div className="grid max-w-[640px] gap-3.5">
