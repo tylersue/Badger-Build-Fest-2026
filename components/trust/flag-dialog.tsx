@@ -88,6 +88,7 @@ export function FlagButton({ target, variant = "icon" }: { target: FlagTarget; v
               value={detail}
               onChange={(e) => setDetail(e.target.value.slice(0, FLAG_DETAIL_MAX))}
               maxLength={FLAG_DETAIL_MAX}
+              required={reasonId === "other"}
               placeholder="What happened?"
               rows={3}
             />
@@ -103,7 +104,12 @@ export function FlagButton({ target, variant = "icon" }: { target: FlagTarget; v
               Cancel
             </button>
           </DialogClose>
-          <button type="button" className={buttonClass("primary", "lg")} disabled={!reasonId} onClick={submit}>
+          <button
+            type="button"
+            className={buttonClass("primary", "lg")}
+            disabled={!reasonId || (reasonId === "other" && !detail.trim())}
+            onClick={submit}
+          >
             Send flag
           </button>
         </DialogFooter>
