@@ -64,7 +64,47 @@ Before parallel implementation, record the four owners in the project board and 
   3. The expert can add and remove supported documents or pasted text, see source status and limits, and retrieve cited chunks from both interview and document knowledge.
   4. The expert can test the draft agent through the same pipeline used for hirers, inspect retrieved chunks and scores, and see external citations, a knowledge-gap note, and expandable web tool steps when expert material is insufficient; a cross-tenant test proves agent A cannot retrieve agent B's chunks.
   5. Interview, embedding, and sandbox calls log actual usage and charge raw cost; insufficient balance prompts a mock top-up before the call, and the daily platform spend cap stops further calls.
-**Plans**: TBD
+**Plans**: 18 plans across 11 waves
+
+**Wave 1**
+- [ ] 02-01-PLAN.md — Freeze shared contracts and install audited dependencies.
+
+**Wave 2 (after Wave 1)**
+- [ ] 02-02-PLAN.md — Create durable schema and server authorization boundary.
+- [ ] 02-06-PLAN.md — Parse and chunk optional sources within resource limits.
+
+**Wave 3 (after Wave 2)**
+- [ ] 02-03-PLAN.md — Implement transactional wallet, reservations and recovery.
+- [ ] 02-04-PLAN.md — Bootstrap server read models and preserve demo continuity.
+- [ ] 02-08-PLAN.md — Preserve persona ownership and custom prompt mode.
+
+**Wave 4 (after Wave 3)**
+- [ ] 02-05-PLAN.md — Build metered Anthropic and Voyage provider gateway.
+
+**Wave 5 (after Wave 4)**
+- [ ] 02-07-PLAN.md — Activate revision-safe indexes and scoped retrieval.
+
+**Wave 6 (after Wave 5)**
+- [ ] 02-09-PLAN.md — Run the adaptive saved interview and answer lifecycle.
+- [ ] 02-10-PLAN.md — Implement confirmed document intake and durable processing.
+- [ ] 02-11-PLAN.md — Build shared grounded answer runtime and isolated web fallback.
+
+**Wave 7 (after Wave 6)**
+- [ ] 02-12-PLAN.md — Connect server APIs to the browser state bridge.
+
+**Wave 8 (after Wave 7)**
+- [ ] 02-13-PLAN.md — Build interview editing and persona review views.
+- [ ] 02-14-PLAN.md — Build optional knowledge intake and source lifecycle UI.
+- [ ] 02-15-PLAN.md — Render streaming evidence, web steps and retained composers.
+
+**Wave 9 (after Wave 8)**
+- [ ] 02-16-PLAN.md — Wire builder views and migrate remaining shell mutations.
+
+**Wave 10 (after Wave 9)**
+- [ ] 02-17-PLAN.md — Complete offline acceptance and prepare real-service diagnostics.
+
+**Wave 11 (after Wave 10)**
+- [ ] 02-18-PLAN.md — [BLOCKING] Apply migrations and prove the real build loop.
 **UI hint**: yes
 
 ### Phase 3: Publish, Discover & Use
