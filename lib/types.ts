@@ -104,6 +104,10 @@ export type Conversation = {
   hirerId: string;
   title: string;
   shareTranscript: boolean;
+  /** One hirer file per conversation, extracted to text and treated as untrusted context (CHAT-04). */
+  fileName?: string | null;
+  fileText?: string | null;
+  fileChars?: number | null;
   createdAt: string;
 };
 
@@ -115,6 +119,8 @@ export type Message = {
   citations: Citation[];
   feedback: "up" | "down" | null;
   costCents: number | null;
+  /** Fixed weak-retrieval reply: no model call, no charge (CHAT-03). */
+  refusal?: boolean;
   retrieved?: { sourceName: string; score: number; page: number | null; question: string | null }[];
   createdAt: string;
 };

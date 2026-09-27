@@ -16,7 +16,9 @@ pnpm dev          # http://localhost:3000 opens straight into the marketplace
 pnpm test         # wallet math and seed-data checks
 ```
 
-Phase 1 is frontend only: placeholder data in `lib/data/seed.ts`, and the switcher, wallet, chat and interview mechanics run in the browser (saved in localStorage). Use the "Viewing as" card in the sidebar footer to switch between Maria (expert) and Sam (hirer); Settings → Reset demo data returns everything to the seeded state.
+Phases 1 and 3 are frontend first: placeholder data in `lib/data/seed.ts`, and the switcher, wallet, publish, chat and interview mechanics run in the browser (saved in localStorage). Use the "Viewing as" card in the sidebar footer to switch between Maria (expert) and Sam (hirer); Settings → Reset demo data returns everything to the seeded state.
+
+The full loop works locally: as Maria, open **My agents → Running form clinic → Publish**, set a rate, tick the consent box and publish. Switch to Sam, find it in the Marketplace, open the listing, click an example question, and watch the reply stream in with citations and its cost; Maria's Earnings and both Wallets move. Chat answers are canned in this build (no API key needed); the one server piece is `app/api/extract/route.ts`, which turns a hirer's PDF, DOCX, TXT or MD upload into untrusted text for the conversation, so run `pnpm dev` for uploads to work.
 
 ## Docs
 

@@ -8,7 +8,7 @@ Deliver one interview-first BUILD → PUBLISH → HIRE → USE loop in four week
 
 - [x] **Phase 1: Shell, Wallet & Shared Contracts** - The local app opens straight into a LangSmith-style shell with every loop route stubbed, two seeded identities, a funded credit wallet, and typed frontend service contracts. The database schema is Phase 2 work.
 - [ ] **Phase 2: Interview-First Agent Building** - Experts can create knowledge through an adaptive interview, add documents, edit their agent, and test grounded answers at real build cost.
-- [ ] **Phase 3: Publish, Discover & Use** - An expert can publish an agent; another account can find it, chat safely with citations, and pay credits that generate expert earnings.
+- [x] **Phase 3: Publish, Discover & Use** - An expert can publish an agent; another account can find it, chat safely with citations, and pay credits that generate expert earnings. Complete for the local demo against the Phase 1 stubs (canned answers, keyword retrieval); the end-to-end acceptance gate still waits on Phase 2.
 - [ ] **Phase 4: Trust, Insights & Launch Readiness** - Hirers control feedback and transcript sharing; experts see earnings and insights; admins handle flags; the full loop is verified.
 
 ## Delivery Checkpoints
@@ -62,7 +62,7 @@ Before parallel implementation, record the four owners in the project board and 
   1. An expert can complete a typed, adaptive interview, pause and resume it, and review, edit, or delete the embedded answers and their source questions.
   2. The interview drafts a persona; the expert can edit its short form and advanced prompt, while the platform assigns the model by category.
   3. The expert can add and remove supported documents or pasted text, see source status and limits, and retrieve cited chunks from both interview and document knowledge.
-  4. The expert can test the draft agent through the same grounded answer pipeline used for hirers and inspect retrieved chunks and scores; a cross-tenant test proves agent A cannot retrieve agent B's chunks.
+  4. The expert can test the draft agent through the same pipeline used for hirers, inspect retrieved chunks and scores, and see external citations, a knowledge-gap note, and expandable web tool steps when expert material is insufficient; a cross-tenant test proves agent A cannot retrieve agent B's chunks.
   5. Interview, embedding, and sandbox calls log actual usage and charge raw cost; insufficient balance prompts a mock top-up before the call, and the daily platform spend cap stops further calls.
 **Plans**: TBD
 **UI hint**: yes
@@ -70,25 +70,26 @@ Before parallel implementation, record the four owners in the project board and 
 ### Phase 3: Publish, Discover & Use
 **Goal**: An expert's agent can be published and found, and a hirer can use it safely while both sides see the credit effect.
 **Depends on**: Phase 1 to start; Phase 2 to complete the end-to-end acceptance gate
-**Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, MKT-02, MKT-03, MKT-04, CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-06, CHAT-07, CHAT-10, CHAT-11, CHAT-12, CRED-04
+**Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, MKT-02, MKT-03, MKT-04, CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-07, CHAT-10, CHAT-11, CHAT-12, CRED-04 (CHAT-06 moved to Phase 4 on 2026-09-26)
 **Success Criteria** (what must be TRUE):
   1. An expert accepts content consent, sets a 1x–5x rate, publishes an eligible agent instantly, sees its generated listing, and can unpublish it immediately.
   2. A hirer can browse and search published agents, compare profiles and typical message cost, and start a conversation from a listing or example question.
-  3. A hirer can stream a reply, return to the conversation later, see valid source citations and the cost of each answer, and get a clear refusal with the expert's contact link when the knowledge is weak.
-  4. A hirer can supply one conversation file as untrusted context; regulated-category disclaimers persist, emergency or self-harm patterns receive a fixed resource reply, and long conversations continue with windowed history.
+  3. A hirer can stream a reply, return later, and see valid expert or labeled external citations, web tool steps, a knowledge-gap note when online fallback runs, and the cost of each answer. If neither expert nor online evidence supports an answer, the agent says so rather than guessing.
+  4. A hirer can supply one conversation file as untrusted context; regulated-category disclaimers persist, and long conversations continue with windowed history. (The emergency and self-harm resource reply moved to Phase 4.)
   5. A local walkthrough that switches between the seeded hirer and expert charges the hirer by actual cost × expert multiplier and atomically records platform cost recovery, margin share, and expert wallet credit; mock funding is the only money-in path.
-**Plans**: TBD
+**Plans**: None — built directly on 2026-09-26 (Phase 3 D-14); answers stay canned with simulated streaming and retrieval stays the Phase 1 keyword search (Phase 3 D-01, D-02). The online fallback in criterion 3 (external citations, web tool steps, knowledge-gap note) was added to the roadmap on 2026-09-26 and is not in this build; today the agent refuses with the expert's contact link when expert knowledge is weak.
 **UI hint**: yes
+**Context**: `.planning/phases/03-publish-discover-use/03-CONTEXT.md`
 
 ### Phase 4: Trust, Insights & Launch Readiness
 **Goal**: Hirers, experts, and admins can review outcomes and exercise privacy and moderation controls; the full loop holds up under outside and adversarial use.
 **Depends on**: Phase 1 to start independent controls; Phase 2 and Phase 3 to complete the end-to-end acceptance gate
-**Requirements**: MKT-05, MKT-06, CHAT-08, CHAT-09, CRED-08, CRED-09, EXPT-01, EXPT-02, ADMN-01
+**Requirements**: MKT-05, MKT-06, CHAT-06, CHAT-08, CHAT-09, CRED-08, CRED-09, EXPT-01, EXPT-02, ADMN-01
 **Success Criteria** (what must be TRUE):
   1. A hirer can rate an agent once after five messages, give thumbs feedback on answers, flag an agent, and choose per conversation whether the expert may read its transcript; sharing starts off.
   2. An expert can see aggregate questions, conversation and message counts, thumbs-down counts, only opted-in transcripts, a complete wallet history, and a per-conversation gross/platform/net earnings breakdown.
   3. An expert can request a mock cash-out that debits credits and records a requested payout; an admin can inspect agent and conversation flags and unpublish an agent with a note.
-  4. Outside users can complete the local loop using real seed content; cross-tenant access, transcript privacy, citation validity, weak-retrieval refusal, regulated-category safety, and streaming errors are checked with representative and adversarial cases.
+  4. Outside users can complete the local loop using real seed content; cross-tenant access, transcript privacy, expert-versus-web citation validity, online fallback and unsupported-answer refusal, regulated-category safety, and streaming errors are checked with representative and adversarial cases.
   5. End-to-end ledger checks reconcile build-time raw costs and use-time markup, platform share, expert credit, and cash-out without missing or duplicate entries.
 **Plans**: TBD
 **UI hint**: yes
@@ -108,5 +109,5 @@ Before parallel implementation, record the four owners in the project board and 
 |-------|----------------|--------|-----------|
 | 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Complete for local demo | 2026-09-26 |
 | 2. Interview-First Agent Building | 0/TBD | Not started | - |
-| 3. Publish, Discover & Use | 0/TBD | Not started | - |
+| 3. Publish, Discover & Use | n/a (built directly) | Complete for local demo (Phase 2 gate pending) | 2026-09-26 |
 | 4. Trust, Insights & Launch Readiness | 0/TBD | Not started | - |
