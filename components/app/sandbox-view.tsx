@@ -11,6 +11,7 @@ import { clearDraft, getDraft, refreshDemo, saveDraft, useDemo } from "@/lib/dem
 import type { Agent } from "@/lib/types";
 import type { EvidenceCitation, Operation, RetrievedChunk, ToolStep } from "@/lib/contracts/phase2";
 import { formatCreditUnits } from "@/lib/format";
+import { parseStoredMoney } from "@/lib/money";
 import { emptyAnswer, markDeletedSources, reduceAnswer, replayAnswer, type AnswerState } from "./chat-state";
 
 type StoredMessage = { id: string; role: "user" | "assistant"; content: string; operationId: string | null;
@@ -29,7 +30,7 @@ function parseMessage(value: unknown): StoredMessage | null {
     sources: Array.isArray(retrieved.chunks) ? retrieved.chunks as RetrievedChunk[] : [],
     gap: typeof retrieved.gap === "string" ? retrieved.gap : null,
     steps: Array.isArray(row.tool_steps) ? row.tool_steps as ToolStep[] : [],
-    chargedUnits: typeof row.charged_units === "string" ? row.charged_units : null,
+    chargedUnits: row.charged_units == null ? null : parseStoredMoney(row.charged_units),
     createdAt: typeof row.created_at === "string" ? row.created_at : "" };
 }
 

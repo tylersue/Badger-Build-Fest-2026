@@ -4,6 +4,7 @@ import { getOperationForIdentity } from "@/features/billing/service";
 import { requireServiceDb } from "@/lib/server/db";
 import { apiError, ApiRequestError, parseRequest, requireAgentOwner, resolveDemoIdentity } from "@/lib/server/request";
 import type { ChatStreamEvent } from "@/features/runtime/events";
+import { parseStoredMoney } from "@/lib/money";
 
 export const runtime = "nodejs";
 type Context = { params: Promise<{ agentId: string }> };
@@ -38,7 +39,9 @@ export async function GET(request: Request, context: Context): Promise<Response>
     const { data, error } = await requireServiceDb().from("messages").select("*")
       .eq("conversation_id", conversationId).order("created_at");
     if (error) throw error;
-    return Response.json({ ok: true, data: { messages: data ?? [] } },
+    const messages = (data ?? []).map(row => ({ ...row,
+      charged_units: row.charged_units == null ? null : parseStoredMoney(row.charged_units) }));
+    return Response.json({ ok: true, data: { messages } },
       { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
