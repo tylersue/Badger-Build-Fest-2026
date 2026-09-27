@@ -32,7 +32,10 @@ export async function GET(request: Request, context: Context): Promise<Response>
       if (!operation.ok) return apiError(operation.error);
       if (operation.data.operation.agentId !== agentId || operation.data.operation.purpose !== "sandbox")
         throw new ApiRequestError("not_owner", "Operation is unavailable.", 404);
-      const events = await createSqlAnswerStore().replay(operationId);
+      const store = createSqlAnswerStore();
+      const prior = await store.replay(operationId);
+      if (!prior.some(event => event.type === "done")) await store.recover(operationId);
+      const events = await store.replay(operationId);
       return Response.json({ ok: true, data: { events, operation: operation.data.operation } },
         { headers: { "Cache-Control": "private, no-store" } });
     }

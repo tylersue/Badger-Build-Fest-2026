@@ -46,4 +46,17 @@ describe("sandbox answer state", () => {
     expect(historical[1]).toEqual(citations[1]);
     expect(markDeletedSources(citations, new Set(), new Set(["s"]))[0]).toMatchObject({ historical: false });
   });
+
+  it("treats recovered unknown usage as a finished answer with a pending charge", () => {
+    const state = replayAnswer([
+      { ...envelope(0), type: "recovery-claim" },
+      { ...envelope(1), type: "error", error: { code: "unknown_usage", message: "Interrupted", retryable: false } },
+      { ...envelope(2), type: "cost", status: "pending", estimateUnits: "20", chargedUnits: null,
+        balanceUnits: "100", heldUnits: "20" },
+      { ...envelope(3), type: "done", messageId: "msg_1" },
+    ]);
+    expect(state.done).toBe(true);
+    expect(state.error).toBe("Interrupted");
+    expect(state.cost).toMatchObject({ status: "pending", heldUnits: "20", chargedUnits: null });
+  });
 });

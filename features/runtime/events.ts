@@ -4,6 +4,7 @@ export type EventEnvelope = { operationId: string; eventId: string; sequence: nu
 /** Persist before emitting. done means the message is durable; cost may still be pending. */
 export type ChatStreamEvent = EventEnvelope & (
   | { type: "operation-start"; operation: Operation }
+  | { type: "recovery-claim" }
   | { type: "sources"; chunks: RetrievedChunk[] }
   | { type: "text-delta"; delta: string }
   | { type: "citations"; citations: EvidenceCitation[] }

@@ -6,7 +6,7 @@ import { BuilderSplit } from "@/components/app/builder";
 import { AssistantMessage, Composer, NotEnoughCredits, RetrievedSources, StreamCostCaption, UserMessage } from "@/components/app/chat";
 import { ToolSteps } from "@/components/app/tool-steps";
 import { EmptyState, PageHeader } from "@/components/app/ui";
-import { api, apiRequest, ApiClientError, streamSandbox } from "@/lib/api-client";
+import { api, apiRequest, ApiClientError, newRequestKey, streamSandbox } from "@/lib/api-client";
 import { clearDraft, getDraft, refreshDemo, saveDraft, useDemo } from "@/lib/demo-store";
 import type { Agent } from "@/lib/types";
 import type { EvidenceCitation, Operation, RetrievedChunk, ToolStep } from "@/lib/contracts/phase2";
@@ -35,7 +35,6 @@ function parseMessage(value: unknown): StoredMessage | null {
 }
 
 type OperationPoll = { operation: Operation };
-const terminal = new Set(["settled", "failed", "cancelled", "completed"]);
 const errorText = (error: unknown) => error instanceof Error ? error.message : "The reply stopped before finishing. Your message is still here.";
 
 export function SandboxView({ agent, isOwner }: { agent: Agent; isOwner: boolean }) {
@@ -76,11 +75,20 @@ export function SandboxView({ agent, isOwner }: { agent: Agent; isOwner: boolean
     const result = await apiRequest<OperationPoll>(`/api/operations/${encodeURIComponent(id)}`);
     if (result.operation.agentId !== agent.id || result.operation.identityId !== identityId)
       throw new Error("Operation is unavailable for this sandbox.");
-    await replay(id);
-    if (terminal.has(result.operation.state)) {
+    const state = await replay(id);
+    if (state.done) {
       await loadTranscript();
       setRecovering(false);
       setPendingText(null);
+      setOperationId(null);
+      const saved = getDraft("sandbox", agent.id);
+      if (state.error) {
+        if (saved) saveDraft("sandbox", agent.id, saved.value, newRequestKey());
+        setError(state.error);
+      } else if (saved) {
+        clearDraft("sandbox", agent.id, saved);
+        setDraft("");
+      }
       return true;
     }
     setRecovering(true);
@@ -177,7 +185,8 @@ export function SandboxView({ agent, isOwner }: { agent: Agent; isOwner: boolean
           <div key={row.id}>
             <ToolSteps steps={answers[row.operationId ?? ""]?.steps ?? row.steps} />
             <RetrievedSources items={answers[row.operationId ?? ""]?.sources ?? row.sources} />
-            <AssistantMessage content={answers[row.operationId ?? ""]?.text ?? row.content}
+            <AssistantMessage content={answers[row.operationId ?? ""]?.done && answers[row.operationId ?? ""]?.error
+              ? row.content : answers[row.operationId ?? ""]?.text ?? row.content}
               citations={displayCitations(answers[row.operationId ?? ""]?.citations ?? row.citations)}
               gap={answers[row.operationId ?? ""]?.gap ?? row.gap}
               caption={answers[row.operationId ?? ""]?.cost ? <StreamCostCaption cost={answers[row.operationId ?? ""].cost} /> :

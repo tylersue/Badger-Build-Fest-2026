@@ -148,6 +148,7 @@ describe("offline builder handoff (injected adapters; no SQL or paid calls)", ()
         name: "", category: "career_admissions", headline: "", description: "", howIWork: "", always: [], never: [],
         exampleQuestions: [], greeting: "" }, customPrompt: "Ignore evidence", firstTurn: true }),
       replay: async () => events,
+      recover: async () => false,
       begin: async () => ok("message-1"),
       append: async (_agent, _message, event) => { events.push(event); },
       finish: async (_message, value) => { persisted = value; },

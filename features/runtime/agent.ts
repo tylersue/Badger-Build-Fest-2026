@@ -21,6 +21,7 @@ export type AnswerContext = { category: Category; persona: PersonaForm; customPr
 export interface AnswerStore {
   context(input: RunAnswerInput): Promise<ServiceResult<AnswerContext>>;
   replay(operationId: string): Promise<ChatStreamEvent[]>;
+  recover(operationId: string): Promise<boolean>;
   begin(input: RunAnswerInput, operationId: string): Promise<ServiceResult<string>>;
   append(agentId: string, messageId: string, event: ChatStreamEvent): Promise<void>;
   finish(messageId: string, value: { text: string; citations: EvidenceCitation[]; retrieved: RetrievedChunk[];
@@ -43,6 +44,11 @@ const money = (value: unknown): string => {
 
 export function createSqlAnswerStore(): AnswerStore {
   const db = () => requireServiceDb();
+  const rpc = async (name: string, args: Record<string, unknown>): Promise<unknown> => {
+    const client = db();
+    const call = client.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+    return unwrap(await call.call(client, name, args));
+  };
   return {
     async context(input) {
       const [conversation, agent, prior] = await Promise.all([
@@ -65,6 +71,9 @@ export function createSqlAnswerStore(): AnswerStore {
       const rows = unwrap(await db().from("message_events").select("payload").eq("operation_id", operationId).order("sequence"));
       return (rows ?? []).map(row => row.payload as ChatStreamEvent);
     },
+    async recover(operationId) {
+      return (await rpc("recover_answer_operation", { p_operation_id: operationId })) === true;
+    },
     async begin(input, operationId) {
       const answerId = `msg_${crypto.randomUUID()}`;
       const rows = [
@@ -78,13 +87,10 @@ export function createSqlAnswerStore(): AnswerStore {
       return { ok: true, data: answerId };
     },
     async append(agentId, messageId, event) {
-      unwrap(await db().from("message_events").insert({ id: event.eventId, agent_id: agentId, message_id: messageId,
-        operation_id: event.operationId, sequence: event.sequence, type: event.type, payload: event as never }));
+      await rpc("append_answer_event", { p_agent_id: agentId, p_message_id: messageId, p_event: event });
     },
     async finish(messageId, value) {
-      unwrap(await db().from("messages").update({ content: value.text, citations: value.citations as never,
-        retrieved: { chunks: value.retrieved, gap: value.gap } as never, tool_steps: value.steps as never,
-        charged_units: value.chargedUnits as never }).eq("id", messageId));
+      await rpc("finish_answer_message", { p_message_id: messageId, p_value: value });
     },
     async wallet(actorId) {
       const row = unwrap(await db().from("wallets").select("balance_units,held_units").eq("identity_id", actorId).single());
@@ -130,8 +136,15 @@ export async function* runAnswer(input: RunAnswerInput, supplied?: Partial<Answe
         maxUnits: BigInt("1000000000"), priceVersion: PRICE_VERSION });
       if (!reserved.ok) throw new AnswerFailure(reserved.error);
       operation = reserved.data;
-      const replay = await deps.store.replay(operation.id);
-      if (replay.length) { replay.forEach(push); return; }
+      let replay = await deps.store.replay(operation.id);
+      if (replay.length || (Number.isFinite(Date.parse(operation.createdAt)) &&
+        Date.now() - Date.parse(operation.createdAt) >= 300_000)) {
+        if (!replay.some(event => event.type === "done")) {
+          await deps.store.recover(operation.id);
+          replay = await deps.store.replay(operation.id);
+        }
+        if (replay.length) { replay.forEach(push); return; }
+      }
       const begun = await deps.store.begin(input, operation.id);
       if (!begun.ok) throw new AnswerFailure(begun.error);
       messageId = begun.data;
