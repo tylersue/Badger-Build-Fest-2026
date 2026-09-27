@@ -47,7 +47,7 @@ function InterviewSection({ agent, isOwner }: { agent: Agent; isOwner: boolean }
   const turns = interviewTurnsFor(s, agent.id);
   const pending = pendingInterviewQuestion(s, agent.id);
   return (
-    <BuilderSplit agent={agent} thread="· Interview" composer={<Composer placeholder="Write your answer…" disabled={!isOwner} onSend={async (text) => {
+    <BuilderSplit agent={agent} thread="· Interview" composer={<Composer placeholder="Write your answer…" disabled={!isOwner || s.status !== "ready"} onSend={async (text) => {
       try {
         const result = await answerInterview(agent.id, text);
         if (!result.ok) { setRefusal({ needed: result.neededCents, available: result.availableCents }); return false; }
@@ -72,7 +72,7 @@ function TestSection({ agent, isOwner }: { agent: Agent; isOwner: boolean }) {
   const [refusal, setRefusal] = useState<{ needed: number; available: number } | null>(null);
   const messages = messagesFor(s, sandboxConversationId(agent.id));
   return (
-    <BuilderSplit agent={agent} thread="· Test" composer={<Composer placeholder="Write your message…" disabled={!isOwner} onSend={async (text) => {
+    <BuilderSplit agent={agent} thread="· Test" composer={<Composer placeholder="Write your message…" disabled={!isOwner || s.status !== "ready"} onSend={async (text) => {
       try {
         const result = await sendSandboxMessage(agent.id, text);
         if (!result.ok) { setRefusal({ needed: result.neededCents, available: result.availableCents }); return false; }

@@ -194,7 +194,8 @@ function IdentitySwitcher() {
   const [open, setOpen] = useState(false);
   const me = currentIdentity(s);
   const balance = balanceOf(s, me.id);
-  const roleLine = `${me.kind === "expert" ? "Expert" : "Hirer"} · ${formatCredits(balance)}`;
+  const roleLine = s.status === "error" ? (s.error ?? "Live service unavailable") :
+    `${me.kind === "expert" ? "Expert" : "Hirer"} · ${s.status === "ready" ? formatCredits(balance) : "Loading wallet…"}`;
 
   const choose = (id: string) => {
     setOpen(false);

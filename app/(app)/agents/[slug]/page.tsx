@@ -41,12 +41,14 @@ export default function ListingPage() {
       router.push(`/build/${agent.id}/test`);
       return;
     }
-    const id = startConversation(agent.id, question ?? "New conversation");
-    if (question) {
-      const r = await sendChatMessage(id, question);
-      if (!r.ok) toast("Not enough credits. Add credits to continue.");
-    }
-    router.push(`/chat/${id}`);
+    try {
+      const id = startConversation(agent.id, question ?? "New conversation");
+      if (question) {
+        const r = await sendChatMessage(id, question);
+        if (!r.ok) toast("Not enough credits. Add credits to continue.");
+      }
+      router.push(`/chat/${id}`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Chat unavailable."); }
   };
 
   return (

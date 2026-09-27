@@ -43,9 +43,11 @@ export default function ChatPage() {
 
   const send = async (text: string) => {
     setRefusal(null);
-    const r = await sendChatMessage(conversation.id, text);
-    if (!r.ok) setRefusal(r);
-    return r.ok;
+    try {
+      const r = await sendChatMessage(conversation.id, text);
+      if (!r.ok) setRefusal(r);
+      return r.ok;
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Chat unavailable."); return false; }
   };
 
   return (
