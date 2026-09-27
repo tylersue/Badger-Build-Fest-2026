@@ -16,7 +16,7 @@ export type CashoutSummary = {
 export function cashoutSummary(s: DemoState, identityId: string): CashoutSummary {
   const rows = allLedger(s).filter((row) => row.identityId === identityId);
   const lifetimeEarningsCents = rows.filter((row) => row.kind === "earnings").reduce((sum, row) => sum + row.amountCents, 0);
-  const lifetimeCashoutCents = -rows.filter((row) => row.kind === "cashout").reduce((sum, row) => sum + row.amountCents, 0);
+  const lifetimeCashoutCents = Math.max(0, -rows.filter((row) => row.kind === "cashout").reduce((sum, row) => sum + row.amountCents, 0));
   const balanceCents = balanceOf(s, identityId);
   return {
     balanceCents,

@@ -7,6 +7,10 @@ import { applyCashout, cashoutSummary, planCashout } from "./cashout";
 afterEach(() => resetDemoHarness());
 
 describe("cashoutSummary and planCashout", () => {
+  it("reports ordinary zero cash-outs before any request", () => {
+    expect(cashoutSummary(createInitialDemoState(), "maria").lifetimeCashoutCents).toBe(0);
+  });
+
   it("limits Maria's available cash-out to her earned credits", () => {
     const s = createInitialDemoState();
     const earned = LEDGER.filter((row) => row.identityId === "maria" && row.kind === "earnings").reduce((sum, row) => sum + row.amountCents, 0);
