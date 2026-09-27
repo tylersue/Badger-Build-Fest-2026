@@ -5,7 +5,7 @@ begin;
 alter table public.index_jobs add column operation_id text references public.operations(id);
 alter table public.index_jobs add column segments jsonb;
 alter table public.index_jobs add column batch_size integer not null default 8 check (batch_size between 1 and 8);
-alter table public.index_jobs add column max_chunks integer not null default 2000 check (max_chunks between 1 and 2000);
+alter table public.index_jobs add column max_chunks integer not null default 1000 check (max_chunks between 1 and 10000);
 alter table public.index_jobs add column retry_generation integer not null default 0 check (retry_generation >= 0);
 alter table public.index_jobs add constraint index_jobs_segments_array check (segments is null or jsonb_typeof(segments) = 'array');
 create index index_jobs_operation_idx on public.index_jobs(operation_id) where operation_id is not null;
@@ -13,14 +13,14 @@ create index quota_holds_agent_state_idx on public.quota_holds(agent_id,state,ex
 
 create function public.enqueue_index_revision(p_job_id text, p_agent_id text,
   p_answer_id text, p_source_id text, p_revision_id text, p_operation_id text,
-  p_segments jsonb, p_max_chunks integer default 2000)
+  p_segments jsonb, p_max_chunks integer default 1000)
 returns public.index_jobs language plpgsql security definer
 set search_path = pg_catalog, public, extensions as $$
 declare j public.index_jobs; a public.answers; s public.sources;
   v_segments jsonb; v_chunks integer; v_active integer; v_held integer;
 begin
   if length(p_job_id) > 200 or p_job_id = '' or p_agent_id = '' or p_revision_id = ''
-    or num_nonnulls(p_answer_id,p_source_id) <> 1 or p_max_chunks not between 1 and 2000 then
+    or num_nonnulls(p_answer_id,p_source_id) <> 1 or p_max_chunks not between 1 and 10000 then
     raise exception 'INVALID_INPUT';
   end if;
   -- Existing job is the sole idempotent resume target for this revision.
@@ -32,6 +32,16 @@ begin
   end if;
   perform 1 from public.agents where id=p_agent_id and deleted_at is null for update;
   if not found then raise exception 'NOT_OWNER'; end if;
+  -- Superseded work cannot keep a quota hold or reacquire a lease. A provider
+  -- call already in flight may finish, but its batch/activation CAS will fail.
+  with stale as (
+    update public.index_jobs set state='failed',error='{"code":"stale"}',lease_owner=null,
+      lease_expires_at=null where agent_id=p_agent_id and revision_id <> p_revision_id
+      and ((p_answer_id is not null and answer_id=p_answer_id) or
+           (p_source_id is not null and source_id=p_source_id))
+      and state in ('queued','processing','failed') returning id
+  ) update public.quota_holds q set state='released' from stale
+    where q.request_key='index:'||stale.id and q.state='held';
   if not exists(select 1 from public.operations where id=p_operation_id and agent_id=p_agent_id
     and purpose in ('embedding','source','interview')) then raise exception 'INVALID_INPUT'; end if;
   if p_answer_id is not null then

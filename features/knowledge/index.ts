@@ -113,7 +113,7 @@ export async function enqueueIndexRevision(input: EnqueueIndexInput,
     const response = await rpcJob(deps, "enqueue_index_revision", {
       p_job_id: input.jobId, p_agent_id: input.agentId, p_answer_id: input.answerId ?? null,
       p_source_id: input.sourceId ?? null, p_revision_id: input.revisionId,
-      p_operation_id: input.operationId, p_max_chunks: input.maxChunks ?? 2000,
+      p_operation_id: input.operationId, p_max_chunks: input.maxChunks ?? 1000,
       p_segments: chunks.map(c => ({ content: c.content, question: c.question,
         page: c.page, headingPath: c.headingPath, answerId: c.answerId, sourceId: c.sourceId })),
     });
@@ -142,8 +142,7 @@ export async function indexRevision(jobId: string, options: { settle?: boolean }
       const stageKey = `index:${job.id}:batch:${batch}:retry:${job.retry_generation}`;
       const existing = await deps.stageState(operation.id, stageKey);
       if (existing) {
-        const code = existing === "unknown" || existing === "dispatched" || existing === "prepared"
-          ? "unknown_usage" : "indexing";
+        const code = existing === "failed" ? "indexing" : "unknown_usage";
         current = await rpcJob(deps, "fail_index_job", { p_job_id: job.id, p_lease_owner: lease, p_code: code });
         shouldSettle = code === "unknown_usage";
         return current.ok ? { ok: true, data: progress(current.data) } : current;
@@ -160,7 +159,14 @@ export async function indexRevision(jobId: string, options: { settle?: boolean }
       }
       current = await rpcJob(deps, "complete_index_batch", { p_job_id: job.id, p_lease_owner: lease,
         p_batch: batch, p_chunks: embedded.data.value.map((embedding, ordinal) => ({ ordinal: start + ordinal, embedding })) });
-      if (!current.ok) return current;
+      if (!current.ok) {
+        const observed = await rpcJob(deps, "claim_index_job", { p_job_id: job.id, p_lease_owner: lease });
+        if (observed.ok && observed.data.state === "failed" && observed.data.error?.code === "stale") {
+          shouldSettle = true;
+          return { ok: true, data: progress(observed.data) };
+        }
+        return current;
+      }
       job = current.data;
     }
     if (job.completed_batches === job.total_batches) {
