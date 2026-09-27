@@ -67,7 +67,7 @@ Before parallel implementation, record the four owners in the project board and 
 **Plans**: 18 plans across 11 waves
 
 **Wave 1**
-- [ ] 02-01-PLAN.md — Freeze shared contracts and install audited dependencies.
+- [x] 02-01-PLAN.md — Freeze shared contracts and install audited dependencies.
 
 **Wave 2 (after Wave 1)**
 - [ ] 02-02-PLAN.md — Create durable schema and server authorization boundary.
@@ -147,6 +147,6 @@ Before parallel implementation, record the four owners in the project board and 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Complete for local demo | 2026-09-26 |
-| 2. Interview-First Agent Building | 0/TBD | Not started | - |
+| 2. Interview-First Agent Building | 1/18 | In Progress|  |
 | 3. Publish, Discover & Use | 0/TBD | Not started | - |
 | 4. Trust, Insights & Launch Readiness | 0/TBD | Not started | - |
