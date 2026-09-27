@@ -90,7 +90,7 @@ Before parallel implementation, record the four owners in the project board and 
 - [x] 02-11-PLAN.md — Build shared grounded answer runtime and isolated web fallback.
 
 **Wave 7 (after Wave 6)**
-- [ ] 02-12-PLAN.md — Connect server APIs to the browser state bridge.
+- [x] 02-12-PLAN.md — Connect server APIs to the browser state bridge.
 
 **Wave 8 (after Wave 7)**
 - [ ] 02-13-PLAN.md — Build interview editing and persona review views.
@@ -147,6 +147,6 @@ Before parallel implementation, record the four owners in the project board and 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Complete for local demo | 2026-09-26 |
-| 2. Interview-First Agent Building | 11/18 | In Progress|  |
+| 2. Interview-First Agent Building | 12/18 | In Progress|  |
 | 3. Publish, Discover & Use | 0/TBD | Not started | - |
 | 4. Trust, Insights & Launch Readiness | 0/TBD | Not started | - |
