@@ -141,18 +141,26 @@ export function Composer({ placeholder, onSend, disabled, attach, hint, draft, o
   const [localText, setLocalText] = useState("");
   const text = draft ? draft.value : localText;
   const setText = draft ? draft.onChange : setLocalText;
+  const textRef = useRef(text);
   const [busy, setBusy] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const busyRef = useRef(false);
   const submit = async () => {
-    const t = text.trim();
+    const t = textRef.current.trim();
     if (!t || busyRef.current || disabled) return;
     busyRef.current = true;
     setBusy(true);
+    setSendError(null);
     try {
       const acknowledged = (await onSend(t)) !== false;
-      if (text === t) setText(retainDraftOnResult(acknowledged, text));
+      if (textRef.current === t) {
+        const next = retainDraftOnResult(acknowledged, textRef.current);
+        textRef.current = next;
+        setText(next);
+      }
     } catch (error) {
-      onError?.(error);
+      if (onError) onError(error);
+      else setSendError(error instanceof Error ? error.message : "Could not send. Your draft is still here.");
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -161,10 +169,11 @@ export function Composer({ placeholder, onSend, disabled, attach, hint, draft, o
   return (
     <div className="flex shrink-0 justify-center px-4 pt-3 pb-4">
       <div className="flex min-h-24 w-full max-w-[752px] flex-col gap-3 rounded-xl border border-line-subtle bg-surface-2 p-4">
+        {sendError && <p role="alert" className="text-sm text-danger">{sendError}</p>}
         <textarea
           data-testid="composer-input"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { textRef.current = e.target.value; setText(e.target.value); }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
@@ -212,7 +221,7 @@ export function NotEnoughCredits({ needed, available, onDismiss }: { needed: num
       </p>
       <div className="mt-3 flex gap-2">
         <AddCreditsButton size="sm" />
-        <button onClick={onDismiss} className="h-6 px-2 text-[13px] text-fg-muted hover:text-foreground">
+        <button onClick={onDismiss} className="min-h-11 px-2 text-[13px] text-fg-muted hover:text-foreground">
           Dismiss
         </button>
       </div>
