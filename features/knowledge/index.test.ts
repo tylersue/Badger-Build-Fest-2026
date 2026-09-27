@@ -109,4 +109,22 @@ describe("indexRevision", () => {
     expect(await indexRevision("job-1", {}, r.deps)).toMatchObject({ ok: true, data: { state: "failed" } });
     expect(r.embed).toHaveBeenCalledOnce();
   });
+
+  it("yields after four batches and resumes only unfinished persisted batches", async () => {
+    const r = rig();
+    const sourceSegments = Array.from({ length: 33 }, (_, page) => ({
+      content: "x".repeat(2000), page: page + 1, headingPath: null,
+    }));
+    expect(await enqueueIndexRevision({ jobId: "job-long", agentId: "agent-a", revisionId: "rev-1",
+      sourceId: "source-1", sourceSegments, operationId: operation.id }, r.deps))
+      .toMatchObject({ ok: true, data: { progress: { totalBatches: 5 } } });
+    expect(await indexRevision("job-long", {}, r.deps))
+      .toMatchObject({ ok: true, data: { state: "pending", progress: { completedBatches: 4, indexedChunks: 32 } } });
+    expect(r.settle).not.toHaveBeenCalled();
+    expect(await indexRevision("job-long", {}, r.deps))
+      .toMatchObject({ ok: true, data: { state: "ready", progress: { completedBatches: 5, indexedChunks: 33 } } });
+    expect(r.embed).toHaveBeenCalledTimes(5);
+    expect(r.calls.filter(c => c.name === "complete_index_batch")).toHaveLength(5);
+    expect(r.settle).toHaveBeenCalledOnce();
+  });
 });
