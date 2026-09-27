@@ -27,12 +27,12 @@ export function AddCreditsButton({ size = "lg" }: { size?: "sm" | "lg" }) {
     <>
       <button data-testid="add-credits" onClick={() => setOpen(true)} className={buttonClass("primary", size)}>
         <Plus />
-        Add {UNIT_LABEL}
+        {UNIT_LABEL === "tokens" ? "Buy tokens" : "Add credits"}
       </button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="w-[min(100vw,480px)] border-line-faint bg-surface-1 sm:max-w-[480px]">
           <SheetHeader>
-            <SheetTitle>Add {UNIT_LABEL}</SheetTitle>
+            <SheetTitle>{UNIT_LABEL === "tokens" ? "Buy tokens" : "Add credits"}</SheetTitle>
             <SheetDescription>Mock funding for the MVP. No payment is taken; each click adds {UNIT_LABEL} and a ledger row.</SheetDescription>
           </SheetHeader>
           <div className="flex flex-col gap-4 px-4">

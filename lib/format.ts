@@ -2,8 +2,8 @@ import { DEMO_MODE } from "./config/demo";
 
 const nf = new Intl.NumberFormat("en-US", { maximumFractionDigits: 7 });
 
-/** Demo mode prices in tokens: 1 token = 1,000 credits ($10), so a message costs about 0.006 tokens. */
-export const TOKEN_CREDITS = 1000;
+/** Demo mode prices in prepaid tokens, like Anthropic's credit balance: 1 token = $1.00 (100 credits), so a message costs about 0.03–0.12 tokens. */
+export const TOKEN_CREDITS = 100;
 export const UNIT_LABEL = DEMO_MODE ? "tokens" : "credits";
 /** Number only, in the display unit: 4968 credits → "4.97" tokens; 6 → "0.006"; 1.55 → "0.0016". */
 export function formatAmount(cents: number): string {
