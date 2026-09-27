@@ -50,7 +50,7 @@ export function CheckoutDialog({ agent, open, onOpenChange }: { agent: Agent; op
         ) : (
           <>
             <div className="border-b border-line-subtle p-5">
-              <DialogTitle className="text-base">Checkout</DialogTitle>
+              <DialogTitle className="text-base">Hire this agent</DialogTitle>
               <div className="mt-4 flex items-center gap-3">
                 <IdentityLogo identityId={agent.ownerId} size={40} />
                 <div className="min-w-0">
@@ -69,12 +69,12 @@ export function CheckoutDialog({ agent, open, onOpenChange }: { agent: Agent; op
             <dl className="space-y-2 p-5 text-sm">
               <div className="flex justify-between"><dt className="text-fg-muted">Price</dt><dd className="tabular-nums">{formatCredits(price)} <span className="text-fg-muted">(${(price / 100).toFixed(2)})</span></dd></div>
               <div className="flex justify-between"><dt className="text-fg-muted">Your balance</dt><dd className="tabular-nums">{formatCredits(balance)}</dd></div>
-              <div className="flex justify-between border-t border-line-subtle pt-2 font-medium"><dt>After purchase</dt><dd className="tabular-nums">{formatCredits(Math.max(0, balance - price))}</dd></div>
+              <div className="flex justify-between border-t border-line-subtle pt-2 font-medium"><dt>After hiring</dt><dd className="tabular-nums">{formatCredits(Math.max(0, balance - price))}</dd></div>
             </dl>
             {error && <div role="alert" className="mx-5 mb-3 rounded-lg bg-danger-surface p-3 text-sm">{error} <AddCreditsButton size="sm" /></div>}
             <div className="flex gap-2 p-5 pt-0">
               <button type="button" data-testid="buy-now" className={`${buttonClass("primary", "lg")} flex-1 justify-center`} disabled={state === "buying"} onClick={() => void buy()}>
-                {state === "buying" ? "Buying…" : `Buy now · ${formatCredits(price)}`}
+                {state === "buying" ? "Hiring…" : `Hire now · ${formatCredits(price)}`}
               </button>
               <button type="button" className={buttonClass("secondary", "lg")} disabled={state === "buying"} onClick={() => onOpenChange(false)}>Cancel</button>
             </div>

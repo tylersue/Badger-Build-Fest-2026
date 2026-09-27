@@ -78,12 +78,12 @@ export default function ListingPage() {
         actions={
           <>
             {isOwner && agent.status !== "published" && <Pill>Preview · {agent.status}</Pill>}
-            {/* One-time price: founders buy the agent, then every chat with it is included. */}
+            {/* One-time price: founders hire the agent, then every chat with it is included. */}
             {isOwner
               ? <Link href={`/build/${agent.id}/test`} data-testid="start-chat" className={buttonClass("primary", "lg")}>Test agent</Link>
               : bought
                 ? <Link href={`/chat/${bought.conversationId}`} data-testid="open-bought" className={buttonClass("primary", "lg")}><CircleCheck /> In My agents · Open chat</Link>
-                : <button type="button" data-testid="buy-agent" onClick={() => setCheckout(true)} className={buttonClass("primary", "lg")}>Buy · {formatCredits(price)}</button>}
+                : <button type="button" data-testid="buy-agent" onClick={() => setCheckout(true)} className={buttonClass("primary", "lg")}>Hire · {formatCredits(price)}</button>}
             {!isOwner && <CheckoutDialog agent={agent} open={checkout} onOpenChange={setCheckout} />}
           </>
         }
@@ -109,7 +109,7 @@ export default function ListingPage() {
               </div>
               <div className="mt-5 flex flex-wrap items-center gap-3 text-[13px] text-fg-muted">
                 <Pill>{categoryLabel(agent.persona.category)}</Pill>
-                <span>{agent.ratingCount ? `★ ${agent.ratingAvg.toFixed(1)} (${compactNumber(ratingTotal(agent))}) · ${compactNumber(buyerCount(agent, !!bought))} bought` : "No ratings yet"}</span>
+                <span>{agent.ratingCount ? `★ ${agent.ratingAvg.toFixed(1)} (${compactNumber(ratingTotal(agent))}) · ${compactNumber(buyerCount(agent, !!bought))} hired` : "No ratings yet"}</span>
                 <span data-testid="listing-cost">{formatCredits(price)} once · unlimited chats</span>
                 <span data-testid="knowledge-updated">Knowledge updated {formatRelative(publicStats?.lastUpdatedAt ?? knowledge.lastUpdatedAt)}</span>
               </div>

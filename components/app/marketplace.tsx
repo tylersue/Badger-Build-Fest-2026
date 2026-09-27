@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowDownUp, Plus, Search, ShoppingBag, Star, Store, X } from "lucide-react";
+import { ArrowDownUp, BriefcaseBusiness, Plus, Search, Star, Store, X } from "lucide-react";
 import { Breadcrumbs, EmptyState, PageBody, PageHeader, Pill, buttonClass } from "@/components/app/ui";
 import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
 import { allAgents, currentIdentity, displayName, profileFor, purchasesFor, useDemo } from "@/lib/demo-store";
@@ -14,7 +14,7 @@ import type { Agent } from "@/lib/types";
 import { formatCredits } from "@/lib/format";
 
 type Sort = "rating" | "newest" | "used";
-const SORT_LABELS: Record<Sort, string> = { rating: "Highest rated", newest: "Newest", used: "Most bought" };
+const SORT_LABELS: Record<Sort, string> = { rating: "Highest rated", newest: "Newest", used: "Most hired" };
 const NEXT_SORT: Record<Sort, Sort> = { rating: "newest", newest: "used", used: "rating" };
 
 /* Marketplace: one wide search field, category chips, then a grid of agent cards in the Kore.ai marketplace shape. */
@@ -159,7 +159,7 @@ function AgentCard({ agent: a }: { agent: Agent }) {
           <span className="font-medium text-fg-secondary">{a.ratingCount ? a.ratingAvg.toFixed(1) : "New"}</span>
           {a.ratingCount > 0 && <span>({compactNumber(ratingTotal(a))})</span>}
         </span>
-        <span className="inline-flex items-center gap-1" title={`${buyerCount(a, bought).toLocaleString()} founders bought this agent`}><ShoppingBag className="size-3.5" aria-hidden />{compactNumber(buyerCount(a, bought))} bought</span>
+        <span className="inline-flex items-center gap-1" title={`${buyerCount(a, bought).toLocaleString()} founders hired this agent`}><BriefcaseBusiness className="size-3.5" aria-hidden />{compactNumber(buyerCount(a, bought))} hired</span>
       </div>
       <div className="mt-3 flex items-center gap-2 border-t border-line-subtle pt-3">
         <Pill>{categoryLabel(a.persona.category)}</Pill>

@@ -27,7 +27,7 @@ Everything in this demo is hardcoded and runs in the browser. The lines below pr
 ## 0:08–0:25 · Hire an expert (Austin)
 
 1. Click the **Idea stress test** card (Cynthia Pham · Sequoia, top left).
-2. Top right, click **Buy · 20 tokens**, then **Buy now**. You'll see **Added to My agents**, and the agent appears in the sidebar under **My agents**.
+2. Top right, click **Hire · 20 tokens**, then **Hire now**. You'll see **Added to My agents**, and the agent appears in the sidebar under **My agents**.
 3. Click **Start using it**.
 4. Click **Write your message…**, paste this line, and press Enter:
 
@@ -38,7 +38,7 @@ hey, we're building proxier. it's a marketplace where first-time founders hire A
 5. When the answer finishes, hover a blue number such as **2** to show where it came from.
 
 **Say (over the answer):**
-> Cynthia's a two-time founder. We bought Cynthia's agent, and it pokes holes in our idea the way Cynthia would, and every point shows exactly where it came from.
+> Cynthia's a two-time founder. We hired Cynthia's agent, and it pokes holes in our idea the way Cynthia would, and every point shows exactly where it came from.
 
 ## 0:25–0:31 · Who sells the agents (Cynthia)
 
@@ -97,7 +97,7 @@ hmm, I don't love that it just quotes me word for word. talk like me, keep it sh
 
 1. Click the **Publish** tab at the top.
 2. Drag **Price** to **25 tokens**, tick the **Content consent** box, and click **Publish agent**.
-3. Click **Benchmarks** in the sidebar. **Your agents** shows the new agent scored next to Cynthia's established one (4.9 stars from 12.8K ratings, 480K bought).
+3. Click **Benchmarks** in the sidebar. **Your agents** shows the new agent scored next to Cynthia's established one (4.9 stars from 12.8K ratings, 480K hired).
 
 **Say:**
 > Set your price, publish, and founders start hiring you. That's Proxier.
@@ -113,7 +113,7 @@ Paste these in Austin's chat with Cynthia's agent:
 
 Other screens worth showing:
 
-- **Wallet** has the purchase.
+- **Wallet** has the hire.
 - **Earnings** (as Cynthia) has the sale.
 - Answers cite Cynthia's own essay. Click its blue number in the answer to open it.
 

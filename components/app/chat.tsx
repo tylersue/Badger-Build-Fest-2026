@@ -188,14 +188,14 @@ export function RetrievedSources({ items }: { items: NonNullable<Message["retrie
 export function CostCaption({ message }: { message: Message }) {
   return (
     <>
-      <span data-testid="message-cost" className="tabular-nums">{message.costCents === null ? "Charge pending" : message.costCents === 0 ? "Included with your purchase" : `Charged ${formatCredits(message.costCents)}`}</span>
+      <span data-testid="message-cost" className="tabular-nums">{message.costCents === null ? "Charge pending" : message.costCents === 0 ? "Included · you hired this agent" : `Charged ${formatCredits(message.costCents)}`}</span>
       <AnswerFeedback message={message} />
     </>
   );
 }
 
 export function StreamCostCaption({ cost, estimateUnits }: { cost?: StreamCost | null; estimateUnits?: string | null }) {
-  if (cost?.status === "settled" && cost.chargedUnits === "0") return <span>Included with your purchase</span>;
+  if (cost?.status === "settled" && cost.chargedUnits === "0") return <span>Included · you hired this agent</span>;
   if (cost?.status === "settled" && cost.chargedUnits !== null) return <span className="tabular-nums">Charged {formatCreditUnits(cost.chargedUnits)}</span>;
   if (cost?.status === "pending") return <span className="tabular-nums">Charge pending · Estimated {formatCreditUnits(cost.estimateUnits)}</span>;
   return estimateUnits ? <span className="tabular-nums">Estimated {formatCreditUnits(estimateUnits)}</span> : <span>Charge pending</span>;

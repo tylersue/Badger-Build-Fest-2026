@@ -33,8 +33,8 @@ export default function MyAgentsPage() {
         </Toolbar>
         {bought.length > 0 && (
           <section className="mb-8" aria-labelledby="bought-heading">
-            <h2 id="bought-heading" className="mb-3 text-sm font-semibold">Bought from the marketplace</h2>
-            <DataTable head={[{ label: "Agent" }, { label: "Expert" }, { label: "Category" }, { label: "Paid", numeric: true }, { label: "Bought" }]}>
+            <h2 id="bought-heading" className="mb-3 text-sm font-semibold">Hired from the marketplace</h2>
+            <DataTable head={[{ label: "Agent" }, { label: "Expert" }, { label: "Category" }, { label: "Paid", numeric: true }, { label: "Hired" }]}>
               {bought.map(({ agent: a, conversationId, credits, purchasedAt }) => (
                 <tr key={a.id} data-testid="bought-row" className="cursor-pointer" onClick={() => router.push(`/chat/${conversationId}`)}>
                   <td><span className="flex items-center gap-2"><AgentTile icon={a.icon} size="sm" />{a.persona.name}</span></td>

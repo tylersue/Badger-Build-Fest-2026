@@ -668,15 +668,15 @@ async function route(method: string, url: URL, init?: RequestInit): Promise<Resp
       if (existing) return ok({ ...existing, balanceUnits: balanceUnits(d.identityId), replayed: true });
       const price = agentPriceCredits(agent.rateMultiplier);
       if (credits(balanceUnits(d.identityId)) < price)
-        return new Response(JSON.stringify({ ok: false, error: { code: "insufficient_credits", message: "Not enough credits to buy this agent.", retryable: false,
+        return new Response(JSON.stringify({ ok: false, error: { code: "insufficient_credits", message: "Not enough tokens to hire this agent.", retryable: false,
           neededUnits: units(price), availableUnits: balanceUnits(d.identityId) } }), { status: 402, headers: { "Content-Type": "application/json" } });
       const conversation: Conversation = { id: id("c"), agentId: agent.id, hirerId: d.identityId, title: agent.persona.name, shareTranscript: false, createdAt: iso(), origin: "live" };
       d.conversations.push(conversation);
       const expertShare = Math.round(price * PURCHASE_EXPERT_SHARE * 100) / 100;
       const ref = { refType: "agent" as const, refId: agent.id };
-      post(d.identityId, "debit", -price, `Bought ${agent.persona.name}`, ref);
-      post(agent.ownerId, "earnings", expertShare, `Sale · ${agent.persona.name}`, ref);
-      post(null, "platform_margin", Math.round((price - expertShare) * 100) / 100, "15% of sale", ref);
+      post(d.identityId, "debit", -price, `Hired ${agent.persona.name}`, ref);
+      post(agent.ownerId, "earnings", expertShare, `Hired · ${agent.persona.name}`, ref);
+      post(null, "platform_margin", Math.round((price - expertShare) * 100) / 100, "15% of hire", ref);
       const purchase = { agentId: agent.id, conversationId: conversation.id, credits: price, purchasedAt: iso() };
       mine.push(purchase);
       save();

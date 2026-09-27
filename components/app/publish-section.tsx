@@ -108,9 +108,9 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
             <span>{formatCredits(agentPriceCredits(RATE_MAX))}</span>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3">
-            <ShareTile label="Buyer pays" value={price} />
-            <ShareTile label="Platform keeps" value={price - expertShare} caption="15% of each sale" />
-            <ShareTile label="You earn" value={expertShare} caption="85% of each sale" tone="success" />
+            <ShareTile label="Hirer pays" value={price} />
+            <ShareTile label="Platform keeps" value={price - expertShare} caption="15% of each hire" />
+            <ShareTile label="You earn" value={expertShare} caption="85% of each hire" tone="success" />
           </div>
           <p className="mt-3 text-xs text-fg-muted">Founders pay once and get unlimited chats with your agent.</p>
         </Card>

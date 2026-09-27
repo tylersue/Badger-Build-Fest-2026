@@ -139,7 +139,7 @@ function AppSidebar() {
                       <Link href={`/chat/${conversationId}`} title={a.persona.name} data-testid="nav-bought-agent">
                         <AgentTile icon={a.icon} size="xs" />
                         <span className="truncate">{a.persona.name.includes("·") ? a.persona.name.split("·").slice(1).join("·").trim() : a.persona.name}</span>
-                        <span className="ml-auto shrink-0 text-[11px] text-fg-muted">Bought</span>
+                        <span className="ml-auto shrink-0 text-[11px] text-fg-muted">Hired</span>
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>

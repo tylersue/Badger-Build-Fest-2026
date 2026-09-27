@@ -167,7 +167,7 @@ function YourAgentCard({ row, publishedCount, knowledgeItems }: { row: RankedBen
       <p className="mt-auto pt-4 text-xs text-fg-muted">
         {row.live
           ? <>Scored live from {knowledgeItems ?? 0} knowledge {knowledgeItems === 1 ? "item" : "items"}. <Link href={`/build/${row.agent.id}`} className="font-medium text-foreground hover:underline underline-offset-2">Keep building</Link> to raise it.</>
-          : <><Link href={`/agents/${row.agent.slug}`} className="font-medium text-foreground hover:underline underline-offset-2">View listing</Link> · {compactNumber(ratingTotal(row.agent))} ratings, {compactNumber(buyerCount(row.agent, false))} bought</>}
+          : <><Link href={`/agents/${row.agent.slug}`} className="font-medium text-foreground hover:underline underline-offset-2">View listing</Link> · {compactNumber(ratingTotal(row.agent))} ratings, {compactNumber(buyerCount(row.agent, false))} hired</>}
       </p>
     </Card>
   );

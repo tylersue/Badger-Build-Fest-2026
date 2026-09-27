@@ -32,7 +32,7 @@ export default function ChatsPage() {
           <SearchField placeholder="Search agents…" value={query} onChange={setQuery} />
         </Toolbar>
         {mine.length === 0 ? (
-          <EmptyState icon={MessageSquare} heading="No agents yet" body="Buy or hire an agent from the Marketplace to start." action={{ label: "Browse marketplace", href: "/marketplace" }} />
+          <EmptyState icon={MessageSquare} heading="No agents yet" body="Hire an agent from the Marketplace to start." action={{ label: "Browse marketplace", href: "/marketplace" }} />
         ) : rows.length === 0 ? (
           <p className="rounded-xl border border-line-subtle bg-surface-1 px-4 py-8 text-center text-sm text-fg-muted">
             No agents match &ldquo;{query}&rdquo;.
