@@ -61,6 +61,10 @@ export default function ChatPage() {
       const body = new FormData();
       body.append("file", file);
       const res = await fetch("/api/extract", { method: "POST", body });
+      if (!res.headers.get("content-type")?.includes("application/json")) {
+        setAttachError(`Upload failed (${res.status}). Try a smaller file.`);
+        return;
+      }
       const data = (await res.json()) as ExtractResponse;
       if (!res.ok || "error" in data) {
         setAttachError("error" in data ? data.error : "Could not read that file.");

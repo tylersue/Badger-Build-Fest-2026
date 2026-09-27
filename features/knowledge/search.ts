@@ -57,8 +57,12 @@ export async function searchKnowledge(agent: Agent, query: string, k = 4, extraC
       };
     });
 
+  /* When anything overlaps the question, drop the chunks that don't, so no unrelated chunk gets cited. */
+  const hits = own.filter((c) => c.score > BASE_SCORE);
   const chunks = own.length
-    ? own
+    ? hits.length
+      ? hits
+      : own
     : [
         {
           id: `${agent.id}-canned-1`,

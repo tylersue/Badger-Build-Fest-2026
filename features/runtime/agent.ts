@@ -71,11 +71,12 @@ export function cannedAnswer(
   return { content: body.join("\n\n"), citations: toCitations(chunks.slice(0, 2)) };
 }
 
-/** Fixed reply when retrieval is weak (CHAT-03). No model call, no charge. */
-export function refusalReply(expertName: string, contactUrl: string | null): string {
+/** Fixed reply when retrieval is weak (CHAT-03). No model call, no charge. Carries the disclaimer when it is the first reply (CHAT-05). */
+export function refusalReply(expertName: string, contactUrl: string | null, disclaimer: string | null = null): string {
   const first = expertName.split(" ")[0];
   const contact = contactUrl ? `You can reach ${first} directly: ${contactUrl}` : `Use the "Contact the expert" link at the top to ask ${first} directly.`;
-  return `I don't have that in ${first}'s knowledge, so I won't guess. ${contact}`;
+  const body = `I don't have that in ${first}'s knowledge, so I won't guess. ${contact}`;
+  return disclaimer ? `${body}\n\n${disclaimer}` : body;
 }
 
 function trimSentence(text: string): string {

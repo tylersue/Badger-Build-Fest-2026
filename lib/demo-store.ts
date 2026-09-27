@@ -11,7 +11,7 @@
 import { useSyncExternalStore } from "react";
 import { AGENTS, CHUNKS, CONVERSATIONS, IDENTITIES, INTERVIEW_ANSWER_COUNTS, INTERVIEW_TURNS, LEDGER, MARIA, MESSAGES, PROFILES, SOURCES } from "@/lib/data/seed";
 import { PACK_GRANT_CENTS, SUBSCRIPTION_GRANT_CENTS, type MeteredPurpose } from "@/lib/config/credits";
-import type { Category } from "@/lib/config/categories";
+import { disclaimerFor, type Category } from "@/lib/config/categories";
 import { clampRate } from "@/lib/config/publish";
 import { costCentsFromUsage, estimateCents, splitUsageCharge, toChargeCents } from "@/features/billing/pricing";
 import { isWeakRetrieval, searchKnowledge } from "@/features/knowledge/search";
@@ -33,6 +33,8 @@ export type DemoState = {
   messages: Message[];
   interviewTurns: InterviewTurn[];
   answeredTurns: Record<string, string>;
+  /** Last time an agent's knowledge changed in this browser (answers), for "knowledge updated". */
+  knowledgeTouchedAt: Record<string, string>;
 };
 
 const initialState = (): DemoState => ({
@@ -47,6 +49,7 @@ const initialState = (): DemoState => ({
   messages: [],
   interviewTurns: [],
   answeredTurns: {},
+  knowledgeTouchedAt: {},
 });
 
 let state: DemoState | null = null;
@@ -215,11 +218,15 @@ export type KnowledgeStats = { answers: number; docChunks: number; total: number
 export function knowledgeStats(s: DemoState, agentId: string): KnowledgeStats {
   const seededShown = interviewTurnsFor({ ...s, interviewTurns: [], answeredTurns: {} }, agentId).filter((t) => t.answer).length;
   const now = interviewTurnsFor(s, agentId).filter((t) => t.answer).length;
-  const answers = (INTERVIEW_ANSWER_COUNTS[agentId] ?? seededShown) + (now - seededShown);
+  // Seeded agents without a transcript still report their interview source's chunk count.
+  const seededAnswers =
+    INTERVIEW_ANSWER_COUNTS[agentId] ?? SOURCES.find((x) => x.agentId === agentId && x.kind === "interview" && x.status === "ready")?.chunkCount ?? seededShown;
+  const answers = seededAnswers + (now - seededShown);
   const docChunks = SOURCES.filter((x) => x.agentId === agentId && x.kind !== "interview" && x.status === "ready").reduce((n, x) => n + x.chunkCount, 0);
   const stamps = [
-    ...SOURCES.filter((x) => x.agentId === agentId).map((x) => x.createdAt),
+    ...SOURCES.filter((x) => x.agentId === agentId && x.status === "ready").map((x) => x.createdAt),
     ...s.interviewTurns.filter((t) => t.agentId === agentId).map((t) => t.createdAt),
+    s.knowledgeTouchedAt[agentId] ?? "",
     agentById(s, agentId)?.createdAt ?? "",
   ].filter(Boolean);
   return { answers, docChunks, total: answers + docChunks, lastUpdatedAt: stamps.sort().at(-1) ?? nowIso() };
@@ -329,9 +336,13 @@ export async function sendChatMessage(conversationId: string, text: string): Pro
 
   const expertName = displayName(s0, agent.ownerId);
   const chunks = await searchKnowledge(agent, text, 4, interviewChunks(s0, agent.id));
+  /* First reply of the conversation, refusal or not: carries the disclaimer (CHAT-05) and counts as one use (D-13). */
+  const isFirstTurn = messagesFor(s0, conversationId).length === 0;
+  const bumpUsage = (edits: DemoState["agentEdits"]) =>
+    isFirstTurn ? { ...edits, [agent.id]: { ...edits[agent.id], usageCount: agent.usageCount + 1 } } : edits;
 
   if (isWeakRetrieval(chunks)) {
-    const reply = refusalReply(expertName, profileFor(s0, agent.ownerId).contactUrl || null);
+    const reply = refusalReply(expertName, profileFor(s0, agent.ownerId).contactUrl || null, isFirstTurn ? disclaimerFor(agent.persona.category) : null);
     const messageId = uid("m");
     freshMessages.add(messageId);
     setState((s) => {
@@ -343,6 +354,7 @@ export async function sendChatMessage(conversationId: string, text: string): Pro
           { id: uid("m"), conversationId, role: "user", content: text, citations: [], feedback: null, costCents: null, createdAt },
           { id: messageId, conversationId, role: "assistant", content: reply, citations: [], feedback: null, costCents: 0, refusal: true, createdAt: new Date(Date.now() + 1).toISOString() },
         ],
+        agentEdits: bumpUsage(s.agentEdits),
       };
     });
     return { ok: true, chargedCents: 0, grounded: false, messageId };
@@ -351,7 +363,6 @@ export async function sendChatMessage(conversationId: string, text: string): Pro
   const refusal = precheck(s0, conversation.hirerId, "chat_message", agent.rateMultiplier);
   if (refusal) return refusal;
 
-  const isFirstTurn = messagesFor(s0, conversationId).length === 0;
   const answer = cannedAnswer(agent, expertName, chunks, isFirstTurn, { fileName: conversation.fileName ?? null });
   const split = splitUsageCharge({ rawCents: costCentsFromUsage(CANNED_USAGE.chat_message), multiplier: agent.rateMultiplier });
 
@@ -376,10 +387,7 @@ export async function sendChatMessage(conversationId: string, text: string): Pro
       id: messageId, conversationId, role: "assistant", content: answer.content, citations: answer.citations, feedback: null,
       costCents: charged, createdAt: new Date(Date.now() + 1).toISOString(),
     };
-    const agentEdits = isFirstTurn
-      ? { ...s.agentEdits, [agent.id]: { ...s.agentEdits[agent.id], usageCount: agent.usageCount + 1 } }
-      : s.agentEdits;
-    return { ...s, ledger: [...s.ledger, ...rows], messages: [...s.messages, userMsg, botMsg], agentEdits };
+    return { ...s, ledger: [...s.ledger, ...rows], messages: [...s.messages, userMsg, botMsg], agentEdits: bumpUsage(s.agentEdits) };
   });
   return { ok: true, chargedCents: charged, grounded: true, messageId };
 }
@@ -438,11 +446,12 @@ export function answerInterview(agentId: string, answer: string): { ok: true; ch
     const turns = interviewTurnsFor(s, agentId);
     const row = debitRow(s, builder, cost, "interview_turn", "interview", agentId, `${agent.persona.name} · answer ${turns.filter((t) => t.answer).length + 1}`);
     charged = -row.amountCents;
+    const knowledgeTouchedAt = { ...s.knowledgeTouchedAt, [agentId]: nowIso() };
     if (pending.turnId) {
-      return { ...s, ledger: [...s.ledger, row], answeredTurns: { ...s.answeredTurns, [pending.turnId]: answer } };
+      return { ...s, ledger: [...s.ledger, row], answeredTurns: { ...s.answeredTurns, [pending.turnId]: answer }, knowledgeTouchedAt };
     }
     const turn: InterviewTurn = { id: uid("t"), agentId, position: (turns.at(-1)?.position ?? 0) + 1, question: pending.question, answer, createdAt: nowIso() };
-    return { ...s, ledger: [...s.ledger, row], interviewTurns: [...s.interviewTurns, turn] };
+    return { ...s, ledger: [...s.ledger, row], interviewTurns: [...s.interviewTurns, turn], knowledgeTouchedAt };
   });
   return { ok: true, chargedCents: charged };
 }

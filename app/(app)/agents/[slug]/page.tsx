@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useRef } from "react";
 import { CircleCheck, EyeOff, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import { Breadcrumbs, Card, EmptyState, IdentityAvatar, PageBody, Pill, buttonClass } from "@/components/app/ui";
@@ -17,6 +18,8 @@ export default function ListingPage() {
   const router = useRouter();
   const s = useDemo();
   const agent = agentById(s, slug);
+  /* A double-click on an example question must not start two conversations and two debits. */
+  const starting = useRef(false);
 
   if (!agent) {
     return (
@@ -50,12 +53,18 @@ export default function ListingPage() {
       router.push(`/build/${agent.id}/test`);
       return;
     }
-    const id = startConversation(agent.id, question ?? "New conversation");
-    if (question) {
-      const r = await sendChatMessage(id, question);
-      if (!r.ok) toast("Not enough credits. Add credits to continue.");
+    if (starting.current) return;
+    starting.current = true;
+    try {
+      const id = startConversation(agent.id, question ?? "New conversation");
+      if (question) {
+        const r = await sendChatMessage(id, question);
+        if (!r.ok) toast("Not enough credits. Add credits to continue.");
+      }
+      router.push(`/chat/${id}`);
+    } finally {
+      starting.current = false;
     }
-    router.push(`/chat/${id}`);
   };
 
   return (

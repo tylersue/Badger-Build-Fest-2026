@@ -27,6 +27,12 @@ describe("searchKnowledge", () => {
     expect(toCitations(chunks)[0]).toMatchObject({ n: 1, chunkId: "ic-1", question: "How do you treat plantar fasciitis?" });
   });
 
+  it("drops non-matching chunks once anything matches, so no unrelated chunk is cited", async () => {
+    const chunks = await searchKnowledge(maria, "What does a good week of shoulder rehab look like?");
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(chunks.every((c) => c.score > BASE_SCORE)).toBe(true);
+  });
+
   it("flags weak retrieval when no chunk shares a word with the question", async () => {
     const chunks = await searchKnowledge(maria, "What is the capital of France?");
     expect(isWeakRetrieval(chunks)).toBe(true);

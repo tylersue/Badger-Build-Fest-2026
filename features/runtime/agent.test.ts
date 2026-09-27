@@ -38,5 +38,7 @@ describe("runtime contract", () => {
     expect(refusalReply("Maria Chen", "https://cal.com/maria-chen")).toContain("https://cal.com/maria-chen");
     expect(refusalReply("Maria Chen", null)).toContain("Contact the expert");
     expect(refusalReply("Maria Chen", null)).toContain("won't guess");
+    expect(refusalReply("Maria Chen", null, "Health information, not medical care.")).toMatch(/won't guess[\s\S]*Health information, not medical care\.$/);
+    expect(refusalReply("Maria Chen", null)).not.toContain("Health information");
   });
 });
