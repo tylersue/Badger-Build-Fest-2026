@@ -44,7 +44,7 @@ export default function InsightsPage() {
             {shared.map((c) => (
               <tr key={c.id}>
                 <td>
-                  <Link href={`/chat/${c.id}`} className="hover:text-selected-fg">
+                  <Link href={`/chat/${c.id}`} className="hover:underline hover:underline-offset-2">
                     {c.title}
                   </Link>
                 </td>

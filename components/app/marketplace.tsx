@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowDownUp, Bot, Plus, Search, Store, X } from "lucide-react";
-import { AGENT_ICONS, Breadcrumbs, EmptyState, PageBody, PageHeader, Pill, buttonClass } from "@/components/app/ui";
-import { allAgents, currentIdentity, displayName, useDemo } from "@/lib/demo-store";
+import { ArrowDownUp, Plus, Search, Store, X } from "lucide-react";
+import { Breadcrumbs, EmptyState, IdentityAvatar, PageBody, PageHeader, Pill, buttonClass } from "@/components/app/ui";
+import { allAgents, currentIdentity, displayName, identityById, profileFor, useDemo } from "@/lib/demo-store";
 import { CATEGORIES, categoryLabel, type Category } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
 import { cn } from "@/lib/utils";
@@ -85,7 +85,7 @@ export function MarketplaceView() {
                 aria-pressed={active}
                 className={cn(
                   "h-7 rounded-full border px-3 text-[13px] font-medium transition-colors",
-                  active ? "border-brand-border bg-selected text-selected-fg" : "border-line-muted text-fg-tertiary hover:bg-surface-2 hover:text-foreground",
+                  active ? "border-brand-border bg-brand text-primary-foreground" : "border-line-subtle text-fg-tertiary hover:bg-surface-2 hover:text-foreground",
                 )}
               >
                 {c.label}
@@ -121,26 +121,29 @@ export function MarketplaceView() {
   );
 }
 
-/* Kore.ai-style card: tinted band, icon tile overlapping its bottom edge, name, two-line description, dashed rule, tags. */
+/* The card leads with the expert (DESIGN.md): who they are, what the agent helps with, then category and price. */
 function AgentCard({ agent: a }: { agent: Agent }) {
-  const Icon = AGENT_ICONS[a.icon] ?? Bot;
+  const s = useDemo();
+  const owner = identityById(a.ownerId);
+  const profile = profileFor(s, a.ownerId);
   return (
     <Link
       href={`/agents/${a.slug}`}
       data-testid="agent-card"
-      className="group flex w-full flex-col overflow-hidden rounded-xl border border-line-subtle bg-surface-1 transition-colors hover:border-line-default focus-visible:border-brand-border focus-visible:outline-none"
+      className="group flex w-full flex-col rounded-xl border border-line-subtle bg-surface-1 p-4 transition-colors hover:border-line-outline focus-visible:border-brand-border focus-visible:outline-none"
     >
-      <div className="h-16 bg-selected/45 transition-colors group-hover:bg-selected/60" />
-      <div className="flex flex-1 flex-col px-4 pb-4">
-        <span className="-mt-6 grid size-12 place-items-center rounded-xl border-4 border-surface-1 bg-tile-surface text-[#c5b4f0] ring-1 ring-tile">
-          <Icon className="size-5" strokeWidth={1.75} />
-        </span>
-        <h2 className="mt-3 truncate text-[15px] leading-tight font-semibold">{a.persona.name}</h2>
-        <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-fg-muted">{a.persona.description}</p>
-        <div className="mt-auto flex items-center gap-2 border-t border-dashed border-line-subtle pt-3">
-          <Pill>{categoryLabel(a.persona.category)}</Pill>
-          <span className="ml-auto text-xs text-fg-muted tabular-nums">{typicalMessageCents(a.rateMultiplier)} credits / msg</span>
+      <div className="flex items-center gap-3">
+        <IdentityAvatar initial={owner.avatarInitial} photoUrl={profile.photoUrl} />
+        <div className="min-w-0">
+          <h2 className="truncate text-[15px] leading-tight font-semibold">{displayName(s, a.ownerId)}</h2>
+          <p className="mt-1 truncate text-xs text-fg-muted">{[profile.field, profile.credentials].filter(Boolean).join(" · ")}</p>
         </div>
+      </div>
+      <p className="mt-3 text-sm leading-snug font-medium">{a.persona.headline || a.persona.name}</p>
+      <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-fg-muted">{a.persona.description}</p>
+      <div className="mt-auto flex items-center gap-2 pt-4">
+        <Pill>{categoryLabel(a.persona.category)}</Pill>
+        <span className="ml-auto text-xs text-fg-muted tabular-nums">{typicalMessageCents(a.rateMultiplier)} credits / msg</span>
       </div>
     </Link>
   );

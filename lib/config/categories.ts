@@ -27,10 +27,3 @@ export function disclaimerFor(category: Category): string | null {
 export function categoryLabel(category: Category): string {
   return CATEGORIES.find((c) => c.id === category)?.label ?? category;
 }
-
-/** Card header gradients per category (placeholder images). */
-export const CATEGORY_GRADIENTS: Record<Category, string> = {
-  health_pt: "linear-gradient(135deg,#102656,#0c336a 60%,#1566b8)",
-  tax_finance: "linear-gradient(135deg,#190d38,#3b2560 60%,#6244a0)",
-  career_admissions: "linear-gradient(135deg,#053321,#084d31 60%,#079455)",
-};

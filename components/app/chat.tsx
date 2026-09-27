@@ -47,7 +47,7 @@ export function AssistantMessage({
           return (
             <Tooltip key={i}>
               <TooltipTrigger asChild>
-                <sup data-testid="citation" className={cn("mx-0.5 cursor-help rounded bg-surface-3 px-[5px] text-xs text-selected-fg", flowing && "flow-word")}>{number}</sup>
+                <sup data-testid="citation" className={cn("mx-0.5 cursor-help rounded bg-citation-surface px-[5px] text-xs font-semibold text-citation", flowing && "flow-word")}>{number}</sup>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <div className="font-medium">{online ? "Online source" : c.sourceType === "document" ? "Expert document" : "Expert interview"} · {c.sourceName}</div>
@@ -89,7 +89,7 @@ export function RetrievedSources({ items }: { items: NonNullable<Message["retrie
         <div className="mt-2 flex flex-col gap-1 rounded-lg border border-line-muted bg-surface-1 p-2 text-xs">
           {items.map((r, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="text-selected-fg">[{i + 1}]</span>
+              <span className="font-semibold text-citation">[{i + 1}]</span>
               <span className="truncate">{r.sourceName}{r.page ? ` · page ${r.page}` : ""}{r.question ? ` · ${r.question}` : ""}{"content" in r ? ` · ${r.content.slice(0, 100)}` : ""}</span>
               <span className="ml-auto tabular-nums text-fg-muted">score {r.score.toFixed(2)}</span>
             </div>
@@ -238,7 +238,7 @@ export function Composer({
             data-testid="composer-send"
             onClick={() => void submit()}
             disabled={disabled || busy || !text.trim()}
-            className="ml-auto grid size-6 place-items-center rounded-full bg-brand text-white disabled:opacity-40"
+            className="ml-auto grid size-6 place-items-center rounded-full bg-brand text-primary-foreground disabled:opacity-40"
           aria-label={sendLabel}
           >
             <ArrowUp className="size-3.5" />

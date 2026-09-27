@@ -55,7 +55,7 @@ export function AppShell({ children, defaultOpen }: { children: ReactNode; defau
         <SidebarInset className="min-w-0">{children}</SidebarInset>
         <Toaster
           position="bottom-center"
-          toastOptions={{ style: { background: "#0c336a", color: "#f5f8fb", border: "none", fontSize: 13, borderRadius: 8 } }}
+          toastOptions={{ style: { background: "var(--bg-brand)", color: "var(--primary-foreground)", border: "none", fontSize: 13, borderRadius: 8 } }}
         />
       </SidebarProvider>
     </TooltipProvider>
@@ -173,10 +173,10 @@ function navRowClass(side: Side, kind: IdentityKind) {
 function Group({ label, action, children }: { label: string; action?: ReactNode; children: ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="pt-2">
-      <div className="flex items-center gap-1 px-2 pt-2 pb-1.5 text-[10px] font-medium tracking-[0.5px] text-fg-muted uppercase group-data-[collapsible=icon]:hidden">
-        <button onClick={() => setOpen(!open)} className="flex items-center gap-1" aria-expanded={open}>
-          <ChevronDown className={cn("size-3 transition-transform", !open && "-rotate-90")} />
+    <div className="mt-2 border-t border-line-subtle pt-2">
+      <div className="flex items-center gap-1.5 px-2 pt-2 pb-1.5 text-xs font-semibold text-fg-secondary group-data-[collapsible=icon]:hidden">
+        <button onClick={() => setOpen(!open)} className="flex items-center gap-1.5 hover:text-foreground" aria-expanded={open}>
+          <ChevronDown className={cn("size-3.5 text-fg-muted transition-transform", !open && "-rotate-90")} />
           {label}
         </button>
         {action && <span className="ml-auto">{action}</span>}
@@ -212,7 +212,7 @@ function IdentitySwitcher() {
       data-testid="identity-card"
       className="flex h-16 w-full items-center gap-2.5 rounded-md p-3 text-left hover:bg-surface-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0"
     >
-      <IdentityAvatar initial={me.avatarInitial} color={me.avatarColor} photoUrl={profileFor(s, me.id).photoUrl} size={sidebarState === "collapsed" ? 32 : 40} />
+      <IdentityAvatar initial={me.avatarInitial} photoUrl={profileFor(s, me.id).photoUrl} size={sidebarState === "collapsed" ? 32 : 40} />
       <span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
         <span data-testid="identity-name" className="block truncate text-[13px] font-semibold">{displayName(s, me.id)}</span>
         <span data-testid="sidebar-balance" className="block truncate text-xs text-fg-muted tabular-nums">{roleLine}</span>
@@ -242,7 +242,7 @@ function IdentitySwitcher() {
             onClick={() => choose(i.id)}
             className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 text-left text-[13px] hover:bg-surface-3"
           >
-            <IdentityAvatar initial={i.avatarInitial} color={i.avatarColor} photoUrl={profileFor(s, i.id).photoUrl} size={28} />
+            <IdentityAvatar initial={i.avatarInitial} photoUrl={profileFor(s, i.id).photoUrl} size={28} />
             <span className="truncate">
               {displayName(s, i.id)} — {i.kind === "expert" ? "Expert" : "Hirer"}
             </span>

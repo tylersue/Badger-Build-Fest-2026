@@ -75,7 +75,7 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
                   <span className="ml-2 text-xs text-fg-muted">{item.detail}</span>
                 </span>
                 {!item.ok && isOwner && (
-                  <Link href={`${base}/${item.fix}`} className="shrink-0 text-xs text-selected-fg hover:underline">
+                  <Link href={`${base}/${item.fix}`} className="shrink-0 text-xs text-foreground underline decoration-line-outline underline-offset-2 hover:decoration-current">
                     {item.fix === "persona" ? "Edit persona" : "Add answers"}
                   </Link>
                 )}

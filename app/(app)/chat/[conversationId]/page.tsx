@@ -128,7 +128,7 @@ export default function ChatPage() {
         <span className="hidden text-xs font-normal text-fg-muted sm:inline">
           by {displayName(s, agent.ownerId)} ·{" "}
           {expert.contactUrl ? (
-            <Link href={expert.contactUrl} target="_blank" data-testid="contact-expert" className="text-selected-fg">
+            <Link href={expert.contactUrl} target="_blank" data-testid="contact-expert" className="text-foreground underline decoration-line-outline underline-offset-2 hover:decoration-current">
               Contact the expert
             </Link>
           ) : (

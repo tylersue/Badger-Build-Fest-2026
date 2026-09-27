@@ -97,7 +97,7 @@ export default function ListingPage() {
               <h1 data-testid="page-title" className="mb-3 text-[28px] leading-[1.2] font-medium">{agent.persona.name}</h1>
               <p className="mb-5 leading-normal text-fg-tertiary">{agent.persona.description || agent.persona.headline}</p>
               <div className="flex items-center gap-3">
-                <IdentityAvatar initial={owner.avatarInitial} color={owner.avatarColor} photoUrl={profile.photoUrl} />
+                <IdentityAvatar initial={owner.avatarInitial} photoUrl={profile.photoUrl} />
                 <div>
                   <div className="flex items-center gap-2 font-semibold">
                     {displayName(s, agent.ownerId)} <Pill>Self-reported</Pill>
@@ -115,7 +115,7 @@ export default function ListingPage() {
               </div>
               {disclaimer && <p data-testid="listing-disclaimer" className="mt-5 text-[13px] text-fg-muted">{disclaimer}</p>}
             </div>
-            <div className="m-4 grid min-h-[260px] place-items-center rounded-xl" style={{ background: "linear-gradient(135deg,#1566b8,#5fbef8)" }}>
+            <div className="m-4 grid min-h-[260px] place-items-center rounded-xl bg-surface-2">
               <div className="w-[70%] rounded-lg border border-line-subtle bg-surface-1 p-3 text-[11px] text-fg-muted">
                 <b className="mb-1.5 block text-xs text-foreground">{displayName(s, agent.ownerId)}</b>
                 Persona · {publicStats?.answers ?? knowledge.answers} interview answers · {docs} {docs === 1 ? "document" : "documents"}
@@ -133,7 +133,7 @@ export default function ListingPage() {
             <h3 className="mb-3 text-base font-semibold">Example questions</h3>
             {agent.persona.exampleQuestions.filter((q) => q.trim()).length === 0 && <p className="text-[13px] text-fg-muted">No example questions yet.</p>}
             {agent.persona.exampleQuestions.filter((q) => q.trim()).map((q) => (
-              <button key={q} data-testid="example-question" onClick={() => void start(q)} className="flex w-full items-center gap-2.5 py-2 text-left text-sm hover:text-selected-fg">
+              <button key={q} data-testid="example-question" onClick={() => void start(q)} className="flex w-full items-center gap-2.5 py-2 text-left text-sm hover:underline hover:underline-offset-2">
                 <CircleCheck className="size-4 text-fg-muted" />
                 {q}
               </button>
@@ -145,7 +145,7 @@ export default function ListingPage() {
             <p className="text-fg-tertiary">
               {profile.bio} Credentials are self-reported.{" "}
               {profile.contactUrl && (
-                <Link href={profile.contactUrl} target="_blank" className="text-selected-fg">
+                <Link href={profile.contactUrl} target="_blank" className="text-foreground underline decoration-line-outline underline-offset-2 hover:decoration-current">
                   Contact {displayName(s, agent.ownerId).split(" ")[0]}
                 </Link>
               )}

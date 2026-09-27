@@ -100,7 +100,7 @@ export function ThinkingPill({ label, mood }: { label: string; mood: OrbMood }) 
   return (
     <span
       data-testid="thinking-pill"
-      className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[50px] bg-[rgb(29_29_29/0.5)] pr-4 pl-1 text-[13px] leading-5 shadow-[inset_0_0_0_1px_rgb(44_47_54/0.22)]"
+      className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[50px] border border-line-subtle bg-sidebar pr-4 pl-1 text-[13px] leading-5"
     >
       <Orb state={design} mood={mood} size={32} label={label} />
       <span className="shimmer" data-text={label}>

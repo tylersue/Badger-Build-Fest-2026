@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
  * motion. Listening is a slow, deep breath; talking is quick and lively. Pace, breath rate and
  * depth all ease toward the new mood (quick to rise, slow to settle), and the clocks are
  * integrated frame by frame, so a mood change never jumps the animation. A state change cross-fades the two geometries.
- * Dark ink only: the app is dark-only (globals.css).
+ * Light ink on the dark theme (DESIGN.md): paintFrame's dark flag is true.
  */
 
 export type OrbMood = "listening" | "thinking" | "talking" | "still";

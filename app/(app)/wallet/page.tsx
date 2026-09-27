@@ -65,7 +65,7 @@ export default function WalletPage() {
                 <td className="text-fg-muted">{formatRelative(r.createdAt)}</td>
                 <td>{r.purpose ? PURPOSE_LABELS[r.purpose] : KIND_LABELS[r.kind]}</td>
                 <td className="text-fg-tertiary">{r.note}</td>
-                <Num className={cn(r.amountCents < 0 ? "text-danger" : "text-success")}>{formatSignedCredits(r.amountCents)}</Num>
+                <Num className={cn(r.amountCents < 0 ? "text-foreground" : "text-success")}>{formatSignedCredits(r.amountCents)}</Num>
                 <Num>{r.balanceAfter === null ? "—" : formatNumber(r.balanceAfter)}</Num>
               </tr>
             ))}

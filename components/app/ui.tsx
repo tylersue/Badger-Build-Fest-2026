@@ -129,24 +129,25 @@ export const AGENT_ICONS: Record<string, LucideIcon> = {
   bot: Bot,
 };
 
-/* Purple tile for agent identity only (never for actions). */
+/* Neutral agent tile: agents get no color of their own (DESIGN.md). */
 export function AgentTile({ icon, size = "md" }: { icon: string; size?: "xs" | "sm" | "md" }) {
   const Icon = AGENT_ICONS[icon] ?? Bot;
   const box = { xs: "size-[22px] rounded-md", sm: "size-6 rounded-md", md: "size-8 rounded-lg" }[size];
   const glyph = { xs: "size-3", sm: "size-3", md: "size-4" }[size];
   return (
-    <span className={cn("grid shrink-0 place-items-center border border-tile bg-tile-surface text-[#c5b4f0]", box)}>
+    <span className={cn("grid shrink-0 place-items-center border border-tile bg-tile-surface text-foreground", box)}>
       <Icon className={glyph} strokeWidth={1.75} />
     </span>
   );
 }
 
-export function IdentityAvatar({ initial, color, size = 40, photoUrl }: { initial: string; color: string; size?: number; photoUrl?: string }) {
+/* A person: their photo, or their initial on a neutral tile (DESIGN.md initials tile). */
+export function IdentityAvatar({ initial, size = 40, photoUrl }: { initial: string; size?: number; photoUrl?: string }) {
   const photo = photoUrl && /^https?:\/\//i.test(photoUrl) ? photoUrl : undefined;
   return (
     <span
-      className="grid shrink-0 place-items-center font-semibold text-white"
-      style={{ width: size, height: size, backgroundColor: color, backgroundImage: photo ? `url("${photo.replace(/["\\]/g, "")}")` : undefined, backgroundSize: "cover", backgroundPosition: "center", borderRadius: size >= 40 ? 8 : 6, fontSize: size >= 40 ? 14 : 12 }}
+      className="grid shrink-0 place-items-center border border-tile bg-tile-surface font-semibold text-foreground"
+      style={{ width: size, height: size, backgroundImage: photo ? `url("${photo.replace(/["\\]/g, "")}")` : undefined, backgroundSize: "cover", backgroundPosition: "center", borderRadius: size >= 40 ? 8 : 6, fontSize: size >= 40 ? 14 : 12 }}
     >
       {photo ? null : initial}
     </span>
@@ -155,7 +156,7 @@ export function IdentityAvatar({ initial, color, size = 40, photoUrl }: { initia
 
 export function SearchField({ placeholder, value, onChange }: { placeholder: string; value?: string; onChange?: (v: string) => void }) {
   return (
-    <label className="flex h-6 w-[218px] items-center gap-1.5 rounded bg-surface-3 px-2 text-[13px] text-fg-muted">
+    <label className="flex h-6 w-[218px] items-center gap-1.5 rounded border border-line-default bg-surface-1 px-2 text-[13px] text-fg-muted">
       <Search className="size-3.5" />
       <input
         className="w-full bg-transparent text-foreground outline-none placeholder:text-fg-muted"
@@ -172,15 +173,15 @@ export function Toolbar({ children }: { children: ReactNode }) {
   return <div className="mb-4 flex flex-wrap items-center gap-2">{children}</div>;
 }
 
-/* LangSmith buttons: small (24px) toolbar buttons and 32px page CTAs. */
+/* Buttons: small (24px) toolbar buttons and 32px page CTAs. Primary is white, secondary outlined (DESIGN.md). */
 export function buttonClass(variant: "primary" | "secondary" | "destructive" | "ghost" = "secondary", size: "sm" | "lg" = "sm") {
   return cn(
     "inline-flex shrink-0 items-center justify-center gap-1.5 rounded border text-[13px] whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-3.5",
     size === "sm" ? "h-6 px-2" : "h-8 px-3 font-medium",
-    variant === "primary" && "border-brand-border bg-brand text-white hover:bg-[#0062c7]",
-    variant === "secondary" && "border-line-muted bg-surface-1 text-fg-secondary hover:bg-surface-2",
-    variant === "destructive" && "border-destructive bg-destructive text-white hover:bg-[#d93a2f]",
-    variant === "ghost" && "border-transparent bg-transparent text-selected-fg hover:bg-surface-2",
+    variant === "primary" && "border-brand-border bg-brand text-primary-foreground hover:bg-brand-hover",
+    variant === "secondary" && "border-line-outline bg-surface-1 text-foreground hover:bg-sidebar",
+    variant === "destructive" && "border-destructive bg-destructive text-white hover:bg-destructive/85",
+    variant === "ghost" && "border-transparent bg-transparent text-fg-secondary hover:bg-surface-2",
   );
 }
 

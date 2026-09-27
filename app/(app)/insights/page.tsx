@@ -20,7 +20,7 @@ export default function InsightsPage() {
           <div className="grid max-w-[720px] gap-4">
             {agents.map((agent) => (
               <div key={agent.id} className="rounded-xl border border-line-subtle bg-surface-1 p-4">
-                <Link href={`/build/${agent.id}/interview`} className="text-sm font-semibold hover:text-selected-fg">{agent.persona.name}</Link>
+                <Link href={`/build/${agent.id}/interview`} className="text-sm font-semibold hover:underline hover:underline-offset-2">{agent.persona.name}</Link>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <StatTile label="Uses" value={agent.usageCount.toLocaleString()} />
                   <StatTile label="Rating" value={agent.ratingCount ? `${agent.ratingAvg.toFixed(1)} / 5` : "—"} />

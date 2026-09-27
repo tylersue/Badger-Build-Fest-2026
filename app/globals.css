@@ -5,10 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * LangSmith dark theme (UI-SPEC, measured 2026-09-26). Dark only.
+ * Neutral dark theme built on Attio's near-black (#202124) with white type (DESIGN.md). Dark only.
  * shadcn variable names are kept so components/ui/* pick the palette up;
- * LangSmith role variables below are exposed as Tailwind colors
- * (bg-surface-2, border-line-subtle, text-fg-muted, bg-selected, ...).
+ * the role variables below are exposed as Tailwind colors
+ * (bg-surface-2, border-line-subtle, text-fg-muted, bg-selected, text-citation, ...).
+ * Blue is for citations and keyboard focus only; primary buttons are white.
  */
 @theme inline {
   --color-background: var(--background);
@@ -58,6 +59,10 @@
   --color-fg-muted: var(--text-muted);
   --color-brand: var(--bg-brand);
   --color-brand-border: var(--border-brand);
+  --color-brand-hover: var(--bg-brand-hover);
+  --color-line-outline: var(--border-outline);
+  --color-citation: var(--citation);
+  --color-citation-surface: var(--citation-surface);
   --color-selected: var(--bg-selected);
   --color-selected-fg: var(--text-selected);
   --color-success: var(--text-success);
@@ -72,58 +77,63 @@
 
 :root,
 .dark {
-  --background: #09090f;
-  --foreground: #f5f8fb;
-  --card: #0d0f18;
-  --card-foreground: #f5f8fb;
-  --popover: #111521;
-  --popover-foreground: #f5f8fb;
-  --primary: #006ddd;
-  --primary-foreground: #ffffff;
-  --secondary: #111521;
-  --secondary-foreground: #e2e8f0;
-  --muted: #1b2030;
-  --muted-foreground: #8790ab;
-  --accent: #0c336a;
-  --accent-foreground: #5fbef8;
-  --destructive: #f04438;
-  --border: #282e42;
-  --input: #393f55;
-  --ring: #0078f1;
+  --background: #141516;
+  --foreground: #f3f4f6;
+  --card: #1a1b1d;
+  --card-foreground: #f3f4f6;
+  --popover: #1a1b1d;
+  --popover-foreground: #f3f4f6;
+  --primary: #f3f4f6;
+  --primary-foreground: #1c1d1f;
+  --secondary: #202124;
+  --secondary-foreground: #d5d8de;
+  --muted: #26282b;
+  --muted-foreground: #979eaa;
+  --accent: #2c2e32;
+  --accent-foreground: #f3f4f6;
+  --destructive: #d92d20;
+  --border: #2a2c30;
+  --input: #383b40;
+  --ring: #6b9cf7;
   --radius: 4px;
-  --sidebar: #0d0f18;
-  --sidebar-foreground: #f5f8fb;
-  --sidebar-primary: #0078f1;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #111521;
-  --sidebar-accent-foreground: #f5f8fb;
-  --sidebar-border: #111521;
-  --sidebar-ring: #0078f1;
+  --sidebar: #1a1b1d;
+  --sidebar-foreground: #f3f4f6;
+  --sidebar-primary: #f3f4f6;
+  --sidebar-primary-foreground: #1c1d1f;
+  --sidebar-accent: #202124;
+  --sidebar-accent-foreground: #f3f4f6;
+  --sidebar-border: #202124;
+  --sidebar-ring: #6b9cf7;
 
-  --bg-surface-level-1: #0d0f18;
-  --bg-surface-level-2: #111521;
-  --bg-surface-level-3: #1b2030;
-  --bg-pill: #282e42;
-  --border-faint: #111521;
-  --border-muted: #1b2030;
-  --border-subtle: #282e42;
-  --border-default: #393f55;
-  --text-primary: #f5f8fb;
-  --text-secondary: #e2e8f0;
-  --text-tertiary: #cbd5e1;
-  --text-muted: #8790ab;
-  --bg-brand: #006ddd;
-  --border-brand: #0078f1;
-  --bg-selected: #0c336a;
-  --text-selected: #5fbef8;
-  --text-success: #46cd89;
-  --bg-success: #053321;
-  --text-warning: #fdb022;
-  --bg-warning: #4c2400;
+  --bg-surface-level-1: #1a1b1d;
+  --bg-surface-level-2: #202124;
+  --bg-surface-level-3: #26282b;
+  --bg-pill: #2c2e32;
+  --border-faint: #202124;
+  --border-muted: #26282b;
+  --border-subtle: #2a2c30;
+  --border-default: #383b40;
+  --border-outline: #43464d;
+  --text-primary: #f3f4f6;
+  --text-secondary: #d5d8de;
+  --text-tertiary: #b4bac4;
+  --text-muted: #979eaa;
+  --bg-brand: #f3f4f6;
+  --bg-brand-hover: #d5d8de;
+  --border-brand: #f3f4f6;
+  --bg-selected: #2c2e32;
+  --text-selected: #f3f4f6;
+  --citation: #9dbcf9;
+  --citation-surface: #1d2a45;
+  --text-success: #52c28b;
+  --bg-success: #0f2a1c;
+  --text-warning: #f2b53f;
+  --bg-warning: #33260a;
   --text-destructive: #f97066;
-  --bg-error: #55160c;
-  --tile-purple: #4e3487;
-  --tile-purple-surface: #190d38;
+  --bg-error: #3b1411;
+  /* Agent tiles are neutral: agents get no color of their own. */
+  --tile-purple: #2a2c30;
+  --tile-purple-surface: #26282b;
 
   color-scheme: dark;
 }
@@ -137,6 +147,7 @@
     font-size: 14px;
     line-height: 1.5;
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "ss03";
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
@@ -180,7 +191,7 @@
 
 /*
  * Status shimmer for the thinking pill (components/app/voice.tsx ThinkingPill), as in the
- * thinking-orbs demo (libraries.dev/orbs): the label sits at half white and a white band
+ * thinking-orbs demo (libraries.dev/orbs): the label sits at half strength and a white band
  * sweeps across it every two seconds. The element carries its text in data-text.
  */
 @keyframes shimmer-sweep {
@@ -196,14 +207,14 @@
   .shimmer {
     position: relative;
     display: inline-block;
-    color: rgb(251 251 251 / 0.5);
+    color: color-mix(in srgb, var(--text-secondary) 55%, transparent);
   }
   .shimmer::before {
     content: attr(data-text);
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background-image: linear-gradient(90deg, transparent 0%, transparent 40%, #fff 50%, transparent 60%, transparent 100%);
+    background-image: linear-gradient(90deg, transparent 0%, transparent 40%, var(--text-primary) 50%, transparent 60%, transparent 100%);
     background-size: 400% 100%;
     background-repeat: no-repeat;
     background-clip: text;
