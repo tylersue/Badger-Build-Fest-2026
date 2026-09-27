@@ -22,11 +22,12 @@ describe("sufficiency and isolated web fallback", () => {
 
   it("keeps private sentinels out of tool-enabled input and rejects unsafe URLs", async () => {
     const stream = vi.fn(async () => ({ ok: true as const, data: { value: "", usage: {} } }));
-    await researchWeb({ operation, missingParts: ["How does PRIVATE_SENTINEL_123 manage budgeting for Maria Chen at maria@example.com?"] }, async () => {}, { stream: stream as never });
+    await researchWeb({ operation, missingParts: ["How does PRIVATE_SENTINEL_123 manage budgeting for Maria Chen and acmecorp at maria@example.com?"] }, async () => {}, { stream: stream as never });
     const outbound = JSON.stringify(stream.mock.calls);
     expect(outbound).not.toContain("PRIVATE_SENTINEL_123");
     expect(outbound).not.toContain("Maria Chen");
     expect(outbound).not.toContain("maria@example.com");
+    expect(outbound).not.toContain("acmecorp");
     expect(publicGapQuery(["PRIVATE_SENTINEL_123"])).toBeNull();
     expect(safeWebUrl("http://127.0.0.1/private")).toBeNull();
     expect(safeWebUrl("https://example.com/a")).toBe("https://example.com/a");

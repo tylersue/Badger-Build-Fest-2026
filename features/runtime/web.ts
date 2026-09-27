@@ -9,13 +9,26 @@ export type WebResearch = { evidence: WebEvidence[]; steps: ToolStep[]; failed: 
 export type WebDependencies = { stream: typeof meteredStream };
 const limits = { maxInputChars: 1000, maxHistoryMessages: 0, maxOutputTokens: 1200,
   timeoutMs: 25000, maxContextTokens: 20000, maxContinuations: 0 };
+/** Unknown tokens may be names, case-insensitive identifiers or private details. Fail closed. */
+const PUBLIC_TERMS = new Set(`about admissions advice aid anxiety application apply assessment balance bank benefit budget budgeting
+career cash college common compare condition cost credit credits debt decision deductible education emergency employment
+exercise expenses experience financial finance fitness forms general goal grants guidance health hiring income insurance interview
+investing job jobs learning loan loans management medical money movement planning practice process program programs public
+questions recovery rehabilitation retirement risk rules salary savings school schools spending strategy student students tax taxes
+therapy training treatment tuition university workout work year years what when where why who how does do is are can should
+for with from to of in on and the a an your their best current recent latest difference between steps first
+example examples exception exceptions principle principles alternatives options requirements eligibility deadlines rates limits
+physical pain injury knee shoulder mobility strength exercise therapy patient care coaching consulting business freelance
+freelancer self-employed filing return deduction deductions federal state application essay essays recommendation scholarship
+scholarships resume compensation interview preparation beginner advanced safe safety research evidence overview`.split(/\s+/));
 
 /** Only public, deidentified terms enter the tool-enabled context. */
 export function publicGapQuery(parts: string[]): string | null {
   const clean = parts.join(" ").replace(/https?:\/\/\S+|\b\S+@\S+\b|["'“”‘’][^"'“”‘’]{1,300}["'“”‘’]/g, " ")
     .replace(/\b(?:ignore|override|instructions|secret|password|token|private|confidential|prompt|system|history|expert|client|patient|my|mine|our|their|call|email|phone)\b/gi, " ")
     .replace(/\b[A-Z][a-z]{2,}\b/g, " ").replace(/\b[A-Z0-9_]{6,}\b/g, " ")
-    .replace(/\b\d[\w-]*\b/g, " ").replace(/[^a-zA-Z\s-]/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+    .replace(/\b\d[\w-]*\b/g, " ").replace(/[^a-zA-Z\s-]/g, " ")
+    .toLowerCase().split(/\s+/).filter(word => PUBLIC_TERMS.has(word)).join(" ").slice(0, 160);
   return clean.length >= 8 ? clean : null;
 }
 
