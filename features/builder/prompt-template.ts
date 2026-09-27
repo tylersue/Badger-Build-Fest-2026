@@ -1,13 +1,9 @@
-/**
- * Builder lane contract: persona form -> system prompt (PERS-02).
- * Deterministic (no dates, no randomness) so prompt caching can hit.
- */
-import { disclaimerFor } from "@/lib/config/categories";
+/** Deterministic, editable persona text. Runtime policy and citations live elsewhere. */
 import type { PersonaForm } from "@/lib/types";
 
 export const EMPTY_PERSONA: PersonaForm = {
   name: "",
-  category: "health_pt",
+  category: "career_admissions",
   headline: "",
   description: "",
   howIWork: "",
@@ -18,21 +14,17 @@ export const EMPTY_PERSONA: PersonaForm = {
 };
 
 export function personaToSystemPrompt(persona: PersonaForm): string {
-  const lines = [
-    `You are ${persona.name || "an expert's agent"}${persona.headline ? `: ${persona.headline}` : ""}.`,
-    persona.description,
-    "",
-    `How I work: ${persona.howIWork || "Not set yet."}`,
-    "",
-    "Always:",
-    ...(persona.always.length ? persona.always.map((a) => `- ${a}`) : ["- Cite the source of every claim"]),
-    "",
-    "Never:",
-    ...(persona.never.length ? persona.never.map((n) => `- ${n}`) : ["- Answer beyond the provided knowledge"]),
-    "",
-    "Grounding: answer only from the numbered context. Cite it inline as [n]. If the context does not cover the question, say \"I don't have that in my knowledge\" and point to the expert's contact link.",
-  ];
-  const disclaimer = disclaimerFor(persona.category);
-  if (disclaimer) lines.push("", `Disclaimer rule: open your first reply with "${disclaimer}" and keep this rule on every turn.`);
-  return lines.join("\n").trim();
+  const lines: string[] = [];
+  if (persona.name) lines.push(`Name: ${persona.name}`);
+  if (persona.headline) lines.push(`Headline: ${persona.headline}`);
+  if (persona.description) lines.push(`About: ${persona.description}`);
+  if (persona.howIWork) lines.push(`How I work: ${persona.howIWork}`);
+  for (const [label, values] of [
+    ["Always do", persona.always], ["Never do", persona.never],
+    ["Example questions", persona.exampleQuestions],
+  ] as const) {
+    if (values.length) lines.push(`${label}:`, ...values.map((value) => `- ${value}`));
+  }
+  if (persona.greeting) lines.push(`Greeting: ${persona.greeting}`);
+  return lines.join("\n\n");
 }
