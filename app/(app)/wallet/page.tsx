@@ -53,12 +53,13 @@ export default function WalletPage() {
           <section aria-label="Balance" className="rounded-xl border border-line-subtle bg-surface-1">
             <div className="flex flex-wrap items-end justify-between gap-6 p-6">
               <div className="min-w-0">
-                <div className="text-[13px] font-medium text-fg-tertiary">{DEMO_MODE ? "Token balance" : "Balance"}</div>
+                <div className="text-[13px] font-medium text-fg-tertiary">Balance</div>
                 <div className="mt-2 flex items-baseline gap-2">
+                  {/* Demo mode shows the prepaid balance in dollars; tokens are what messages are priced in. */}
                   <span data-testid="wallet-balance" title={formatCreditUnits(wallet.balanceUnits)} className="text-[40px] leading-none font-semibold tracking-[-0.02em] text-foreground tabular-nums">
-                    {displayCredits(balance)}
+                    {DEMO_MODE ? formatUsd(balance) : displayCredits(balance)}
                   </span>
-                  <span className="text-base text-fg-muted">{creditUnit(balance)}</span>
+                  {!DEMO_MODE && <span className="text-base text-fg-muted">{creditUnit(balance)}</span>}
                 </div>
                 <div className="mt-2 text-[13px] text-fg-muted tabular-nums">
                   {DEMO_MODE ? "1 token = $1.00 · prepaid, charged per message" : `${formatUsd(balance)} equivalent`}
