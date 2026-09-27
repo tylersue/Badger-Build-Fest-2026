@@ -6,7 +6,7 @@ export const MIN_PUBLISH_CHUNKS = 5;
 /** Rate multiplier on raw LLM cost (PUB-01). */
 export const RATE_MIN = 1;
 export const RATE_MAX = 5;
-export const RATE_STEP = 0.5;
+export const RATE_STEP = 1;
 
 /** Shown next to the consent checkbox at first publish (PUB-02). */
 export const CONSENT_TEXT =

@@ -8,6 +8,11 @@ export const buyerCount = (agent: { ratingCount: number; usageCount: number }, b
 /** Marketplace-scale rating count (the seed's written reviews are a sample of these). */
 export const ratingTotal = (agent: { ratingCount: number; usageCount: number }) =>
   agent.ratingCount ? agent.ratingCount * 400 + agent.usageCount * 7 : 0;
+/** Marketplace-scale written reviews: about one rating in twelve, never fewer than the sample on the page. */
+export const writtenReviewTotal = (agent: { ratingCount: number; usageCount: number }, sample: number) =>
+  Math.max(sample, Math.round(ratingTotal(agent) / 12));
+/** 1024 → "999+", 540 → "540". */
+export const cappedCount = (value: number) => (value > 999 ? "999+" : value.toLocaleString());
 /** 480000 → "480K", 12400 → "12.4K". */
 export const compactNumber = (value: number) =>
   new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: value >= 100_000 ? 0 : 1 }).format(value);

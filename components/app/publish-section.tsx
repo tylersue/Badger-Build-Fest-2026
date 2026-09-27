@@ -7,15 +7,14 @@ import { toast } from "sonner";
 import { Card, PageBody, PageHeader, StatusPill, buttonClass } from "@/components/app/ui";
 import { knowledgeStats, publishAgent, setRateMultiplier, unpublishAgent, useDemo } from "@/lib/demo-store";
 import { publishChecklist } from "@/features/marketplace/publish";
-import { splitUsageCharge, typicalMessageCents } from "@/features/billing/pricing";
-import { TYPICAL_CALL_CENTS } from "@/lib/config/credits";
+import { PURCHASE_EXPERT_SHARE, agentPriceCredits } from "@/lib/config/purchase";
 import { CONSENT_TEXT, RATE_MAX, RATE_MIN, RATE_STEP } from "@/lib/config/publish";
 import { formatCredits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Agent } from "@/lib/types";
 import { api } from "@/lib/api-client";
 
-/* Publish tab (PUB-01..04): checklist gate, rate slider, consent, instant publish and unpublish. */
+/* Publish tab (PUB-01..04): checklist gate, price slider, consent, instant publish and unpublish. */
 export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: boolean }) {
   const s = useDemo();
   const stats = knowledgeStats(s, agent.id);
@@ -37,7 +36,8 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
   const [confirmUnpublish, setConfirmUnpublish] = useState(false);
   const published = agent.status === "published";
   const canPublishNow = isOwner && activeChunks !== null && ready && (accepted || consent) && !busy;
-  const split = splitUsageCharge({ rawCents: TYPICAL_CALL_CENTS.chat_message, multiplier: rate });
+  const price = agentPriceCredits(rate);
+  const expertShare = Math.round(price * PURCHASE_EXPERT_SHARE * 100) / 100;
   const base = `/build/${agent.id}`;
 
   const publish = async () => {
@@ -56,7 +56,7 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
   const changeRate = async (next: number) => {
     setRateOverride(next); setBusy(true);
     try { await setRateMultiplier(agent.id, next); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Could not save rate."); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Could not save price."); }
     finally { setRateOverride(null); setBusy(false); }
   };
 
@@ -86,9 +86,9 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
 
         <Card className="p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h3 className="text-sm font-semibold">Rate multiplier</h3>
+            <h3 className="text-sm font-semibold">Price</h3>
             <span data-testid="rate-value" className="text-sm tabular-nums">
-              {rate}× · about {formatCredits(typicalMessageCents(rate))} per message
+              {formatCredits(price)} · one-time
             </span>
           </div>
           <input
@@ -100,19 +100,19 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
             value={rate}
             disabled={!isOwner || busy}
             onChange={(e) => void changeRate(Number(e.target.value))}
-            aria-label="Rate multiplier"
+            aria-label="Price"
             className="mt-3 w-full accent-brand"
           />
           <div className="mt-1 flex justify-between text-[11px] text-fg-muted">
-            <span>1× · raw cost, you earn nothing</span>
-            <span>5×</span>
+            <span>{formatCredits(agentPriceCredits(RATE_MIN))}</span>
+            <span>{formatCredits(agentPriceCredits(RATE_MAX))}</span>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3">
-            <ShareTile label="Hirer pays" value={split.hirerDebitCents} />
-            <ShareTile label="Platform keeps" value={split.platformCostCents + split.platformMarginCents} caption="raw cost + 15% of margin" />
-            <ShareTile label="You earn" value={split.expertCreditCents} tone="success" />
+            <ShareTile label="Buyer pays" value={price} />
+            <ShareTile label="Platform keeps" value={price - expertShare} caption="15% of each sale" />
+            <ShareTile label="You earn" value={expertShare} caption="85% of each sale" tone="success" />
           </div>
-          <p className="mt-3 text-xs text-fg-muted">Per typical message. Each real reply is charged at its actual cost × your rate.</p>
+          <p className="mt-3 text-xs text-fg-muted">Founders pay once and get unlimited chats with your agent.</p>
         </Card>
 
         <Card className="p-4">

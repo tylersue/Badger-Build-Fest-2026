@@ -62,7 +62,7 @@ export default function WalletPage() {
                   {!DEMO_MODE && <span className="text-base text-fg-muted">{creditUnit(balance)}</span>}
                 </div>
                 <div className="mt-2 text-[13px] text-fg-muted tabular-nums">
-                  {DEMO_MODE ? "1 token = $1.00 · prepaid, charged per message" : `${formatUsd(balance)} equivalent`}
+                  {DEMO_MODE ? "1 token = $1.00 · prepaid" : `${formatUsd(balance)} equivalent`}
                   {held > 0 && <> · {displayCredits(available)} available now</>}
                 </div>
               </div>

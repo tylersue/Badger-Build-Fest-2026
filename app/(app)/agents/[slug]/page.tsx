@@ -1,25 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { CircleCheck, EyeOff, SearchX } from "lucide-react";
-import { toast } from "sonner";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Check, CircleCheck, EyeOff, SearchX, X } from "lucide-react";
 import { Breadcrumbs, Card, EmptyState, PageBody, Pill, buttonClass } from "@/components/app/ui";
 import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
-import { agentById, currentIdentity, displayName, knowledgeStats, profileFor, purchasesFor, sendChatMessage, startConversation, useDemo } from "@/lib/demo-store";
+import { agentById, currentIdentity, displayName, knowledgeStats, profileFor, purchasesFor, useDemo } from "@/lib/demo-store";
 import { CheckoutDialog } from "@/components/app/checkout-dialog";
 import { agentPriceCredits, buyerCount, compactNumber, ratingTotal } from "@/lib/config/purchase";
 import { categoryLabel, disclaimerFor } from "@/lib/config/categories";
-import { typicalMessageCents } from "@/features/billing/pricing";
-import { UNIT_LABEL, formatCredits, formatRelative } from "@/lib/format";
+import { formatCredits, formatRelative } from "@/lib/format";
 import { AgentListingExtras } from "@/components/trust/listing-extras";
 import { api } from "@/lib/api-client";
+import { EXPERT_MEDIA } from "@/lib/demo-backend/media";
 
 /* Listing page (PUB-04, MKT-03, MKT-04): generated from persona + profile, Fleet template-detail pattern (UI-SPEC). */
 export default function ListingPage() {
   const { slug } = useParams<{ slug: string }>();
-  const router = useRouter();
   const s = useDemo();
   const agent = agentById(s, slug);
   const agentId = agent?.id;
@@ -31,8 +29,6 @@ export default function ListingPage() {
     void api.publicStats(agentId).then(value => { if (active) setPublicStats(value); }, () => undefined);
     return () => { active = false; };
   }, [agentId, s.status, s.identityId]);
-  /* A double-click on an example question must not start two conversations and two debits. */
-  const starting = useRef(false);
 
   if (!agent) {
     return (
@@ -61,27 +57,19 @@ export default function ListingPage() {
   const disclaimer = disclaimerFor(agent.persona.category);
   const knowledge = knowledgeStats(s, agent.id);
   const docs = publicStats?.documents ?? (s.snapshot?.sources ?? []).filter((x) => x.agentId === agent.id && x.kind !== "interview").length;
+  const publications = EXPERT_MEDIA.filter((item) => item.agentId === agent.id).length;
+  const answers = publicStats?.answers ?? knowledge.answers;
+  const builtFrom = ([
+    [answers, answers === 1 ? "interview answer" : "interview answers"],
+    [docs, docs === 1 ? "document" : "documents"],
+    [publications, publications === 1 ? "publication" : "publications"],
+  ] as [number, string][]).filter(([value], i) => i === 0 || value > 0);
+  const rules = [
+    { label: "Always", items: agent.persona.always.filter((x) => x.trim()).slice(0, 3), Icon: Check },
+    { label: "Never", items: agent.persona.never.filter((x) => x.trim()).slice(0, 3), Icon: X },
+  ];
 
-  const start = async (question?: string) => {
-    if (isOwner) {
-      router.push(`/build/${agent.id}/test`);
-      return;
-    }
-    if (starting.current) return;
-    starting.current = true;
-    try {
-      const id = await startConversation(agent.id, question ?? "New conversation");
-      if (question) {
-        const r = await sendChatMessage(id, question);
-        if (!r.ok) toast(`Not enough ${UNIT_LABEL}. Add ${UNIT_LABEL} to continue.`);
-      }
-      router.push(`/chat/${id}`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not start the conversation.");
-    } finally {
-      starting.current = false;
-    }
-  };
+  const price = agentPriceCredits(agent.rateMultiplier);
 
   return (
     <>
@@ -90,12 +78,12 @@ export default function ListingPage() {
         actions={
           <>
             {isOwner && agent.status !== "published" && <Pill>Preview · {agent.status}</Pill>}
-            {!isOwner && (bought
-              ? <Link href={`/chat/${bought.conversationId}`} data-testid="open-bought" className={buttonClass("secondary", "lg")}><CircleCheck className="text-success" /> In My agents · Open chat</Link>
-              : <button type="button" data-testid="buy-agent" onClick={() => setCheckout(true)} className={buttonClass("secondary", "lg")}>Buy · {formatCredits(agentPriceCredits(agent.rateMultiplier))}</button>)}
-            <button data-testid="start-chat" onClick={() => void start()} className={buttonClass("primary", "lg")}>
-              {isOwner ? "Test agent" : "Start chat"}
-            </button>
+            {/* One-time price: founders buy the agent, then every chat with it is included. */}
+            {isOwner
+              ? <Link href={`/build/${agent.id}/test`} data-testid="start-chat" className={buttonClass("primary", "lg")}>Test agent</Link>
+              : bought
+                ? <Link href={`/chat/${bought.conversationId}`} data-testid="open-bought" className={buttonClass("primary", "lg")}><CircleCheck /> In My agents · Open chat</Link>
+                : <button type="button" data-testid="buy-agent" onClick={() => setCheckout(true)} className={buttonClass("primary", "lg")}>Buy · {formatCredits(price)}</button>}
             {!isOwner && <CheckoutDialog agent={agent} open={checkout} onOpenChange={setCheckout} />}
           </>
         }
@@ -109,7 +97,7 @@ export default function ListingPage() {
               <div className="flex items-center gap-3">
                 <IdentityLogo identityId={agent.ownerId} size={40} />
                 <div>
-                  <div className="flex items-center gap-2 font-semibold">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold">
                     {displayName(s, agent.ownerId)}
                     {company && <span className="font-normal text-fg-muted">· {company}</span>}
                     <Pill>Self-reported</Pill>
@@ -122,54 +110,49 @@ export default function ListingPage() {
               <div className="mt-5 flex flex-wrap items-center gap-3 text-[13px] text-fg-muted">
                 <Pill>{categoryLabel(agent.persona.category)}</Pill>
                 <span>{agent.ratingCount ? `★ ${agent.ratingAvg.toFixed(1)} (${compactNumber(ratingTotal(agent))}) · ${compactNumber(buyerCount(agent, !!bought))} bought` : "No ratings yet"}</span>
-                <span data-testid="listing-cost">About {formatCredits(typicalMessageCents(agent.rateMultiplier))} per message</span>
+                <span data-testid="listing-cost">{formatCredits(price)} once · unlimited chats</span>
                 <span data-testid="knowledge-updated">Knowledge updated {formatRelative(publicStats?.lastUpdatedAt ?? knowledge.lastUpdatedAt)}</span>
               </div>
               {disclaimer && <p data-testid="listing-disclaimer" className="mt-5 text-[13px] text-fg-muted">{disclaimer}</p>}
             </div>
-            <div className="m-4 grid min-h-[260px] place-items-center rounded-xl bg-surface-2">
-              <div className="w-[70%] rounded-lg border border-line-subtle bg-surface-1 p-3 text-[11px] text-fg-muted">
-                <span className="mb-1.5 flex items-center gap-1.5">
-                  <IdentityLogo identityId={agent.ownerId} size={20} />
-                  <b className="text-xs text-foreground">{displayName(s, agent.ownerId)}</b>
-                </span>
-                Persona · {publicStats?.answers ?? knowledge.answers} interview answers · {docs} {docs === 1 ? "document" : "documents"}
-                <br />
-                <br />
-                <b className="block text-xs text-foreground">Always</b>
-                {agent.persona.always[0] ?? "Cite the source"}
-                <b className="mt-1 block text-xs text-foreground">Never</b>
-                {agent.persona.never[0] ?? "Guess"}
+            <div data-testid="listing-inside" className="border-t border-line-subtle p-8 lg:border-t-0 lg:border-l">
+              {agent.persona.howIWork.trim() && (
+                <>
+                  <h2 className="text-xs font-medium text-fg-muted">How it works</h2>
+                  <p className="mt-2 text-[15px] leading-normal text-foreground">{agent.persona.howIWork}</p>
+                </>
+              )}
+              <div className={`grid grid-cols-3 gap-4 border-b border-line-subtle pb-5 ${agent.persona.howIWork.trim() ? "mt-5 border-t pt-5" : ""}`}>
+                {builtFrom.map(([value, label]) => (
+                  <div key={label}>
+                    <div className="text-xl font-semibold tabular-nums">{value}</div>
+                    <div className="mt-0.5 text-xs text-fg-muted">{label}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                {rules.map(({ label, items, Icon }) => items.length > 0 && (
+                  <div key={label}>
+                    <h2 className="text-xs font-medium text-fg-muted">{label}</h2>
+                    <ul className="mt-2 space-y-2 text-sm text-fg-secondary">
+                      {items.map((item) => <li key={item} className="flex gap-2"><Icon className="mt-0.5 size-4 shrink-0 text-fg-muted" />{item}</li>)}
+                    </ul>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
           <Card className="mb-4 p-6">
-            <h3 className="mb-3 text-base font-semibold">Example questions</h3>
-            {agent.persona.exampleQuestions.filter((q) => q.trim()).length === 0 && <p className="text-[13px] text-fg-muted">No example questions yet.</p>}
-            {agent.persona.exampleQuestions.filter((q) => q.trim()).map((q) => (
-              <button key={q} data-testid="example-question" onClick={() => void start(q)} className="flex w-full items-center gap-2.5 py-2 text-left text-sm hover:underline hover:underline-offset-2">
-                <CircleCheck className="size-4 text-fg-muted" />
-                {q}
-              </button>
-            ))}
-          </Card>
-
-          <Card className="mb-4 p-6">
             <h3 className="mb-3 text-base font-semibold">About the expert</h3>
             <p className="text-fg-tertiary">
-              {profile.bio} Credentials are self-reported.{" "}
+              {profile.bio}{" "}
               {profile.contactUrl && (
                 <Link href={profile.contactUrl} target="_blank" className="text-foreground underline decoration-line-outline underline-offset-2 hover:decoration-current">
                   Contact {displayName(s, agent.ownerId).split(" ")[0]}
                 </Link>
               )}
             </p>
-            {(publicStats?.activeChunks ?? knowledge.total) > 0 && (
-              <p className="mt-3 text-xs text-fg-muted">
-                Answers cite the expert&apos;s {publicStats?.answers ?? knowledge.answers} interview answers{docs ? ` and ${docs} documents` : ""}. When expert knowledge is incomplete, the agent labels its online sources separately.
-              </p>
-            )}
           </Card>
           <AgentListingExtras agent={agent} />
         </div>

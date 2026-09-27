@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
-  ArrowUp, ArrowUpRight, ChevronDown, ExternalLink, FileText, Globe2, MessageSquareQuote, Newspaper, Paperclip, Plus, Search, X, Database, type LucideIcon,
+  ArrowUp, ChevronDown, FileText, Globe2, Paperclip, Plus, Search, X, Database, type LucideIcon,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddCreditsButton } from "@/components/app/add-credits";
@@ -33,37 +33,9 @@ export function UserMessage({ content }: { content: string }) {
 }
 
 type AnyCitation = Citation | EvidenceCitation;
-type SourceKind = "interview" | "document" | "published" | "web";
-type SourceEntry = {
-  key: string; number: number; kind: SourceKind; name: string; detail: string | null;
-  excerpt: string | null; url: string | null; historical: boolean;
-};
-
 const CITATION_MARKER = /(\[(?:\d+|(?:expert|web):[^\]\s]+)\])/g;
 
-const citationKey = (c: AnyCitation) => ("evidenceId" in c ? c.evidenceId : `n-${c.n}`);
 const citationNumber = (c: AnyCitation) => ("ordinal" in c ? c.ordinal : c.n);
-const locate = (c: { page: number | null; headingPath: string | null; question: string | null }) =>
-  c.page ? `Page ${c.page}${c.headingPath ? ` · ${c.headingPath}` : ""}` : c.question ? `Q: ${c.question}` : null;
-const hostOf = (url: string | null) => { try { return url ? new URL(url).hostname.replace(/^www\./, "") : null; } catch { return null; } };
-
-function sourceEntry(c: AnyCitation): SourceEntry {
-  if ("evidenceId" in c) {
-    if (c.sourceType === "web") {
-      const url = safeExternalUrl(c.url);
-      return { key: c.evidenceId, number: c.ordinal, kind: "web", name: c.title || c.sourceName,
-        detail: [c.sourceName, hostOf(url)].filter(Boolean).join(" · ") || null, excerpt: c.excerpt || null, url, historical: false };
-    }
-    // The expert's own essay, podcast or talk: an in-app page, shown by title.
-    if (c.url?.startsWith("/sources/")) return { key: c.evidenceId, number: c.ordinal, kind: "published", name: c.headingPath ?? c.sourceName,
-      detail: c.sourceName, excerpt: c.excerpt || null, url: c.url, historical: false };
-    return { key: c.evidenceId, number: c.ordinal, kind: c.sourceType, name: c.sourceName, detail: locate(c),
-      excerpt: c.excerpt || null, url: null, historical: c.historical };
-  }
-  if (c.url?.startsWith("/sources/")) return { key: `n-${c.n}`, number: c.n, kind: "published", name: c.headingPath ?? c.sourceName,
-    detail: c.sourceName, excerpt: null, url: c.url, historical: false };
-  return { key: `n-${c.n}`, number: c.n, kind: c.sourceType, name: c.sourceName, detail: locate(c), excerpt: null, url: null, historical: false };
-}
 
 /* Answer text as blocks: blank lines split paragraphs, and "1." / "-" lines become real lists. */
 type Block = { kind: "p"; text: string } | { kind: "ol"; start: number; items: string[] } | { kind: "ul"; items: string[] };
@@ -93,43 +65,15 @@ function toBlocks(content: string): Block[] {
   return blocks.filter(block => block.kind !== "p" || block.text.trim() !== "");
 }
 
-/** The numbered chip in citation blue (DESIGN.md citation chip), shared by inline markers and the sources footer. */
-function CitationNumber({ number, className }: { number: number; className?: string }) {
-  return (
-    <span className={cn("inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-sm bg-citation-surface px-1 text-[11px] leading-none font-semibold tabular-nums text-citation", className)}>
-      {number}
-    </span>
-  );
-}
-
-const KIND_ICON: Record<SourceKind, LucideIcon> = { interview: MessageSquareQuote, document: FileText, published: Newspaper, web: Globe2 };
-
 /* Arriving words ease in while citation chips retain their stable evidence IDs. */
 export function AssistantMessage({
   content, citations = [], caption, flow = false, gap,
 }: { content: string; citations?: Citation[] | EvidenceCitation[]; caption?: ReactNode; flow?: boolean; gap?: string | null }) {
   const [flowing] = useState(flow);
-  const [openSource, setOpenSource] = useState<string | null>(null);
-  const uid = useId();
   const modern = citations.filter((item): item is EvidenceCitation => "evidenceId" in item);
   const legacy = citations.filter((item): item is Citation => "n" in item);
   const find = (marker: string): AnyCitation | undefined =>
     modern.find(item => item.evidenceId === marker) ?? modern.find(item => String(item.ordinal) === marker) ?? legacy.find(item => String(item.n) === marker);
-
-  const entries = [...modern, ...legacy].map(sourceEntry)
-    .filter((entry, index, all) => all.findIndex(other => other.key === entry.key) === index)
-    .sort((a, b) => a.number - b.number);
-  const expert = entries.filter(entry => entry.kind !== "web");
-  const online = entries.filter(entry => entry.kind === "web");
-  // While a reply is still typing out with no caption yet, the footer waits so the text settles first.
-  const showSources = entries.length > 0 && (!flow || caption !== undefined);
-  const sourceId = (key: string) => `${uid}-source-${key}`;
-
-  const select = (c: AnyCitation) => {
-    const key = citationKey(c);
-    setOpenSource(key);
-    requestAnimationFrame(() => document.getElementById(sourceId(key))?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
-  };
 
   const inline = (text: string, prefix: string) => text.split(CITATION_MARKER).map((part, i) => {
     const m = part.match(/^\[([^\]]+)\]$/);
@@ -138,27 +82,26 @@ export function AssistantMessage({
     const number = citationNumber(c);
     const isWeb = "evidenceId" in c && c.sourceType === "web";
     const url = isWeb ? safeExternalUrl(c.url) : null;
+    // The expert's own essay or talk opens in the app; every other chip explains itself on hover.
+    const published = !isWeb && c.url?.startsWith("/sources/") ? c.url : null;
+    const chipClass = cn(
+      "mx-0.5 inline-flex h-[18px] min-w-[18px] -translate-y-px cursor-pointer items-center justify-center rounded-sm bg-citation-surface px-1 align-middle text-xs leading-none font-semibold tabular-nums text-citation transition-shadow hover:ring-1 hover:ring-citation/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+      flowing && "flow-word",
+    );
+    const label = `Source ${number}: ${c.sourceName}`;
     return (
       <Tooltip key={`${prefix}-${i}`}>
         <TooltipTrigger asChild>
-          <button
-            type="button"
-            data-testid="citation"
-            aria-label={`Source ${number}: ${c.sourceName}`}
-            onClick={() => select(c)}
-            className={cn(
-              "mx-0.5 inline-flex h-[18px] min-w-[18px] -translate-y-px cursor-pointer items-center justify-center rounded-sm bg-citation-surface px-1 align-middle text-xs leading-none font-semibold tabular-nums text-citation transition-shadow hover:ring-1 hover:ring-citation/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
-              flowing && "flow-word",
-            )}
-          >
-            {number}
-          </button>
+          {published
+            ? <Link href={published} data-testid="citation" aria-label={label} className={chipClass}>{number}</Link>
+            : <button type="button" data-testid="citation" aria-label={label} className={chipClass}>{number}</button>}
         </TooltipTrigger>
-        <TooltipContent className="max-w-xs">
+        <TooltipContent className="max-w-xs flex-col items-start gap-0 py-2 leading-snug">
           <div className="font-medium">{isWeb ? "Online source" : c.url ? "Published by the expert" : c.sourceType === "document" ? "Expert document" : "Expert interview"} · {!isWeb && c.url ? c.headingPath ?? c.sourceName : c.sourceName}</div>
           {!isWeb && !c.url && <div className="opacity-80">{c.page ? `Page ${c.page}${c.headingPath ? ` · ${c.headingPath}` : ""}` : c.question ? `Q: ${c.question}` : "Interview answer"}</div>}
           {"evidenceId" in c && <div className="mt-1 opacity-80">{c.excerpt}</div>}
           {url && <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 block underline">Open source</a>}
+          {published && <div className="mt-1 opacity-80">Click to read the full piece</div>}
         </TooltipContent>
       </Tooltip>
     );
@@ -189,67 +132,6 @@ export function AssistantMessage({
               <ul key={b} className="list-disc space-y-1.5 pl-6 marker:text-fg-muted">
                 {block.items.map((item, i) => <li key={i} className="pl-1">{inline(item, `${b}-${i}`)}</li>)}
               </ul>
-            ),
-          )}
-        </div>
-      )}
-      {showSources && (
-        <div data-testid="answer-sources" className="mt-4 max-w-[68ch] overflow-hidden rounded-lg border border-line-subtle bg-surface-1">
-          {([["Expert sources", expert, null], ["Online sources", online, "not the expert's views"]] as const).map(([label, group, hint], g) =>
-            group.length > 0 && (
-              <section key={label} className={cn(g > 0 && expert.length > 0 && "border-t border-line-subtle")}>
-                <h4 className="flex items-center gap-1.5 px-3 pt-2.5 pb-1 text-xs font-medium text-fg-tertiary">
-                  {label}
-                  <span className="tabular-nums text-fg-muted">{group.length}</span>
-                  {hint && <span className="font-normal text-fg-muted">· {hint}</span>}
-                </h4>
-                <ul className="pb-1.5">
-                  {group.map(entry => {
-                    const open = openSource === entry.key;
-                    const Icon = KIND_ICON[entry.kind];
-                    return (
-                      <li key={entry.key} id={sourceId(entry.key)}>
-                        <button
-                          type="button"
-                          aria-expanded={open}
-                          onClick={() => setOpenSource(open ? null : entry.key)}
-                          className={cn("flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring", open && "bg-surface-2")}
-                        >
-                          <CitationNumber number={entry.number} />
-                          <Icon className="size-3.5 shrink-0 text-fg-muted" aria-hidden />
-                          <span className="max-w-[55%] shrink-0 truncate text-fg-secondary">{entry.name}</span>
-                          <span className="min-w-0 flex-1 truncate text-fg-muted">{entry.detail}</span>
-                          {entry.historical && <span className="shrink-0 rounded-sm bg-surface-3 px-1.5 text-[11px] text-fg-muted">Removed</span>}
-                          <ChevronDown className={cn("size-3.5 shrink-0 text-fg-muted transition-transform duration-150", open && "rotate-180")} aria-hidden />
-                        </button>
-                        {open && (
-                          <div className="px-3 pt-1 pb-2.5 sm:pl-[64px]">
-                            {entry.detail && <p className="mb-1.5 text-xs text-fg-muted">{entry.detail}</p>}
-                            {entry.excerpt ? (
-                              <blockquote className="rounded-md bg-citation-surface px-3 py-2 text-[13px] leading-relaxed text-fg-secondary">
-                                &ldquo;{entry.excerpt}&rdquo;
-                              </blockquote>
-                            ) : (
-                              <p className="text-xs text-fg-muted">{entry.kind === "published" ? "Published by the expert." : entry.kind === "document" ? "From the expert's uploaded document." : "From the expert's interview answers."}</p>
-                            )}
-                            {entry.url && entry.kind === "published" && (
-                              <Link href={entry.url} className="mt-2 inline-flex items-center gap-1 text-xs text-fg-tertiary underline decoration-line-outline underline-offset-2 hover:text-foreground">
-                                Read the full {entry.detail?.split(" · ")[0].toLowerCase() ?? "piece"} <ArrowUpRight className="size-3" aria-hidden />
-                              </Link>
-                            )}
-                            {entry.url && entry.kind !== "published" && (
-                              <a href={entry.url} target="_blank" rel="noopener noreferrer"
-                                className="mt-2 inline-flex items-center gap-1 text-xs text-fg-tertiary underline decoration-line-outline underline-offset-2 hover:text-foreground">
-                                Open source <ExternalLink className="size-3" aria-hidden />
-                              </a>
-                            )}
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
             ),
           )}
         </div>

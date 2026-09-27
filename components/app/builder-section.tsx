@@ -11,6 +11,8 @@ import { KnowledgeView } from "@/components/app/knowledge-view";
 import { SandboxView } from "@/components/app/sandbox-view";
 import { Breadcrumbs, EmptyState, PageBody, PageHeader, PlaceholderNote, StatusPill, buttonClass } from "@/components/app/ui";
 import { displayName, refreshDemo } from "@/lib/demo-store";
+import { agentPriceCredits } from "@/lib/config/purchase";
+import { formatCredits } from "@/lib/format";
 import type { Agent } from "@/lib/types";
 
 const SECTIONS = ["interview", "persona", "knowledge", "test", "publish"] as const;
@@ -49,7 +51,7 @@ function PublishSection({ agent }: { agent: Agent }) {
     <PageBody>
       <PageHeader title="Publish" />
       <div className="grid max-w-[720px] gap-4 rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm">
-        <div>Rate multiplier: {agent.rateMultiplier}×</div>
+        <div>Price: {formatCredits(agentPriceCredits(agent.rateMultiplier))}</div>
         <div>Content consent: {agent.consentAcceptedAt ? "Accepted" : "Not accepted yet"}</div>
         <StatusPill status={agent.status} />
         <div><Link href={`/agents/${agent.slug}`} className={buttonClass("secondary", "lg")}>Preview listing</Link></div>

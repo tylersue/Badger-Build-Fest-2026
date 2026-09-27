@@ -6,13 +6,12 @@ import { ArrowDownUp, Plus, Search, ShoppingBag, Star, Store, X } from "lucide-r
 import { Breadcrumbs, EmptyState, PageBody, PageHeader, Pill, buttonClass } from "@/components/app/ui";
 import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
 import { allAgents, currentIdentity, displayName, profileFor, purchasesFor, useDemo } from "@/lib/demo-store";
-import { buyerCount, compactNumber, ratingTotal } from "@/lib/config/purchase";
+import { agentPriceCredits, buyerCount, compactNumber, ratingTotal } from "@/lib/config/purchase";
 import { CATEGORIES, categoryLabel, type Category } from "@/lib/config/categories";
 import { BenchmarkScoreBadge } from "@/components/benchmark/benchmark-ui";
-import { typicalMessageCents } from "@/features/billing/pricing";
 import { cn } from "@/lib/utils";
 import type { Agent } from "@/lib/types";
-import { UNIT_LABEL, formatAmount } from "@/lib/format";
+import { formatCredits } from "@/lib/format";
 
 type Sort = "rating" | "newest" | "used";
 const SORT_LABELS: Record<Sort, string> = { rating: "Highest rated", newest: "Newest", used: "Most bought" };
@@ -165,7 +164,7 @@ function AgentCard({ agent: a }: { agent: Agent }) {
       <div className="mt-3 flex items-center gap-2 border-t border-line-subtle pt-3">
         <Pill>{categoryLabel(a.persona.category)}</Pill>
         {bought && <span className="text-xs text-success">In My agents</span>}
-        <span className="ml-auto text-xs text-fg-muted tabular-nums">{formatAmount(typicalMessageCents(a.rateMultiplier))} {UNIT_LABEL} / msg</span>
+        <span className="ml-auto text-xs text-fg-muted tabular-nums">{formatCredits(agentPriceCredits(a.rateMultiplier))}</span>
       </div>
     </Link>
   );

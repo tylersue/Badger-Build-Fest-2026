@@ -17,7 +17,7 @@ import { PURCHASE_EXPERT_SHARE, agentPriceCredits } from "@/lib/config/purchase"
 import * as seed from "./seed";
 import { INTERVIEW_LENGTH, STYLE_LABELS, applyDraft, composeAnswer, formOf, interviewQuestion, parseFeedback, personaDraft, personaState, rawCostCredits, seedKnowledge, toneFromAnswers, type AnswerStyle, type ComposedAnswer, type KnowledgeChunk } from "./engine";
 
-const STORAGE_KEY = "proxier-demo-db-v5";
+const STORAGE_KEY = "proxier-demo-db-v6";
 const UNITS_PER_CREDIT = 10_000_000;
 const PRICE_VERSION = "2026-09-26-standard-v1";
 const units = (credits: number) => String(Math.round(credits * UNITS_PER_CREDIT));

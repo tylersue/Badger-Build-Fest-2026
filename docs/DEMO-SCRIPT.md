@@ -5,7 +5,7 @@ Everything in this demo is hardcoded and runs in the browser. The lines below pr
 **Cast**
 
 - **Austin Han** is the buyer: a first-time founder building Proxier.
-- **Cynthia Pham** is the expert: a two-time founder at Sequoia who sells agents on Proxier.
+- **Cynthia Pham** is the expert: a two-time founder who sold her second company for $150M and is now a partner at Sequoia. She sells agents on Proxier.
 
 ## Before you record
 
@@ -96,7 +96,7 @@ hmm, I don't love that it just quotes me word for word. talk like me, keep it sh
 ## 0:53–1:00 · Price it and publish (Cynthia)
 
 1. Click the **Publish** tab at the top.
-2. Drag **Rate multiplier** to **3×**, tick the **Content consent** box, and click **Publish agent**.
+2. Drag **Price** to **25 tokens**, tick the **Content consent** box, and click **Publish agent**.
 3. Click **Benchmarks** in the sidebar. **Your agents** shows the new agent scored next to Cynthia's established one (4.9 stars from 12.8K ratings, 480K bought).
 
 **Say:**
@@ -115,7 +115,7 @@ Other screens worth showing:
 
 - **Wallet** has the purchase.
 - **Earnings** (as Cynthia) has the sale.
-- Answers cite Cynthia's own essay. Click **Read the full essay** to open it.
+- Answers cite Cynthia's own essay. Click its blue number in the answer to open it.
 
 ## If something goes wrong
 

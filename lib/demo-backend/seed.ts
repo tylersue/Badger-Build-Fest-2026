@@ -32,7 +32,7 @@ export const IDENTITIES: Identity[] = [
 ];
 
 export const PROFILES: Profile[] = [
-  { identityId: MARIA, displayName: "Cynthia Pham", field: "Early-stage startups", credentials: "2x founder (one exit), angel investor", yearsExperience: 12, contactUrl: "https://cal.com/cynthia-pham", bio: "Founded two B2B software companies and sold the second. Now I angel invest and mentor first-time founders at a university accelerator.", location: "Madison, WI" },
+  { identityId: MARIA, displayName: "Cynthia Pham", field: "Early-stage startups", credentials: "Sequoia partner, $150M exit, 2x founder", yearsExperience: 12, contactUrl: "https://cal.com/cynthia-pham", bio: "Founded two B2B software companies and sold the second for $150M. Now a partner at Sequoia, where I've backed more than 30 first-time founders from the first idea to Series A. I still mentor founders at a university accelerator every week.", location: "Madison, WI" },
   { identityId: SAM, displayName: "Austin Han", field: "", credentials: "", yearsExperience: null, contactUrl: "", bio: "First-time founder building Proxier, a marketplace where founders hire AI agents built by experts. No co-founder with startup experience, no investors yet.", location: "Madison, WI" },
   { identityId: "dev", displayName: "Dev Patel", field: "Fundraising", credentials: "Former seed-stage VC, raised $14M across two companies", yearsExperience: 10, contactUrl: "https://cal.com/dev-patel", bio: "Sat on the investor side of 1,000+ pitches before starting my own company. I help founders tell a story investors can repeat.", location: "Chicago, IL" },
   { identityId: "priya", displayName: "Priya Nair", field: "Customer discovery", credentials: "Head of product at two YC companies", yearsExperience: 9, contactUrl: "https://cal.com/priya-nair", bio: "Ran more than 500 customer interviews. I teach founders to hear what customers do, not what they say they'll do.", location: "Ann Arbor, MI" },
@@ -872,6 +872,24 @@ for (const e of MORE_EXPERTS) {
   for (const [reviewerId, stars, comment, daysAgo] of e.reviews) {
     REVIEWS.push({ id: `r-seed-${REVIEWS.length + 1}`, agentId: id, reviewerId, stars, comment, createdAt: ago(daysAgo * DAY) });
   }
+}
+
+// More founders reviewing Cynthia's Idea stress test, the agent the demo buys. Appended for the same reason as above.
+const IDEA_REVIEWERS: [id: string, name: string, color: string, stars: ReviewStars, comment: string, minutesAgo: number][] = [
+  ["kofi", "Kofi Mensah", "#1f5a3a", 5, "Used it the night before our accelerator interview. The partner asked the exact question it flagged as our riskiest assumption, and we had an answer ready.", 1 * DAY],
+  ["omar", "Omar Haddad", "#2d4a6b", 5, "We were about to spend the summer building. It had us call ten dispatchers first. Four said they'd pay, so now we're building with a waitlist.", 1 * DAY + 180],
+  ["chloe", "Chloe Martin", "#6b2d3f", 5, "Every point had a citation, so when my cofounder pushed back I could show him it came from Cynthia's checklist and not something made up.", 3 * DAY],
+  ["nina", "Nina Okafor", "#3f2d6b", 5, "Asked it to stress-test our meal-plan app and it asked who actually pays. It's the parents, not the students. Rewrote the pitch that night.", 4 * DAY],
+  ["yuki", "Yuki Sato", "#6b4a1f", 5, "Sounds like someone who has done this before, not a chatbot. Short answers and one next step every time.", 5 * DAY],
+  ["ethan", "Ethan Park", "#1f4f5a", 5, "Better than the two office hours I booked last month. It kept asking how often the problem really happens until I admitted it was twice a year.", 6 * DAY],
+  ["isabel", "Isabel Cruz", "#5a1f4f", 4, "Some answers were tougher than I wanted to hear, which was the point. Light on hardware, but it said upfront where Cynthia's knowledge ends.", 8 * DAY],
+  ["maya", "Maya Goldberg", "#4f5a1f", 4, "Blunt. Called our market-size slide a red flag and showed me how to size it from customers I could actually name.", 11 * DAY],
+  ["daniel", "Daniel Cho", "#5a3a1f", 5, "20 tokens, and it talked us out of a pivot that would have cost us the semester.", 13 * DAY],
+  ["lucas", "Lucas Meyer", "#1f3a5a", 5, "I send every founder in our cohort here before they write a line of code.", 16 * DAY],
+];
+for (const [id, name, color, stars, comment, minutesAgo] of IDEA_REVIEWERS) {
+  IDENTITIES.push({ id, kind: "hirer", displayName: name, avatarInitial: name[0], avatarColor: color, isSwitchable: false });
+  REVIEWS.push({ id: `r-seed-${REVIEWS.length + 1}`, agentId: MARIA_IDEA, reviewerId: id, stars, comment, createdAt: ago(minutesAgo) });
 }
 
 // Presentation fixtures never qualify as live evidence.

@@ -7,7 +7,7 @@ import { BookOpen, ChevronDown, ChevronRight, Ellipsis, Eye, FileText, Menu, Mic
 import { AgentTile, StatusPill, buttonClass } from "@/components/app/ui";
 import { agentById, currentIdentity, displayName, knowledgeStats, useDemo, type DemoState } from "@/lib/demo-store";
 import { categoryLabel } from "@/lib/config/categories";
-import { typicalMessageCents } from "@/features/billing/pricing";
+import { agentPriceCredits } from "@/lib/config/purchase";
 import { cn } from "@/lib/utils";
 import type { Agent, Source } from "@/lib/types";
 import { formatCredits } from "@/lib/format";
@@ -116,7 +116,7 @@ function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void
         </DrawerSection>
 
         <DrawerSection icon={Rocket} title="Publishing">
-          <DrawerRow href={`${base}/publish`} title="Rate multiplier" sub={`${agent.rateMultiplier}× · about ${formatCredits(typicalMessageCents(agent.rateMultiplier))} per message`} />
+          <DrawerRow href={`${base}/publish`} title="Price" sub={`${formatCredits(agentPriceCredits(agent.rateMultiplier))} · one-time, unlimited chats`} />
           <DrawerRow href={`${base}/publish`} title="Content consent" sub={agent.consentAcceptedAt ? `Accepted ${agent.consentAcceptedAt.slice(0, 10)}` : "Not accepted yet"} />
           <div className="flex flex-col gap-2 px-3 pt-2 pb-3">
             <StatusPill status={agent.status} />
