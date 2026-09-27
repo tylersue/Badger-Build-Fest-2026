@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
-  Bot, ChartNoAxesCombined, Check, ChevronDown, ChevronsUpDown, MessageSquare, Plus, Search, Settings, Shield, Sparkles, Store, TrendingUp, Wallet,
+  Bot, ChartNoAxesCombined, Check, ChevronDown, ChevronsUpDown, MessageSquare, Plus, Search, Settings, Shield, Sparkles, Store, TrendingUp, Trophy, Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ type NavItem = { label: string; href: string; icon: LucideIcon; side: Side; matc
 const NAV = {
   marketplace: { label: "Marketplace", href: "/marketplace", icon: Store, side: "hirer", match: (p: string) => p === "/" || p.startsWith("/marketplace") || p.startsWith("/agents"), testId: "nav-marketplace" },
   chats: { label: "Chats", href: "/chat", icon: MessageSquare, side: "hirer", match: (p: string) => p.startsWith("/chat"), testId: "nav-chats" },
+  benchmarks: { label: "Benchmarks", href: "/benchmarks", icon: Trophy, side: "both", match: (p: string) => p.startsWith("/benchmarks"), testId: "nav-benchmarks" },
   myAgents: { label: "My agents", href: "/build", icon: Bot, side: "expert", match: (p: string) => p === "/build", testId: "nav-my-agents" },
   wallet: { label: "Wallet", href: "/wallet", icon: Wallet, side: "both", match: (p: string) => p.startsWith("/wallet"), testId: "nav-wallet" },
   earnings: { label: "Earnings", href: "/earnings", icon: TrendingUp, side: "expert", match: (p: string) => p.startsWith("/earnings"), testId: "nav-earnings" },
@@ -109,6 +110,7 @@ function AppSidebar() {
         <SidebarMenu className="gap-1.5">
           {row(NAV.marketplace)}
           {row(NAV.chats, chatCount > 0 ? <span className="ml-auto text-[13px] font-normal text-fg-muted">{chatCount}</span> : null)}
+          {row(NAV.benchmarks)}
         </SidebarMenu>
 
         <Group label="Build">

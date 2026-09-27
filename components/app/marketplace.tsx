@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowDownUp, BadgeCheck, Plus, Store } from "lucide-react";
 import { Breadcrumbs, DataTable, EmptyState, Num, PageBody, PageHeader, Pill, SearchField, Toolbar, AgentTile, buttonClass } from "@/components/app/ui";
+import { BenchmarkScoreBadge } from "@/components/benchmark/benchmark-ui";
 import { allAgents, currentIdentity, displayName, useDemo } from "@/lib/demo-store";
 import { CATEGORIES, CATEGORY_GRADIENTS, categoryLabel, type Category } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
@@ -95,6 +96,7 @@ export function MarketplaceView() {
                   <Pill>{categoryLabel(a.persona.category)}</Pill>
                   <span>★ {a.ratingAvg.toFixed(1)} ({a.ratingCount})</span>
                   <span>{typicalMessageCents(a.rateMultiplier)} credits / msg</span>
+                  <BenchmarkScoreBadge agent={a} />
                   <span className="ml-auto flex items-center gap-1">
                     by {displayName(s, a.ownerId)}
                     <BadgeCheck className="size-3 text-selected-fg" />
