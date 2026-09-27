@@ -1,67 +1,82 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { MODE_FRAMES, resolvePreset, scaleCounts, scaleRadii, type ModeFrame, type ModeOpts, type OrbState } from "thinking-orbs";
+import { MODE_FRAMES, resolvePreset, scaleCounts, scaleRadii, type ModeFrame, type ModeOpts, type OrbSize, type OrbState } from "thinking-orbs";
 import { paintFrame } from "thinking-orbs/engine";
 import { cn } from "@/lib/utils";
 
 /*
- * Stage-size thinking orb (github.com/Jakubantalik/thinking-orbs).
- * The package's <ThinkingOrb> only resolves its three tuned sizes (20, 32, 64). The stage
- * orb is much larger, so this drives the exported engine on its own canvas, starting from the
- * 64px design: dot counts grow with the perimeter so spacing keeps the tuned look, radii lean
- * on the engine's own size scaling, and motion slows a little as the orb grows.
- * The clock is integrated frame by frame, so a speed change eases the pace instead of jumping
- * the animation; a state change cross-fades the two geometries.
+ * Thinking orb (github.com/Jakubantalik/thinking-orbs) that breathes.
+ * The package's <ThinkingOrb> only resolves its tuned sizes (20, 32, 64) and runs at a fixed
+ * pace. This drives the exported engine on its own canvas from the nearest tuned size, so any
+ * size works: dot counts grow with the perimeter so spacing keeps the tuned look, radii lean on
+ * the engine's own size scaling, and motion slows a little as the orb grows.
+ * On top of that the orb breathes with its mood: each breath swells it slightly and surges its
+ * motion. Listening is a slow, deep breath; talking is quick and lively. Pace, breath rate and
+ * depth all ease toward the new mood (quick to rise, slow to settle), and the clocks are
+ * integrated frame by frame, so a mood change never jumps the animation. A state change cross-fades the two geometries.
  * Dark ink only: the app is dark-only (globals.css).
  */
 
+export type OrbMood = "listening" | "thinking" | "talking" | "still";
+
+type Breath = { speed: number; rate: number; depth: number };
+
+/** speed: multiplier on the preset's pace; rate: breaths per second; depth: how far each breath swells. */
+const MOODS: Record<OrbMood, Breath> = {
+  listening: { speed: 0.4, rate: 0.2, depth: 0.035 },
+  thinking: { speed: 1.1, rate: 0.45, depth: 0.025 },
+  talking: { speed: 1.9, rate: 0.8, depth: 0.05 },
+  still: { speed: 0, rate: 0, depth: 0 },
+};
+
+/** How much a breath speeds the motion up (and slows it on the out-breath), per unit of depth. */
+const SURGE = 5;
+/** Seconds for pace, breath rate and depth to cover ~63% of the way to a new mood: the orb comes
+    alive quickly and settles slowly, so even a one-second line reads as talking, then trails off. */
+const RISE_S = 0.3;
+const SETTLE_S = 1.2;
 const FADE_MS = 450;
 const COUNT_POW = 1;
 const RADIUS_POW = -0.15;
 const SPEED_POW = -0.35;
 
-const LABELS: Partial<Record<OrbState, string>> = {
-  solving: "Thinking",
-  breathing: "Idle",
-  listening: "Listening",
-  searching: "Searching",
-  shaping: "Speaking",
-};
+const LABELS: Record<OrbMood, string> = { listening: "Listening", thinking: "Thinking", talking: "Speaking", still: "Done" };
 
 type StagePreset = { frame: ModeFrame; speed: number; opts: ModeOpts };
 
-function stagePreset(state: OrbState, size: number, dots: number, dotSize: number): StagePreset {
-  const base = resolvePreset(state, 64);
-  const grow = size / 64;
-  const opts = scaleRadii(scaleCounts(base.opts, grow ** COUNT_POW * dots), grow ** RADIUS_POW * dotSize);
+function stagePreset(state: OrbState, size: number): StagePreset {
+  const baseSize: OrbSize = size <= 20 ? 20 : size <= 32 ? 32 : 64;
+  const base = resolvePreset(state, baseSize);
+  const grow = size / baseSize;
+  const opts = scaleRadii(scaleCounts(base.opts, grow ** COUNT_POW), grow ** RADIUS_POW);
   return { frame: MODE_FRAMES[base.mode], speed: base.speed * grow ** SPEED_POW, opts };
 }
 
 export function Orb({
-  state, size = 176, speed = 1, dots = 1, dotSize = 1, className, label,
+  state = "composing", mood, size = 176, className, label,
 }: {
-  state: OrbState;
+  state?: OrbState;
+  mood: OrbMood;
   size?: number;
-  /** Multiplier on the preset's baked speed; changes ease in rather than restart the animation. */
-  speed?: number;
-  /** Density multiplier on the mode's dot counts, as the library's `dots` prop. */
-  dots?: number;
-  /** Radius multiplier on every dot, as the library's `dotSize` prop. */
-  dotSize?: number;
   className?: string;
   label?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const speedRef = useRef(speed);
+  const moodRef = useRef(mood);
+  /** Live pace, breath rate and depth, eased toward the current mood frame by frame. */
+  const live = useRef<Breath>({ ...MOODS[mood] });
   /** Abstract clock in seconds; each preset scales it by its own baked speed. */
-  const clock = useRef(0);
+  const clock = useRef(0.6);
+  const breathPhase = useRef(0);
   const current = useRef<StagePreset | null>(null);
   const previous = useRef<{ preset: StagePreset; since: number } | null>(null);
+  const kick = useRef<() => void>(() => {});
 
   useEffect(() => {
-    speedRef.current = speed;
-  }, [speed]);
+    moodRef.current = mood;
+    kick.current();
+  }, [mood]);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -71,7 +86,7 @@ export function Orb({
     canvas.width = Math.round(size * dpr);
     canvas.height = Math.round(size * dpr);
 
-    const preset = stagePreset(state, size, dots, dotSize);
+    const preset = stagePreset(state, size);
     // Cross-fade from whatever was on screen so a state change reads as the orb reshaping.
     if (current.current) previous.current = { preset: current.current, since: performance.now() };
     current.current = preset;
@@ -81,8 +96,12 @@ export function Orb({
       paintFrame(ctx, p.frame(size, clock.current * p.speed, p.opts), true);
     };
     const draw = (nowMs: number) => {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, size, size);
+      // Swell around the centre with the breath.
+      const swell = 1 + live.current.depth * Math.sin(breathPhase.current);
+      const shift = (size / 2) * (1 - swell) * dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dpr * swell, 0, 0, dpr * swell, shift, shift);
       const prev = previous.current;
       const k = prev ? Math.min(1, (nowMs - prev.since) / FADE_MS) : 1;
       if (prev && k < 1) paint(prev.preset, 1 - k);
@@ -93,22 +112,43 @@ export function Orb({
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       previous.current = null;
-      clock.current = 0.6 / preset.speed;
-      draw(performance.now());
-      return;
+      live.current = { ...MOODS.still };
+      kick.current = () => draw(performance.now());
+      kick.current();
+      return () => {
+        kick.current = () => {};
+      };
     }
 
     let raf = 0;
     let running = false;
     let last = performance.now();
+    const settled = () => {
+      const target = MOODS[moodRef.current];
+      const l = live.current;
+      return target.speed === 0 && previous.current === null && l.speed < 0.002 && l.depth < 0.0005;
+    };
     const loop = (nowMs: number) => {
-      clock.current += ((nowMs - last) / 1000) * speedRef.current;
+      const dt = Math.min(0.1, (nowMs - last) / 1000);
       last = nowMs;
+      const target = MOODS[moodRef.current];
+      const l = live.current;
+      const ease = (from: number, to: number) => from + (to - from) * (1 - Math.exp(-dt / (to > from ? RISE_S : SETTLE_S)));
+      l.speed = ease(l.speed, target.speed);
+      l.rate = ease(l.rate, target.rate);
+      l.depth = ease(l.depth, target.depth);
+      breathPhase.current += dt * l.rate * 2 * Math.PI;
+      clock.current += dt * l.speed * (1 + SURGE * l.depth * Math.sin(breathPhase.current));
       draw(nowMs);
+      // A finished reply eases to rest, then stops drawing.
+      if (settled()) running = false;
       if (running) raf = requestAnimationFrame(loop);
     };
     const start = () => {
       if (running) return;
+      // Always leave a drawn frame, even in a background tab where frames never fire.
+      draw(performance.now());
+      if (settled() || document.visibilityState === "hidden") return;
       running = true;
       last = performance.now();
       raf = requestAnimationFrame(loop);
@@ -118,13 +158,15 @@ export function Orb({
       cancelAnimationFrame(raf);
     };
     const onVisibility = () => (document.visibilityState === "hidden" ? stop() : start());
+    kick.current = start;
     document.addEventListener("visibilitychange", onVisibility);
     start();
     return () => {
       stop();
+      kick.current = () => {};
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [state, size, dots, dotSize]);
+  }, [state, size]);
 
-  return <canvas ref={ref} role="img" aria-label={label ?? LABELS[state] ?? state} className={cn("block", className)} style={{ width: size, height: size }} />;
+  return <canvas ref={ref} role="img" aria-label={label ?? LABELS[mood]} className={cn("block", className)} style={{ width: size, height: size }} />;
 }

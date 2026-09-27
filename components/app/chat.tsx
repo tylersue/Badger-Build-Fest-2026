@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { ArrowUp, ChevronDown, ChevronRight, Database, FileText, Paperclip, Plus, Search, ThumbsDown, ThumbsUp, X, type LucideIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddCreditsButton } from "@/components/app/add-credits";
+import { FlowWords } from "@/components/app/flow";
 import { formatCredits, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Citation, Message } from "@/lib/types";
@@ -16,45 +17,27 @@ export function UserMessage({ content }: { content: string }) {
   );
 }
 
-/* Word-by-word reveal for a fresh reply (CHAT-01, simulated per Phase 3 D-01). Non-streamed messages render at once. */
-const REVEAL_TOKENS_PER_TICK = 2;
-const REVEAL_TICK_MS = 28;
-
-/* Assistant turns are plain text, no bubble; [n] markers become citation chips with a hover card. */
+/* Assistant turns are plain text, no bubble; [n] markers become citation chips with a hover card.
+   `flow` marks a reply that is arriving (useVoice passes the growing text): its words ease in as
+   they appear. Set at mount, so an answer keeps its fade when the turn settles and history never animates. */
 export function AssistantMessage({
-  content, citations = [], caption, stream = false, onStreamed,
-}: { content: string; citations?: Citation[]; caption?: ReactNode; stream?: boolean; onStreamed?: () => void }) {
-  const tokens = useMemo(() => content.split(/(?<=\s)/), [content]);
-  const [revealed, setRevealed] = useState(stream ? 0 : tokens.length);
-  useEffect(() => {
-    if (!stream) return;
-    const id = window.setInterval(() => {
-      setRevealed((n) => {
-        const next = Math.min(tokens.length, n + REVEAL_TOKENS_PER_TICK);
-        if (next >= tokens.length) window.clearInterval(id);
-        return next;
-      });
-    }, REVEAL_TICK_MS);
-    return () => window.clearInterval(id);
-  }, [stream, tokens.length]);
-  const done = !stream || revealed >= tokens.length;
-  useEffect(() => {
-    if (stream && done) onStreamed?.();
-  }, [stream, done, onStreamed]);
-  const visible = done ? content : tokens.slice(0, revealed).join("");
-  const parts = visible.split(/(\[\d+\])/g);
+  content, citations = [], caption, flow = false,
+}: { content: string; citations?: Citation[]; caption?: ReactNode; flow?: boolean }) {
+  const [flowing] = useState(flow);
+  const parts = content.split(/(\[\d+\])/g);
   return (
-    <div className="mb-5" data-testid="assistant-message" data-streaming={done ? undefined : "true"} aria-busy={!done}>
+    <div className="mb-5" data-testid="assistant-message">
       <div className="text-base leading-[1.6] whitespace-pre-line">
         {parts.map((part, i) => {
           const m = part.match(/^\[(\d+)\]$/);
-          if (!m) return <span key={i}>{part}</span>;
-          const c = citations.find((x) => x.n === Number(m[1]));
-          if (!c) return <span key={i}>{part}</span>;
+          const c = m && citations.find((x) => x.n === Number(m[1]));
+          if (!c) return <FlowWords key={i} text={part} flowing={flowing} />;
           return (
             <Tooltip key={i}>
               <TooltipTrigger asChild>
-                <sup data-testid="citation" className="mx-0.5 cursor-help rounded bg-surface-3 px-[5px] text-xs text-selected-fg">{c.n}</sup>
+                <sup data-testid="citation" className={cn("mx-0.5 cursor-help rounded bg-surface-3 px-[5px] text-xs text-selected-fg", flowing && "flow-word")}>
+                  {c.n}
+                </sup>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <div className="font-medium">{c.sourceName}</div>
@@ -64,7 +47,7 @@ export function AssistantMessage({
           );
         })}
       </div>
-      {caption && done && <div className="mt-1.5 flex items-center gap-2 text-xs text-fg-muted">{caption}</div>}
+      {caption && <div className="mt-1.5 flex items-center gap-2 text-xs text-fg-muted">{caption}</div>}
     </div>
   );
 }

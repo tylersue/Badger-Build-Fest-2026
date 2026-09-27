@@ -71,8 +71,8 @@ export default function TestPage() {
           )}
         </div>
         {messages.length === 0 && (
-          <AgentTurn name={agent.persona.name} phase={phase} label={turnLabel} onSkip={voice.skip}>
-            {voice.spoken ? <AssistantMessage content={voice.spoken} /> : null}
+          <AgentTurn name={agent.persona.name} phase={phase} label={turnLabel} listening onSkip={voice.skip}>
+            {voice.spoken ? <AssistantMessage content={voice.spoken} flow /> : null}
           </AgentTurn>
         )}
         {messages.map((m) =>
@@ -81,10 +81,10 @@ export default function TestPage() {
           ) : m.id === latest?.id && !voice.done ? (
             <AgentTurn key={m.id} name={agent.persona.name} phase={phase} label={turnLabel} onSkip={voice.skip}>
               {m.retrieved && <RetrievedSources items={m.retrieved} />}
-              {voice.spoken ? <AssistantMessage content={voice.spoken} citations={m.citations} /> : null}
+              {voice.spoken ? <AssistantMessage content={voice.spoken} citations={m.citations} flow /> : null}
             </AgentTurn>
           ) : (
-            <AgentTurn key={m.id} name={agent.persona.name} phase="done">
+            <AgentTurn key={m.id} name={agent.persona.name} phase="done" listening={m.id === latest?.id}>
               {m.retrieved && <RetrievedSources items={m.retrieved} />}
               <AssistantMessage content={m.content} citations={m.citations} caption={<CostCaption message={m} />} />
             </AgentTurn>

@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ThinkingOrb, type OrbState } from "thinking-orbs";
-import { Orb } from "@/components/app/orb";
-import { AgentTile } from "@/components/app/ui";
-import { captionWindow, planSpeech, spokenPrefix, type CaptionWindow } from "@/features/runtime/speech";
+import type { OrbState } from "thinking-orbs";
+import { Orb, type OrbMood } from "@/components/app/orb";
+import { currentIdentity, useDemo } from "@/lib/demo-store";
+import { planSpeech, shownAt, spokenPrefix } from "@/features/runtime/speech";
 import { cn } from "@/lib/utils";
 
 /*
  * The shared "talking to an AI" pieces, for every AI conversation in the app:
- * - useVoice reveals the agent's current line one word at a time (thinking → speaking → done).
- * - VoiceStage (interview): a large orb in the middle that changes shape with what the agent is
- *   doing, the current line captioned under it, transcript and composer below.
- * - AgentTurn (chats): a small orb loads inline as if the agent were typing, the answer types
- *   out beside it, and the orb freezes once the answer is complete.
+ * - useVoice flows the agent's current line in on one animation-frame clock (thinking → speaking → done).
+ * - ThinkingPill: the thinking-orbs "composing" orb (an undulating multi-band sash) in a dark pill
+ *   with a shimmering status label, as in the library's demo (libraries.dev/orbs), at the top of a
+ *   chat answer. The interview shows the same orb on its own, large (app/(app)/build/[agentId]/interview).
+ * - AgentTurn (chats): the compact pill while the agent searches and writes; a small orb and the
+ *   agent's name once the answer is complete. Both rows are 40px, so nothing jumps when it settles.
+ * Every orb breathes with its mood (components/app/orb.tsx): slow while listening, quick while talking.
+ * Its design follows who is viewing (useOrbDesign): the expert sees "composing", a hirer the Rubik's cube.
  */
 
 export type VoiceStatus = "idle" | "listening" | "thinking" | "speaking";
@@ -28,22 +31,6 @@ export type Utterance = {
   leadMs?: number;
 };
 
-/* One design throughout: the spherical Rubik's cube ("solving": bands scramble in quarter turns,
-   then click back solved). Only the pace changes with what the agent is doing. */
-const ORB: Record<VoiceStatus, { state: OrbState; speed: number }> = {
-  idle: { state: "solving", speed: 0.45 },
-  listening: { state: "solving", speed: 0.7 },
-  thinking: { state: "solving", speed: 1.7 },
-  speaking: { state: "solving", speed: 1 },
-};
-
-const DEFAULT_LABELS: Record<VoiceStatus, string> = {
-  idle: "Ready",
-  listening: "Listening…",
-  thinking: "Thinking…",
-  speaking: "Speaking…",
-};
-
 export function useVoice(utterance: Utterance | null, input: { busy?: boolean; focused?: boolean } = {}) {
   const id = utterance?.id ?? null;
   const text = utterance?.text ?? "";
@@ -51,15 +38,26 @@ export function useVoice(utterance: Utterance | null, input: { busy?: boolean; f
   const leadMs = utterance?.leadMs ?? 0;
   const plan = useMemo(() => planSpeech(text), [text]);
   const [progress, setProgress] = useState<{ id: string; shown: number } | null>(null);
-  const timers = useRef<number[]>([]);
+  const cancel = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (!id || !speak) return;
-    timers.current = plan.startsAt.map((at, i) => window.setTimeout(() => setProgress({ id, shown: i + 1 }), leadMs + at));
-    return () => {
-      timers.current.forEach((t) => window.clearTimeout(t));
-      timers.current = [];
+    // One clock for the whole line: each frame works out how many words are due, so the stream
+    // never bunches up the way a queue of per-word timers does.
+    const start = performance.now() + leadMs;
+    let raf = 0;
+    let last = -1;
+    const tick = (now: number) => {
+      const n = shownAt(plan, now - start);
+      if (n !== last) {
+        last = n;
+        setProgress({ id, shown: n });
+      }
+      if (n < plan.words.length) raf = requestAnimationFrame(tick);
     };
+    raf = requestAnimationFrame(tick);
+    cancel.current = () => cancelAnimationFrame(raf);
+    return () => cancelAnimationFrame(raf);
   }, [id, speak, leadMs, plan]);
 
   const total = plan.words.length;
@@ -69,16 +67,13 @@ export function useVoice(utterance: Utterance | null, input: { busy?: boolean; f
   const status: VoiceStatus = input.busy || pending ? "thinking" : speaking ? "speaking" : input.focused ? "listening" : "idle";
 
   const skip = () => {
-    timers.current.forEach((t) => window.clearTimeout(t));
-    timers.current = [];
+    cancel.current();
     if (id) setProgress({ id, shown: total });
   };
 
   return {
     status,
-    /** Two caption lines for the stage (citation markers left out). */
-    caption: captionWindow(plan.words, shown),
-    /** The reply text revealed so far, verbatim, for the transcript. */
+    /** The line revealed so far, verbatim (paragraph breaks and citation markers kept). */
     spoken: spokenPrefix(text, plan, shown),
     speaking,
     done: shown >= total,
@@ -93,19 +88,45 @@ export function turnPhase(voice: { status: VoiceStatus; speaking: boolean }): Tu
   return voice.status === "thinking" ? "thinking" : voice.speaking ? "typing" : "done";
 }
 
-/* One agent answer in a chat. The header row carries the orb (the package's own 32px avatar
-   preset): fast while searching, steady while the answer types out, frozen once it is done. */
+/** The orb design for whoever is viewing: an undulating sash ("composing") for the expert building an
+    agent, the spherical Rubik's cube ("solving": bands scramble, then click back solved) for a hirer. */
+export function useOrbDesign(): OrbState {
+  const s = useDemo();
+  return currentIdentity(s).kind === "expert" ? "composing" : "solving";
+}
+
+export function ThinkingPill({ label, mood }: { label: string; mood: OrbMood }) {
+  const design = useOrbDesign();
+  return (
+    <span
+      data-testid="thinking-pill"
+      className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[50px] bg-[rgb(29_29_29/0.5)] pr-4 pl-1 text-[13px] leading-5 shadow-[inset_0_0_0_1px_rgb(44_47_54/0.22)]"
+    >
+      <Orb state={design} mood={mood} size={32} label={label} />
+      <span className="shimmer" data-text={label}>
+        {label}
+      </span>
+    </span>
+  );
+}
+
+/* One agent answer in a chat: the compact pill while it searches (thinking breath) and writes
+   (talking breath), then a small orb and the agent's name once the answer is complete. The latest
+   answer's orb keeps breathing slowly while it listens for your next message; older ones are still. */
 export function AgentTurn({
-  name, phase, label, onSkip, children,
+  name, phase, label, listening = false, onSkip, children,
 }: {
   name: string;
   phase: TurnPhase;
   /** Status shown while live, e.g. "Searching Maria's answers…" or "Typing…". */
   label?: string;
+  /** The latest answer, waiting on the next message: its orb breathes slowly instead of resting. */
+  listening?: boolean;
   onSkip?: () => void;
   children?: ReactNode;
 }) {
   const live = phase !== "done";
+  const design = useOrbDesign();
   return (
     <div data-testid="agent-turn" data-phase={phase} className={cn(!children && "mb-5")}>
       <button
@@ -113,74 +134,18 @@ export function AgentTurn({
         onClick={onSkip}
         disabled={!live}
         aria-label={live ? "Show the whole reply now" : undefined}
-        className="mb-1.5 flex items-center gap-2 text-xs text-fg-muted disabled:cursor-default"
+        className="mb-1.5 flex h-10 items-center gap-2 text-xs text-fg-muted disabled:cursor-default"
       >
-        <ThinkingOrb state="solving" size={32} theme="dark" speed={phase === "thinking" ? 1.8 : 1} paused={!live} aria-label={live ? (label ?? "Working…") : `${name}'s reply`} />
-        <span className="font-medium text-fg-tertiary">{name}</span>
-        {live && label && <span>{label}</span>}
+        {live ? (
+          <ThinkingPill label={label ?? "Thinking…"} mood={phase === "typing" ? "talking" : "thinking"} />
+        ) : (
+          <>
+            <Orb state={design} mood={listening ? "listening" : "still"} size={20} label={listening ? `${name} is listening` : `${name}'s reply`} />
+            <span className="font-medium text-fg-tertiary">{name}</span>
+          </>
+        )}
       </button>
       {children}
     </div>
-  );
-}
-
-const DOT: Record<VoiceStatus, string> = {
-  idle: "bg-fg-muted",
-  listening: "bg-selected-fg",
-  thinking: "bg-warning animate-pulse",
-  speaking: "bg-success animate-pulse",
-};
-
-export function VoiceStage({
-  status, caption, name, icon, labels, onSkip, children,
-}: {
-  status: VoiceStatus;
-  caption: CaptionWindow;
-  name: string;
-  icon: string;
-  labels?: Partial<Record<VoiceStatus, string>>;
-  onSkip?: () => void;
-  children?: ReactNode;
-}) {
-  const label = labels?.[status] ?? DEFAULT_LABELS[status];
-  const speaking = status === "speaking";
-  return (
-    <section data-testid="voice-stage" data-status={status} className="flex shrink-0 flex-col items-center px-4 pt-5 pb-3 text-center">
-      <button
-        type="button"
-        onClick={onSkip}
-        disabled={!speaking}
-        aria-label={speaking ? "Show the whole reply now" : undefined}
-        className="relative rounded-full disabled:cursor-default"
-      >
-        <span
-          aria-hidden
-          className={cn(
-            "absolute inset-4 rounded-full blur-2xl transition-opacity duration-700",
-            speaking ? "bg-selected-fg/20 opacity-100" : status === "thinking" ? "bg-warning/15 opacity-100" : "opacity-0",
-          )}
-        />
-        <Orb state={ORB[status].state} speed={ORB[status].speed} className="relative" label={`${name}: ${label}`} />
-      </button>
-
-      <div className="mt-3 flex w-full max-w-[640px] flex-col items-center">
-        <p className="min-h-5 text-[13px] leading-5 text-fg-muted line-clamp-2">{caption.previous}</p>
-        <p data-testid="voice-caption" className="mt-1 min-h-7 text-[17px] leading-7 font-medium">
-          {caption.current || <span className="font-normal text-fg-muted">{status === "thinking" ? "…" : ""}</span>}
-          {speaking && <span aria-hidden className="ml-0.5 inline-block h-[1em] w-0.5 translate-y-[2px] animate-pulse bg-fg-muted" />}
-        </p>
-      </div>
-
-      <div className="mt-2 flex items-center gap-2 text-xs text-fg-muted">
-        <span className={cn("size-1.5 rounded-full", DOT[status])} />
-        <span>{label}</span>
-        <span aria-hidden>·</span>
-        <span className="inline-flex items-center gap-1.5 text-fg-tertiary">
-          <AgentTile icon={icon} size="xs" />
-          {name}
-        </span>
-      </div>
-      {children}
-    </section>
   );
 }

@@ -17,7 +17,7 @@ import { formatCredits, formatNumber } from "@/lib/format";
 
 type ExtractResponse = { name: string; text: string; chars: number; pages: number | null; truncated: boolean } | { error: string };
 
-/* Hirer chat (runtime lane). Each reply types out under a small orb that freezes when it is done (Phase 3 D-01);
+/* Hirer chat (runtime lane). Each reply flows in under a small ribbon that comes to rest when it is done (Phase 3 D-01);
    answers are canned, the wallet math is real, and one hirer file per conversation rides along as untrusted context (CHAT-04). */
 export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -138,8 +138,8 @@ export default function ChatPage() {
       <ChatColumn>
         {messages.length === 0 && (
           <>
-            <AgentTurn name={agent.persona.name} phase={phase} label={turnLabel} onSkip={voice.skip}>
-              {voice.spoken ? <AssistantMessage content={voice.spoken} /> : null}
+            <AgentTurn name={agent.persona.name} phase={phase} label={turnLabel} listening onSkip={voice.skip}>
+              {voice.spoken ? <AssistantMessage content={voice.spoken} flow /> : null}
             </AgentTurn>
             {disclaimer && <p className="mb-5 text-xs text-fg-muted">{disclaimer}</p>}
           </>
@@ -149,10 +149,10 @@ export default function ChatPage() {
             <UserMessage key={m.id} content={m.content} />
           ) : m.id === latest?.id && !voice.done ? (
             <AgentTurn key={m.id} name={agent.persona.name} phase={phase} label={turnLabel} onSkip={voice.skip}>
-              {voice.spoken ? <AssistantMessage content={voice.spoken} citations={m.citations} /> : null}
+              {voice.spoken ? <AssistantMessage content={voice.spoken} citations={m.citations} flow /> : null}
             </AgentTurn>
           ) : (
-            <AgentTurn key={m.id} name={agent.persona.name} phase="done">
+            <AgentTurn key={m.id} name={agent.persona.name} phase="done" listening={m.id === latest?.id}>
               <AssistantMessage content={m.content} citations={m.citations} caption={captionFor(m)} />
             </AgentTurn>
           ),
