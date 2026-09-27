@@ -1,9 +1,14 @@
 import type { Category } from "@/lib/config/categories";
 import type { MeteredPurpose } from "@/lib/config/credits";
+import type { EvidenceCitation, RecordOrigin, RetrievedChunk, ToolStep } from "@/lib/contracts/phase2";
+export type { MoneyAmount, Operation, ProviderAttempt, AnswerRevision, PersonaFieldState, PersonaState, SourceEstimate, RetrievedChunk, EvidenceCitation, ToolStep, ServiceResult, KnowledgeSource, KnowledgeChunk } from "@/lib/contracts/phase2";
+
+/** Optional only for the Phase 1 display bridge; live service records require origin. */
+type OriginBridge = { origin?: RecordOrigin };
 
 export type IdentityKind = "expert" | "hirer";
 
-export type Identity = {
+export type Identity = OriginBridge & {
   id: string;
   kind: IdentityKind;
   displayName: string;
@@ -12,7 +17,7 @@ export type Identity = {
   isSwitchable: boolean;
 };
 
-export type Profile = {
+export type Profile = OriginBridge & {
   identityId: string;
   displayName: string;
   photoUrl?: string;
@@ -38,7 +43,7 @@ export type PersonaForm = {
 
 export type AgentStatus = "draft" | "published" | "unpublished";
 
-export type Agent = {
+export type Agent = OriginBridge & {
   id: string;
   ownerId: string;
   slug: string;
@@ -58,7 +63,7 @@ export type Agent = {
 export type SourceKind = "interview" | "pdf" | "docx" | "txt" | "md" | "text";
 export type SourceStatus = "queued" | "processing" | "ready" | "failed";
 
-export type Source = {
+export type Source = OriginBridge & {
   id: string;
   agentId: string;
   kind: SourceKind;
@@ -69,7 +74,7 @@ export type Source = {
   createdAt: string;
 };
 
-export type Chunk = {
+export type Chunk = OriginBridge & {
   id: string;
   agentId: string;
   sourceId: string;
@@ -89,7 +94,7 @@ export type Citation = {
   headingPath: string | null;
 };
 
-export type InterviewTurn = {
+export type InterviewTurn = OriginBridge & {
   id: string;
   agentId: string;
   position: number;
@@ -98,7 +103,7 @@ export type InterviewTurn = {
   createdAt: string;
 };
 
-export type Conversation = {
+export type Conversation = OriginBridge & {
   id: string;
   agentId: string;
   hirerId: string;
@@ -111,23 +116,25 @@ export type Conversation = {
   createdAt: string;
 };
 
-export type Message = {
+export type Message = OriginBridge & {
   id: string;
   conversationId: string;
   role: "user" | "assistant";
   content: string;
-  citations: Citation[];
+  citations: Citation[] | EvidenceCitation[];
   feedback: "up" | "down" | null;
   costCents: number | null;
   /** Fixed weak-retrieval reply: no model call, no charge (CHAT-03). */
   refusal?: boolean;
-  retrieved?: { sourceName: string; score: number; page: number | null; question: string | null }[];
+  retrieved?: { sourceName: string; score: number; page: number | null; question: string | null }[] | RetrievedChunk[];
+  gap?: string | null;
+  steps?: ToolStep[];
   createdAt: string;
 };
 
 export type LedgerKind = "seed" | "subscription" | "pack" | "debit" | "earnings" | "cashout" | "platform_cost" | "platform_margin";
 
-export type LedgerEntry = {
+export type LedgerEntry = OriginBridge & {
   id: string;
   /** null for the platform's own rows */
   identityId: string | null;
@@ -141,7 +148,7 @@ export type LedgerEntry = {
   createdAt: string;
 };
 
-export type Flag = {
+export type Flag = OriginBridge & {
   id: string;
   targetType: "agent" | "conversation";
   agentId: string;

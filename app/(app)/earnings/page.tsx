@@ -19,9 +19,9 @@ export default function EarningsPage() {
     const sum = (pred: (r: (typeof ledger)[number]) => boolean) => ledger.filter((r) => r.refId === refId && pred(r)).reduce((n, r) => n + r.amountCents, 0);
     return {
       id: refId,
-      title: conv?.title ?? "Conversation",
-      agent: conv ? agentById(s, conv.agentId)?.persona.name ?? "" : "",
-      messages: conv ? conversationStats(s, conv.id).messageCount : 0,
+      title: conv?.title ?? "Private conversation",
+      agent: agentById(s, conv?.agentId ?? s.snapshot?.earningAgents[refId] ?? "")?.persona.name ?? "",
+      messages: conv ? conversationStats(s, conv.id).messageCount : null,
       gross: -sum((r) => r.kind === "debit"),
       platform: sum((r) => r.kind === "platform_cost" || r.kind === "platform_margin"),
       net: sum((r) => r.kind === "earnings" && r.identityId === me.id),
@@ -59,7 +59,7 @@ export default function EarningsPage() {
                   <td>{r.title}</td>
                   <td className="text-fg-tertiary">{r.agent}</td>
                   <Num>
-                    <NumberPill value={r.messages} />
+                    {r.messages === null ? "—" : <NumberPill value={r.messages} />}
                   </Num>
                   <Num>{r.gross}</Num>
                   <Num className="text-fg-muted">{r.platform}</Num>

@@ -7,8 +7,8 @@ Deliver one interview-first BUILD → PUBLISH → HIRE → USE loop in four week
 ## Phases
 
 - [x] **Phase 1: Shell, Wallet & Shared Contracts** - The local app opens straight into a LangSmith-style shell with every loop route stubbed, two seeded identities, a funded credit wallet, and typed frontend service contracts. The database schema is Phase 2 work.
-- [ ] **Phase 2: Interview-First Agent Building** - Experts can create knowledge through an adaptive interview, add documents, edit their agent, and test grounded answers at real build cost.
-- [x] **Phase 3: Publish, Discover & Use** - An expert can publish an agent; another account can find it, chat safely with citations, and pay credits that generate expert earnings. Complete for the local demo against the Phase 1 stubs (canned answers, keyword retrieval); the end-to-end acceptance gate still waits on Phase 2.
+- [ ] **Phase 2: Interview-First Agent Building** - Experts can create knowledge through an adaptive interview, add documents, edit their agent, and test cited answers and the online fallback at real build cost.
+- [ ] **Phase 3: Publish, Discover & Use** - An expert can publish an agent; another account can find it, chat safely with citations, and pay credits that generate expert earnings. The Phase 3 UI landed on main as a local browser demo; integrated server acceptance is pending.
 - [ ] **Phase 4: Trust, Insights & Launch Readiness** - Hirers control feedback and transcript sharing; experts see earnings and insights; admins handle flags; the full loop is verified.
 
 ## Delivery Checkpoints
@@ -55,7 +55,7 @@ Before parallel implementation, record the four owners in the project board and 
 **Context**: `.planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md`
 
 ### Phase 2: Interview-First Agent Building
-**Goal**: An expert can turn their own answers into a grounded agent, add optional material, and verify what the agent knows before publishing.
+**Goal**: An expert can turn their own answers into a grounded agent, add optional material, and verify both its expert knowledge and clearly labeled online fallback before publishing.
 **Depends on**: Phase 1
 **Requirements**: INTV-01, INTV-02, INTV-03, INTV-04, INTV-05, INTV-06, INTV-07, PERS-01, PERS-02, PERS-03, DOCS-01, DOCS-02, DOCS-03, DOCS-04, RETR-01, RETR-02, RETR-03, SBOX-01, SBOX-02, CRED-02, CRED-03, CRED-05, CRED-10
 **Success Criteria** (what must be TRUE):
@@ -64,7 +64,47 @@ Before parallel implementation, record the four owners in the project board and 
   3. The expert can add and remove supported documents or pasted text, see source status and limits, and retrieve cited chunks from both interview and document knowledge.
   4. The expert can test the draft agent through the same pipeline used for hirers, inspect retrieved chunks and scores, and see external citations, a knowledge-gap note, and expandable web tool steps when expert material is insufficient; a cross-tenant test proves agent A cannot retrieve agent B's chunks.
   5. Interview, embedding, and sandbox calls log actual usage and charge raw cost; insufficient balance prompts a mock top-up before the call, and the daily platform spend cap stops further calls.
-**Plans**: TBD
+**Plans**: 18 plans across 11 waves
+
+**Wave 1**
+- [x] 02-01-PLAN.md — Freeze shared contracts and install audited dependencies.
+
+**Wave 2 (after Wave 1)**
+- [x] 02-02-PLAN.md — Create durable schema and server authorization boundary.
+- [x] 02-06-PLAN.md — Parse and chunk optional sources within resource limits.
+
+**Wave 3 (after Wave 2)**
+- [x] 02-03-PLAN.md — Implement transactional wallet, reservations and recovery.
+- [x] 02-04-PLAN.md — Bootstrap server read models and preserve demo continuity.
+- [x] 02-08-PLAN.md — Preserve persona ownership and custom prompt mode.
+
+**Wave 4 (after Wave 3)**
+- [x] 02-05-PLAN.md — Build metered Anthropic and Voyage provider gateway.
+
+**Wave 5 (after Wave 4)**
+- [x] 02-07-PLAN.md — Activate revision-safe indexes and scoped retrieval.
+
+**Wave 6 (after Wave 5)**
+- [x] 02-09-PLAN.md — Run the adaptive saved interview and answer lifecycle.
+- [x] 02-10-PLAN.md — Implement confirmed document intake and durable processing.
+- [x] 02-11-PLAN.md — Build shared grounded answer runtime and isolated web fallback.
+
+**Wave 7 (after Wave 6)**
+- [x] 02-12-PLAN.md — Connect server APIs to the browser state bridge.
+
+**Wave 8 (after Wave 7)**
+- [x] 02-13-PLAN.md — Build interview editing and persona review views.
+- [x] 02-14-PLAN.md — Build optional knowledge intake and source lifecycle UI.
+- [x] 02-15-PLAN.md — Render streaming evidence, web steps and retained composers.
+
+**Wave 9 (after Wave 8)**
+- [x] 02-16-PLAN.md — Wire builder views and migrate remaining shell mutations.
+
+**Wave 10 (after Wave 9)**
+- [x] 02-17-PLAN.md — Complete offline acceptance and prepare real-service diagnostics.
+
+**Wave 11 (after Wave 10)**
+- [ ] 02-18-PLAN.md — [BLOCKING] Apply migrations and prove the real build loop.
 **UI hint**: yes
 
 ### Phase 3: Publish, Discover & Use
@@ -77,14 +117,14 @@ Before parallel implementation, record the four owners in the project board and 
   3. A hirer can stream a reply, return later, and see valid expert or labeled external citations, web tool steps, a knowledge-gap note when online fallback runs, and the cost of each answer. If neither expert nor online evidence supports an answer, the agent says so rather than guessing.
   4. A hirer can supply one conversation file as untrusted context; regulated-category disclaimers persist, and long conversations continue with windowed history. (The emergency and self-harm resource reply moved to Phase 4.)
   5. A local walkthrough that switches between the seeded hirer and expert charges the hirer by actual cost × expert multiplier and atomically records platform cost recovery, margin share, and expert wallet credit; mock funding is the only money-in path.
-**Plans**: None — built directly on 2026-09-26 (Phase 3 D-14); answers stay canned with simulated streaming and retrieval stays the Phase 1 keyword search (Phase 3 D-01, D-02). The online fallback in criterion 3 (external citations, web tool steps, knowledge-gap note) was added to the roadmap on 2026-09-26 and is not in this build; today the agent refuses with the expert's contact link when expert knowledge is weak.
+**Plans**: None — Phase 3 presentation UI was built directly on 2026-09-26 (Phase 3 D-14), initially with canned answers and Phase 1 keyword retrieval (D-01, D-02). PR #39 integrates the Phase 2 server pipeline, SQL publishing, and transactional chat billing. Integrated live-service acceptance remains pending.
 **UI hint**: yes
 **Context**: `.planning/phases/03-publish-discover-use/03-CONTEXT.md`
 
 ### Phase 4: Trust, Insights & Launch Readiness
 **Goal**: Hirers, experts, and admins can review outcomes and exercise privacy and moderation controls; the full loop holds up under outside and adversarial use.
 **Depends on**: Phase 1 to start independent controls; Phase 2 and Phase 3 to complete the end-to-end acceptance gate
-**Requirements**: MKT-05, MKT-06, CHAT-06, CHAT-08, CHAT-09, CRED-08, CRED-09, EXPT-01, EXPT-02, ADMN-01
+**Requirements**: MKT-05, MKT-06, CHAT-08, CHAT-09, CRED-08, CRED-09, EXPT-01, EXPT-02, ADMN-01
 **Success Criteria** (what must be TRUE):
   1. A hirer can rate an agent once after five messages, give thumbs feedback on answers, flag an agent, and choose per conversation whether the expert may read its transcript; sharing starts off.
   2. An expert can see aggregate questions, conversation and message counts, thumbs-down counts, only opted-in transcripts, a complete wallet history, and a per-conversation gross/platform/net earnings breakdown.
@@ -99,8 +139,8 @@ Before parallel implementation, record the four owners in the project board and 
 - Applied AI & Automation is the confirmed track. Badgers Building for Badgers and Art of the Break are the team's tentative challenge pair. Prepare stress-test fixtures during Phase 1 and collect real before/after evidence as soon as the agent runs in Phases 2–3. Show an actual UW student completing a campus career task; the submission Break Card cannot wait solely for Phase 4. Challenge registration and timing remain to be confirmed.
 - Phase 1 must freeze the wallet and service contracts before parallel implementation. Decided in Phase 1 context: margin share stays a configurable 15%; each seeded identity starts with $50; the wallet reserves the estimated cost before a call and hard-stops at zero.
 - Authentication, RLS and the admin allowlist are out of the MVP (presentation build). Admin pages are open. Seed content is placeholder; the interview, chat, metering and ledger are real. Work lands on branch `platform/skeleton-ui` and merges to `main` by PR.
-- Phase 2 planning needs focused research on interview turn-taking, answer segmentation, and persona drafting. Hirer-uploaded files need a prompt-injection threat model before Phase 3 delivery.
-- Health/PT and tax/finance get the regulated-category treatment; career/admissions does not. This list is provisional and must live in config so it can change in one line. Safety checks and grounded refusal are part of the first published-chat release, then verified more deeply in Phase 4.
+- Phase 2 planning needs focused research on interview turn-taking, answer segmentation, persona drafting, and scoped web fallback with source provenance and visible tool steps. Hirer-uploaded files need a prompt-injection threat model before Phase 3 delivery.
+- Health/PT and tax/finance get the regulated-category treatment; career/admissions does not. This list is provisional and must live in config so it can change in one line. Safety checks and refusal when neither expert nor online evidence supports an answer are part of the first published-chat release, then verified more deeply in Phase 4.
 - After this roadmap is accepted, reconcile the older `docs/` scope and the existing GitHub issues with these phases; remove obsolete Stripe, trial, and document-first assumptions before implementation issues are assigned.
 
 ## Progress
@@ -108,6 +148,6 @@ Before parallel implementation, record the four owners in the project board and 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Complete for local demo | 2026-09-26 |
-| 2. Interview-First Agent Building | 0/TBD | Not started | - |
-| 3. Publish, Discover & Use | n/a (built directly) | Complete for local demo (Phase 2 gate pending) | 2026-09-26 |
+| 2. Interview-First Agent Building | 17/18 | In Progress|  |
+| 3. Publish, Discover & Use | n/a (UI built directly) | Integrated implementation in review; live gate pending | - |
 | 4. Trust, Insights & Launch Readiness | 0/TBD | Not started | - |

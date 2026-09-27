@@ -5,20 +5,20 @@ import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Flag, MessageSquareOff, Share2 } from "lucide-react";
 import { toast } from "sonner";
-import { AssistantMessage, ChatColumn, Composer, CostCaption, NotEnoughCredits, UserMessage } from "@/components/app/chat";
+import { AssistantMessage, ChatColumn, Composer, CostCaption, NotEnoughCredits, RetrievedSources, StreamCostCaption, UserMessage } from "@/components/app/chat";
+import { ToolSteps } from "@/components/app/tool-steps";
+import { emptyAnswer, reduceAnswer, type AnswerState } from "@/components/app/chat-state";
 import { AgentTile, Breadcrumbs, EmptyState, Pill, buttonClass } from "@/components/app/ui";
 import { AgentTurn, turnPhase, useVoice, type Utterance } from "@/components/app/voice";
 import {
-  agentById, allConversations, attachConversationFile, balanceOf, currentIdentity, displayName, isFreshMessage, markStreamed, messagesFor, profileFor,
-  removeConversationFile, sendChatMessage, useDemo, type Refusal,
+  agentById, allConversations, balanceOf, currentIdentity, displayName, getDraft, isFreshMessage, markStreamed, messagesFor, profileFor,
+  sendChatMessage, useDemo, type Refusal,
 } from "@/lib/demo-store";
+import { api } from "@/lib/api-client";
 import { disclaimerFor } from "@/lib/config/categories";
 import { formatCredits, formatNumber } from "@/lib/format";
 
-type ExtractResponse = { name: string; text: string; chars: number; pages: number | null; truncated: boolean } | { error: string };
-
-/* Hirer chat (runtime lane). Each reply flows in under a small ribbon that comes to rest when it is done (Phase 3 D-01);
-   answers are canned, the wallet math is real, and one hirer file per conversation rides along as untrusted context (CHAT-04). */
+/* Hirer chat keeps Phase 3's voice presentation over Phase 2's durable answer path. */
 export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const s = useDemo();
@@ -26,6 +26,10 @@ export default function ChatPage() {
   const [busy, setBusy] = useState(false);
   const [attaching, setAttaching] = useState(false);
   const [attachError, setAttachError] = useState<string | null>(null);
+  const [attachment, setAttachment] = useState<{ name: string; chars: number } | null>(null);
+  const [liveAnswer, setLiveAnswer] = useState<AnswerState | null>(null);
+  const [pendingText, setPendingText] = useState<string | null>(() => getDraft("chat", conversationId)?.value ?? null);
+  const [sendError, setSendError] = useState<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const conversation = allConversations(s).find((c) => c.id === conversationId);
   const agent = conversation && agentById(s, conversation.agentId);
@@ -40,6 +44,14 @@ export default function ChatPage() {
       : { id: "greeting", text: agent.persona.greeting || `Hi, I'm ${agent.persona.name}. Ask me anything.`, speak: true, leadMs: 400 };
   const voice = useVoice(utterance, { busy });
   const phase = turnPhase(voice);
+
+  useEffect(() => {
+    let active = true;
+    if (conversation?.hirerId !== s.identityId) return () => { active = false; };
+    void api.attachment(conversationId).then(value => { if (active) setAttachment(value); },
+      error => { if (active) setAttachError(error instanceof Error ? error.message : "Attachment unavailable."); });
+    return () => { active = false; };
+  }, [conversationId, conversation?.hirerId, s.identityId]);
 
   useEffect(() => {
     if (latestId && voice.done && isFreshMessage(latestId)) markStreamed(latestId);
@@ -66,12 +78,17 @@ export default function ChatPage() {
   const turnLabel = phase === "thinking" ? `Searching ${expertFirst}'s answers…` : "Typing…";
 
   const send = async (text: string) => {
-    setRefusal(null);
+    setRefusal(null); setSendError(null); setLiveAnswer(emptyAnswer()); setPendingText(text);
     setBusy(true);
     try {
-      const r = await sendChatMessage(conversation.id, text);
+      const r = await sendChatMessage(conversation.id, text, event =>
+        setLiveAnswer(previous => reduceAnswer(previous ?? emptyAnswer(), event)));
       if (!r.ok) setRefusal(r);
+      setPendingText(null); setLiveAnswer(null);
       return r.ok;
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : "Could not finish the answer. Your message is saved for retry.");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -81,25 +98,22 @@ export default function ChatPage() {
     setAttaching(true);
     setAttachError(null);
     try {
-      const body = new FormData();
-      body.append("file", file);
-      const res = await fetch("/api/extract", { method: "POST", body });
-      if (!res.headers.get("content-type")?.includes("application/json")) {
-        setAttachError(`Upload failed (${res.status}). Try a smaller file.`);
-        return;
-      }
-      const data = (await res.json()) as ExtractResponse;
-      if (!res.ok || "error" in data) {
-        setAttachError("error" in data ? data.error : "Could not read that file.");
-        return;
-      }
-      attachConversationFile(conversation.id, { name: data.name, text: data.text, chars: data.chars });
-      toast(`Attached ${data.name} · ${formatNumber(data.chars)} characters${data.truncated ? " (truncated)" : ""}`);
-    } catch {
-      setAttachError("Could not reach the file reader. Is the dev server running?");
+      const body = new FormData(); body.append("file", file);
+      const response = await fetch(`/api/conversations/${encodeURIComponent(conversation.id)}/attachment`,
+        { method: "POST", body, credentials: "same-origin" });
+      const result = await response.json() as { ok: true; data: { name: string; chars: number } } | { ok: false; error: { message: string } };
+      if (!result.ok) throw new Error(result.error.message);
+      setAttachment(result.data);
+      toast(`Attached ${result.data.name} · ${formatNumber(result.data.chars)} characters`);
+    } catch (error) {
+      setAttachError(error instanceof Error ? error.message : "Could not attach that file.");
     } finally {
       setAttaching(false);
     }
+  };
+  const removeAttachment = async () => {
+    try { await api.removeAttachment(conversation.id); setAttachment(null); }
+    catch (error) { setAttachError(error instanceof Error ? error.message : "Could not remove attachment."); }
   };
 
   const captionFor = (m: (typeof messages)[number]) =>
@@ -149,14 +163,32 @@ export default function ChatPage() {
             <UserMessage key={m.id} content={m.content} />
           ) : m.id === latest?.id && !voice.done ? (
             <AgentTurn key={m.id} name={agent.persona.name} phase={phase} label={turnLabel} onSkip={voice.skip}>
-              {voice.spoken ? <AssistantMessage content={voice.spoken} citations={m.citations} flow /> : null}
+              {!!m.steps?.length && <ToolSteps steps={m.steps} />}
+              {!!m.retrieved?.length && <RetrievedSources items={m.retrieved} />}
+              {voice.spoken ? <AssistantMessage content={voice.spoken} citations={m.citations} gap={m.gap} flow /> : null}
             </AgentTurn>
           ) : (
             <AgentTurn key={m.id} name={agent.persona.name} phase="done" listening={m.id === latest?.id}>
-              <AssistantMessage content={m.content} citations={m.citations} caption={captionFor(m)} />
+              {!!m.steps?.length && <ToolSteps steps={m.steps} />}
+              {!!m.retrieved?.length && <RetrievedSources items={m.retrieved} />}
+              <AssistantMessage content={m.content} citations={m.citations} gap={m.gap} caption={captionFor(m)} />
             </AgentTurn>
           ),
         )}
+        {pendingText && <UserMessage content={pendingText} />}
+        {pendingText && <AgentTurn name={agent.persona.name} phase={liveAnswer?.text ? "typing" : "thinking"}
+          label={liveAnswer?.text ? "Typing…" : turnLabel}>
+          {!!liveAnswer?.steps.length && <ToolSteps steps={liveAnswer.steps} />}
+          {!!liveAnswer?.sources.length && <RetrievedSources items={liveAnswer.sources} />}
+          {liveAnswer?.text && <AssistantMessage content={liveAnswer.text} citations={liveAnswer.citations}
+            gap={liveAnswer.gap} flow caption={<StreamCostCaption cost={liveAnswer.cost} />} />}
+        </AgentTurn>}
+        {sendError && <div role="alert" className="mb-5 text-sm text-danger">
+          <p>{sendError}</p>
+          {pendingText && !busy && <button className={buttonClass("secondary")} onClick={() => void send(pendingText)}>
+            Retry saved message
+          </button>}
+        </div>}
         {refusal && <NotEnoughCredits needed={refusal.neededCents} available={refusal.availableCents} onDismiss={() => setRefusal(null)} />}
         <div ref={bottom} />
       </ChatColumn>
@@ -165,11 +197,12 @@ export default function ChatPage() {
         <Composer
           placeholder="Write your message…"
           onSend={send}
-          attachment={conversation.fileName ? { name: conversation.fileName, chars: conversation.fileChars ?? conversation.fileText?.length ?? 0 } : null}
+          attachment={attachment}
           onAttach={attach}
-          onRemoveAttachment={() => removeConversationFile(conversation.id)}
+          onRemoveAttachment={() => void removeAttachment()}
           attaching={attaching}
           attachError={attachError}
+          onError={error => setSendError(error instanceof Error ? error.message : "Could not send message.")}
         />
       ) : (
         <div className="px-4 pb-4 text-center text-[13px] text-fg-muted">

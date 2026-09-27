@@ -4,9 +4,9 @@ import { useState } from "react";
 import { Wallet } from "lucide-react";
 import { AddCreditsButton } from "@/components/app/add-credits";
 import { Breadcrumbs, DataTable, EmptyState, Num, PageBody, PageHeader, SearchField, StatTile, Toolbar } from "@/components/app/ui";
-import { balanceOf, currentIdentity, ledgerFor, useDemo } from "@/lib/demo-store";
-import { PURPOSE_LABELS, TYPICAL_CALL_CENTS } from "@/lib/config/credits";
-import { formatCredits, formatNumber, formatRelative, formatSignedCredits, formatUsd, isoDaysAgo } from "@/lib/format";
+import { currentIdentity, ledgerFor, useDemo, walletStatus } from "@/lib/demo-store";
+import { PURPOSE_LABELS } from "@/lib/config/credits";
+import { formatCreditUnits, formatCredits, formatNumber, formatRelative, formatSignedCredits, formatUsd, isoDaysAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { LedgerEntry } from "@/lib/types";
 
@@ -27,7 +27,7 @@ export default function WalletPage() {
   const me = currentIdentity(s);
   const [query, setQuery] = useState("");
   const rows = ledgerFor(s, me.id);
-  const balance = balanceOf(s, me.id);
+  const wallet = walletStatus(s);
   const weekAgo = isoDaysAgo(7);
   const monthAgo = isoDaysAgo(30);
   const debitsThisWeek = rows.filter((r) => r.kind === "debit" && r.createdAt > weekAgo);
@@ -45,12 +45,12 @@ export default function WalletPage() {
     <>
       <Breadcrumbs items={[{ label: "Wallet" }]} />
       <PageBody>
-        <PageHeader title="Wallet" subtitle="1 credit = 1 cent. Building and chatting both draw from here." />
+        <PageHeader title="Wallet" subtitle="1 credit = 1 cent. Charges and reservations come from the server ledger." />
         <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatTile label="Balance" value={formatCredits(balance)} caption={formatUsd(balance)} testId="wallet-balance" />
+          <StatTile label="Balance" value={formatCreditUnits(wallet.balanceUnits)} caption={formatUsd(Number(BigInt(wallet.balanceUnits)) / 10_000_000)} testId="wallet-balance" />
           <StatTile label="Spent this week" value={formatCredits(spentThisWeek)} caption={breakdown || "Nothing yet"} />
           <StatTile label="Added this month" value={formatCredits(added)} caption="Seed, plans, packs and earnings" />
-          <StatTile label="Typical call" value={formatCredits(TYPICAL_CALL_CENTS.chat_message)} caption="Reserved before each call" />
+          <StatTile label="Pending holds" value={formatCreditUnits(wallet.heldUnits)} caption={`${formatCreditUnits(wallet.availableUnits)} available`} />
         </div>
         <Toolbar>
           <AddCreditsButton />

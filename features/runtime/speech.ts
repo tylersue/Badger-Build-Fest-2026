@@ -27,12 +27,12 @@ const CLAUSE_PAUSE_MS = 45;
 
 const SENTENCE_END = /[.!?]["')\]]*$/;
 const CLAUSE_END = /[,;:]["')\]]*$/;
-const CITATION = /^\[\d+\]$/;
+const CITATION = /^\[(?:\d+|(?:expert|web):[^\]\s]+)\]$/;
 
 /** Citation markers belong to the transcript's chips, not to spoken captions. */
 export function stripCitations(text: string): string {
   return text
-    .replace(/\s*\[\d+\]/g, "")
+    .replace(/\s*\[(?:\d+|(?:expert|web):[^\]\s]+)\]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }

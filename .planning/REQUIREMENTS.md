@@ -1,7 +1,7 @@
 # Requirements: Expert Agent Platform
 
 **Defined:** 2026-09-26
-**Core Value:** An expert with no audience and no technical skill can put their knowledge into an agent that answers in their words, grounded only in what they actually said and wrote, and earn from it.
+**Core Value:** An expert with no audience and no technical skill can put their knowledge into an agent that answers from their material and earn from it; gaps may be answered from clearly labeled, cited online sources that never become expert knowledge.
 
 ## v1 Requirements
 
@@ -45,45 +45,45 @@ Requirements for the working MVP loop (BUILD → PUBLISH → HIRE → USE). Each
 
 ### Sandbox
 
-- [ ] **SBOX-01**: Expert can chat with their own agent before publishing, through the same pipeline hirers use, charged at raw cost with no multiplier
-- [ ] **SBOX-02**: The sandbox shows, for each answer, which chunks were retrieved and their relevance scores
+- [ ] **SBOX-01**: Expert can chat with their own agent before publishing through the same pipeline hirers use, including online fallback when expert material is insufficient, charged at raw cost with no multiplier
+- [ ] **SBOX-02**: The sandbox shows retrieved excerpts and relevance scores, plus expandable web-search and page-read steps when online fallback runs
 
 ### Publish
 
-- [x] **PUB-01**: Expert sets a rate multiplier from 1x to 5x on raw LLM cost; the listing shows the resulting typical cost per message
-- [x] **PUB-02**: Expert must accept a consent checkbox at first publish (expert owns their content, platform gets a limited license to serve it through this agent only, no training on it)
-- [x] **PUB-03**: Expert can publish instantly once the persona is complete and the agent has a minimum number of knowledge chunks; can unpublish instantly
-- [x] **PUB-04**: A listing page is generated from the persona form and expert profile with no extra input
+- [ ] **PUB-01**: Expert sets a rate multiplier from 1x to 5x on raw LLM cost; the listing shows the resulting typical cost per message
+- [ ] **PUB-02**: Expert must accept a consent checkbox at first publish (expert owns their content, platform gets a limited license to serve it through this agent only, no training on it)
+- [ ] **PUB-03**: Expert can publish instantly once the persona is complete and the agent has a minimum number of knowledge chunks; can unpublish instantly
+- [ ] **PUB-04**: A listing page is generated from the persona form and expert profile with no extra input
 
 ### Marketplace
 
-- [x] **MKT-02**: Hirer can browse published agents in a grid, filter by category, sort by rating, newest, or most used, and search by text
-- [x] **MKT-03**: Listing page shows expert card (photo, credentials, years, self-reported label), headline, description, clickable example questions, rating and count, typical cost per message, "knowledge last updated," and the category disclaimer where required
-- [x] **MKT-04**: Hirer can start a conversation from the listing, including by clicking an example question that is sent as the first message
+- [ ] **MKT-02**: Hirer can browse published agents in a grid, filter by category, sort by rating, newest, or most used, and search by text
+- [ ] **MKT-03**: Listing page shows expert card (photo, credentials, years, self-reported label), headline, description, clickable example questions, rating and count, typical cost per message, "knowledge last updated," and the category disclaimer where required
+- [ ] **MKT-04**: Hirer can start a conversation from the listing, including by clicking an example question that is sent as the first message
 - [ ] **MKT-05**: Hirer can rate an agent from 1 to 5 stars after five or more messages, once per agent; the listing shows the average and count
 - [ ] **MKT-06**: Anyone can flag an agent from its listing or chat; flags go to an admin queue
 
 ### Chat
 
-- [x] **CHAT-01**: Hirer sends a message and sees the agent's answer stream in *(Phase 3: canned answer revealed word by word; a real model stream is a deferred idea in 03-CONTEXT.md)*
-- [x] **CHAT-02**: Answers are grounded in the agent's knowledge and cite sources inline; hovering a citation shows the source name and page or question
-- [x] **CHAT-03**: When retrieval is weak, the agent says it does not have that in its knowledge and points to the expert's contact link instead of guessing
-- [x] **CHAT-04**: Hirer can upload one file (PDF, DOCX, or TXT) into a conversation; its text is extracted and included in that conversation's prompt as untrusted content
-- [x] **CHAT-05**: Agents in regulated categories (health, tax/finance, legal, mental health) show a fixed disclaimer in the first reply, and the disclaimer rule is present in the system prompt on every turn
-- [ ] **CHAT-06**: Messages matching emergency or self-harm patterns get a fixed resource reply instead of an agent answer, and the conversation is flagged *(moved to Phase 4 on 2026-09-26; edge-case work deferred by the team)*
-- [x] **CHAT-07**: Conversation history is windowed to recent turns so long conversations keep working
+- [ ] **CHAT-01**: Hirer sends a message and sees the agent's answer stream in
+- [ ] **CHAT-02**: Answers cite their evidence inline, distinguishing expert interview/document sources from external web sources; citation details show the source name, page or question, or external link
+- [ ] **CHAT-03**: When expert knowledge is insufficient, the shared pipeline searches online, answers from cited sources, notes what expert material did not cover, and shows expandable search/page-read steps. External findings are not saved as expert knowledge; if no usable source is found, the agent says it cannot answer rather than guessing
+- [ ] **CHAT-04**: Hirer can upload one file (PDF, DOCX, TXT, or MD) into a conversation; its text is extracted and included in that conversation's prompt as untrusted content
+- [ ] **CHAT-05**: Agents in regulated categories (health, tax/finance, legal, mental health) show a fixed disclaimer in the first reply, and the disclaimer rule is present in the system prompt on every turn
+- [ ] **CHAT-06**: Messages matching emergency or self-harm patterns get a fixed resource reply instead of an agent answer, and the conversation is flagged *(moved to Phase 4 on 2026-09-26)*
+- [ ] **CHAT-07**: Conversation history is windowed to recent turns so long conversations keep working
 - [ ] **CHAT-08**: Hirer can thumbs up or down any answer
 - [ ] **CHAT-09**: Hirer can opt in, per conversation, to share the transcript with the expert; the default is off
-- [x] **CHAT-10**: Conversations persist; hirer can return to any past conversation and continue
-- [x] **CHAT-11**: Chat header shows the agent name, the expert, a "contact the expert" link, and the hirer's wallet balance
-- [x] **CHAT-12**: After each reply, the chat shows what that message cost in credits
+- [ ] **CHAT-10**: Conversations persist; hirer can return to any past conversation and continue
+- [ ] **CHAT-11**: Chat header shows the agent name, the expert, a "contact the expert" link, and the hirer's wallet balance
+- [ ] **CHAT-12**: After each reply, the chat shows what that message cost in credits
 
 ### Credits (purchases mocked, metering real)
 
 - [x] **CRED-01**: Every identity has one wallet; 1 credit = 1 cent; the balance is visible in the app shell
 - [ ] **CRED-02**: Every LLM call is logged with tokens in and out, model, purpose, latency, and computed cost
 - [ ] **CRED-03**: Building actions (interview turns, document embedding, sandbox messages) deduct real cost from the builder's wallet after the call completes
-- [x] **CRED-04**: A chat message charges the hirer real cost × the agent's rate multiplier; the ledger records the hirer debit, the platform's cost recovery, the platform's margin share (configurable, default 15%), and the expert's credit
+- [ ] **CRED-04**: A chat message charges the hirer real cost × the agent's rate multiplier; the ledger records the hirer debit, the platform's cost recovery, the platform's margin share (configurable, default 15%), and the expert's credit
 - [ ] **CRED-05**: Before any metered call, the platform checks the wallet covers a typical call; if not, it shows a top-up prompt instead of running the call
 - [x] **CRED-06**: User can "subscribe" to a mock monthly plan that grants a configured number of credits, and "buy" mock credit packs; both write ledger rows and update the balance with no real payment
 - [ ] **CRED-08**: Expert sees an earnings page: per-conversation gross, platform share, and net credited, plus a wallet history of every debit and credit
@@ -132,7 +132,7 @@ Deferred. Tracked but not in the current roadmap.
 | Feature | Reason |
 |---------|--------|
 | Voice, video, or avatar clones | Expensive, not the value; Delphi's most costly feature |
-| Visual workflow or graph builder; agent tools or web access | The visual-builder tier collapsed in 2026; our agent is persona + knowledge + fixed pipeline |
+| Visual workflow or graph builder; arbitrary agent tools | The agent has a fixed pipeline with a scoped web-search fallback, not expert-configurable tools |
 | Per-agent subscriptions, allowances, or free trials | Replaced by the single wallet and seeded balances |
 | Authentication (email + Google sign-in), RLS, admin allowlist (AUTH-01, AUTH-02, AUTH-04) | Presentation MVP: two seeded identities with a switcher stand in for accounts; reinstate when strangers use the platform |
 | Free credit grant for new accounts (CRED-07) | No accounts without auth; each seeded identity starts with $50 (5,000 credits) |
@@ -173,31 +173,31 @@ Which phases cover which requirements. Each v1 requirement maps to exactly one p
 | RETR-03 | Phase 2 | Pending |
 | SBOX-01 | Phase 2 | Pending |
 | SBOX-02 | Phase 2 | Pending |
-| PUB-01 | Phase 3 | Complete (local demo) |
-| PUB-02 | Phase 3 | Complete (local demo) |
-| PUB-03 | Phase 3 | Complete (local demo) |
-| PUB-04 | Phase 3 | Complete (local demo) |
-| MKT-02 | Phase 3 | Complete (local demo) |
-| MKT-03 | Phase 3 | Complete (local demo) |
-| MKT-04 | Phase 3 | Complete (local demo) |
+| PUB-01 | Phase 3 | Pending |
+| PUB-02 | Phase 3 | Pending |
+| PUB-03 | Phase 3 | Pending |
+| PUB-04 | Phase 3 | Pending |
+| MKT-02 | Phase 3 | Pending |
+| MKT-03 | Phase 3 | Pending |
+| MKT-04 | Phase 3 | Pending |
 | MKT-05 | Phase 4 | Pending |
 | MKT-06 | Phase 4 | Pending |
-| CHAT-01 | Phase 3 | Complete (local demo) |
-| CHAT-02 | Phase 3 | Complete (local demo) |
-| CHAT-03 | Phase 3 | Complete (local demo) |
-| CHAT-04 | Phase 3 | Complete (local demo) |
-| CHAT-05 | Phase 3 | Complete (local demo) |
-| CHAT-06 | Phase 4 | Pending (moved from Phase 3 on 2026-09-26: edge-case work deferred) |
-| CHAT-07 | Phase 3 | Complete (local demo) |
+| CHAT-01 | Phase 3 | Pending |
+| CHAT-02 | Phase 3 | Pending |
+| CHAT-03 | Phase 3 | Pending |
+| CHAT-04 | Phase 3 | Pending |
+| CHAT-05 | Phase 3 | Pending |
+| CHAT-06 | Phase 4 | Pending |
+| CHAT-07 | Phase 3 | Pending |
 | CHAT-08 | Phase 4 | Pending |
 | CHAT-09 | Phase 4 | Pending |
-| CHAT-10 | Phase 3 | Complete (local demo) |
-| CHAT-11 | Phase 3 | Complete (local demo) |
-| CHAT-12 | Phase 3 | Complete (local demo) |
+| CHAT-10 | Phase 3 | Pending |
+| CHAT-11 | Phase 3 | Pending |
+| CHAT-12 | Phase 3 | Pending |
 | CRED-01 | Phase 1 | Complete |
 | CRED-02 | Phase 2 | Pending |
 | CRED-03 | Phase 2 | Pending |
-| CRED-04 | Phase 3 | Complete (local demo) |
+| CRED-04 | Phase 3 | Pending |
 | CRED-05 | Phase 2 | Pending |
 | CRED-06 | Phase 1 | Complete |
 | CRED-08 | Phase 4 | Pending |
@@ -214,4 +214,4 @@ Which phases cover which requirements. Each v1 requirement maps to exactly one p
 
 ---
 *Requirements defined: 2026-09-26*
-*Last updated: 2026-09-26 after Phase 3 (publish, listing, chat, upload and settlement complete for the local demo against Phase 1 stubs; CHAT-06 moved to Phase 4)*
+*Last updated: 2026-09-26 after Phase 1 discussion (presentation MVP: no auth, seeded identities, shell requirements added)*

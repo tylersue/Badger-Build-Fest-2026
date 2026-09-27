@@ -13,12 +13,12 @@ BUILD an agent  →  PUBLISH it  →  HIRE it  →  USE it (chat grounded in the
 ```bash
 pnpm install
 pnpm dev          # http://localhost:3000 opens straight into the marketplace
-pnpm test         # wallet math and seed-data checks
+pnpm test         # offline unit and integration checks
 ```
 
-Phases 1 and 3 are frontend first: placeholder data in `lib/data/seed.ts`, and the switcher, wallet, publish, chat and interview mechanics run in the browser (saved in localStorage). Use the "Viewing as" card in the sidebar footer to switch between Maria (expert) and Sam (hirer); Settings → Reset demo data returns everything to the seeded state.
+The active builder, marketplace, chat, wallet and usage flows use Supabase and the Anthropic/Voyage provider gateway. Copy `.env.example` to `.env.local` and configure the server-only values before running the live loop. Use the "Viewing as" card to switch between Maria (expert) and Sam (hirer). Browser storage keeps unsent drafts and the selected demo identity; the database owns published status, conversations and money.
 
-The full loop works locally: as Maria, open **My agents → Running form clinic → Publish**, set a rate, tick the consent box and publish. Switch to Sam, find it in the Marketplace, open the listing, click an example question, and watch the reply stream in with citations and its cost; Maria's Earnings and both Wallets move. Chat answers are canned in this build (no API key needed); the one server piece is `app/api/extract/route.ts`, which turns a hirer's PDF, DOCX, TXT or MD upload into untrusted text for the conversation, so run `pnpm dev` for uploads to work.
+See [Phase 2 service setup](docs/PHASE2-SETUP.md) for migrations, local Supabase, and paid acceptance. [Phase 3 integration](docs/PHASE3-INTEGRATION.md) records the additional SQL, route, wallet and browser gates. The PR remains a draft until those live gates pass.
 
 ## Docs
 
@@ -44,7 +44,7 @@ Current product scope and execution phases live in [`.planning/PROJECT.md`](.pla
 
 ## Stack (short version)
 
-Current demo: Next.js 16 · Tailwind v4 + shadcn/ui · browser storage and seeded data. Planned real services: Supabase, Vercel AI SDK + Anthropic Claude, Voyage embeddings. The hackathon presentation runs locally; mock credits do not use Stripe.
+Current app: Next.js 16 · Tailwind v4 + shadcn/ui · Supabase · Vercel AI SDK + Anthropic Claude · Voyage embeddings. The hackathon presentation runs locally; mock credits do not use Stripe.
 
 ## Team
 

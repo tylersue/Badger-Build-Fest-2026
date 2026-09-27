@@ -305,3 +305,8 @@ export const LEDGER: LedgerEntry[] = [
 ];
 
 export const FLAGS: Flag[] = [];
+
+// Presentation history is explicitly marked and can never qualify as live evidence.
+for (const records of [IDENTITIES, PROFILES, AGENTS, SOURCES, CHUNKS, INTERVIEW_TURNS, CONVERSATIONS, MESSAGES, LEDGER, FLAGS]) {
+  for (const record of records) record.origin = "fixture";
+}

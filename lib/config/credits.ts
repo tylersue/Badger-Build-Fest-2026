@@ -1,4 +1,4 @@
-/** 1 credit = 1 cent. All amounts here are in cents (= credits). */
+/** 1 credit = 1 cent = 10,000,000 nanodollars. Cents below are display metadata. */
 
 export type MeteredPurpose = "interview_turn" | "embedding" | "sandbox_message" | "chat_message";
 

@@ -1,520 +1,362 @@
 "use client";
 
-/**
- * Client-side demo state for the presentation MVP (no backend).
- * Seed data is read-only; everything the viewer does (switching identity,
- * adding credits, chatting, interviewing, editing, publishing) is stored as a
- * delta in localStorage so it survives reloads. The mechanics are real: a
- * metered call checks the wallet first and refuses when it doesn't fit (hard
- * stop at zero, D-10), and every balance change writes a ledger row.
- */
 import { useSyncExternalStore } from "react";
-import { AGENTS, CHUNKS, CONVERSATIONS, IDENTITIES, INTERVIEW_ANSWER_COUNTS, INTERVIEW_TURNS, LEDGER, MARIA, MESSAGES, PROFILES, SOURCES } from "@/lib/data/seed";
-import { PACK_GRANT_CENTS, SUBSCRIPTION_GRANT_CENTS, type MeteredPurpose } from "@/lib/config/credits";
-import { disclaimerFor, type Category } from "@/lib/config/categories";
-import { clampRate } from "@/lib/config/publish";
-import { costCentsFromUsage, estimateCents, splitUsageCharge, toChargeCents } from "@/features/billing/pricing";
-import { isWeakRetrieval, searchKnowledge } from "@/features/knowledge/search";
-import { publishBlockers } from "@/features/marketplace/publish";
-import { cannedAnswer, nextInterviewQuestion, refusalReply } from "@/features/runtime/agent";
-import type { Agent, AgentStatus, Chunk, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile } from "@/lib/types";
+import { IDENTITIES, INTERVIEW_TURNS, MARIA, PROFILES } from "@/lib/data/seed";
+import type { Category } from "@/lib/config/categories";
+import type { Agent, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile } from "@/lib/types";
+import type { DemoSnapshot } from "@/lib/server/demo";
+import type { InterviewView } from "@/features/builder/interview";
+import { api, ApiClientError, newRequestKey, streamChat, streamSandbox } from "./api-client";
+import type { ChatStreamEvent } from "@/features/runtime/events";
 
-const STORAGE_KEY = "bx-demo-v1";
-
-export type DemoState = {
-  v: 1;
-  identityId: string;
-  ledger: LedgerEntry[];
-  profileEdits: Record<string, Partial<Profile>>;
-  agentEdits: Record<string, Partial<Agent>>;
-  newAgents: Agent[];
-  conversations: Conversation[];
-  conversationEdits: Record<string, Partial<Conversation>>;
-  messages: Message[];
-  interviewTurns: InterviewTurn[];
-  answeredTurns: Record<string, string>;
-  /** Last time an agent's knowledge changed in this browser (answers), for "knowledge updated". */
-  knowledgeTouchedAt: Record<string, string>;
-};
-
-const initialState = (): DemoState => ({
-  v: 1,
-  identityId: MARIA,
-  ledger: [],
-  profileEdits: {},
-  agentEdits: {},
-  newAgents: [],
-  conversations: [],
-  conversationEdits: {},
-  messages: [],
-  interviewTurns: [],
-  answeredTurns: {},
-  knowledgeTouchedAt: {},
-});
-
+const STORAGE_KEY = "bx-demo-bridge-v2";
+const LEGACY_KEY = "bx-demo-v1";
+type DraftKind = "interview" | "interview-control" | "grant" | "persona" | "source" | "sandbox" | "profile" | "chat";
+type Draft = { value: string; requestKey: string; dirty: true; operationId?: string };
+type Drafts = Record<string, Draft>;
+export type DemoState = { v: 2; identityId: string; snapshot: DemoSnapshot | null;
+  drafts: Drafts; interviews: Record<string, InterviewView>; status: "loading" | "ready" | "error";
+  error: string | null };
+const initialState = (): DemoState => ({ v: 2, identityId: MARIA, snapshot: null, drafts: {},
+  interviews: {}, status: "loading", error: null });
+const serverFallback = initialState();
 let state: DemoState | null = null;
+let started = false;
+let generation = 0;
+let identityQueue: Promise<void> = Promise.resolve();
 const listeners = new Set<() => void>();
+const draftKey = (kind: DraftKind, ownerId: string) => `${kind}:${ownerId}`;
+function selectServerIdentity(identityId: string): Promise<void> {
+  identityQueue = identityQueue.catch(() => undefined).then(async () => { await api.identity(identityId); });
+  return identityQueue;
+}
 
 function load(): DemoState {
-  if (typeof window === "undefined") return initialState();
+  if (typeof window === "undefined") return serverFallback;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as DemoState;
-      if (parsed?.v === 1) return { ...initialState(), ...parsed };
+      const parsed = JSON.parse(raw) as Partial<DemoState>;
+      if (parsed.v === 2) return { ...initialState(), identityId: parsed.identityId === "sam" ? "sam" : MARIA,
+        drafts: parsed.drafts && typeof parsed.drafts === "object" ? parsed.drafts : {} };
     }
-  } catch {
-    // Private window or blocked storage: fall back to the seeded state.
-  }
+  } catch { /* In-memory drafts still work when storage is unavailable. */ }
   return initialState();
 }
-
 function getSnapshot(): DemoState {
   if (typeof window === "undefined") return serverFallback;
   if (!state) state = load();
   return state;
 }
-
-const serverFallback = initialState();
-
-function getServerSnapshot(): DemoState | null {
-  return null;
+export const readDemoState = (): DemoState => getSnapshot();
+function setState(update: (current: DemoState) => DemoState) {
+  state = update(getSnapshot());
+  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: 2, identityId: state.identityId, drafts: state.drafts })); }
+  catch { /* Keep in memory. */ }
+  listeners.forEach(listener => listener());
 }
-
 function subscribe(listener: () => void) {
   listeners.add(listener);
+  if (!started && typeof window !== "undefined") {
+    started = true;
+    queueMicrotask(() => void refreshDemo(true).catch(() => undefined));
+  }
   return () => listeners.delete(listener);
 }
+export function useDemoSnapshot(): DemoState | null { return useSyncExternalStore(subscribe, getSnapshot, () => null); }
+export function useDemo(): DemoState { return useSyncExternalStore(subscribe, getSnapshot, () => serverFallback); }
 
-function setState(update: (s: DemoState) => DemoState) {
-  state = update(getSnapshot());
+/** An earlier identity response cannot replace the currently selected wallet. */
+export async function refreshDemo(syncIdentity = false): Promise<DemoSnapshot> {
+  const expected = getSnapshot().identityId;
+  const ticket = ++generation;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // Storage full or blocked: keep the in-memory state.
+    if (syncIdentity) await selectServerIdentity(expected);
+    if (ticket !== generation) throw new Error("Identity selection changed.");
+    const snapshot = await api.snapshot();
+    if (ticket === generation && snapshot.identityId === expected)
+      setState(s => ({ ...s, snapshot, status: "ready", error: null }));
+    return snapshot;
+  } catch (error) {
+    if (ticket === generation) setState(s => ({ ...s, status: "error", error: error instanceof Error ? error.message : "Server unavailable." }));
+    throw error;
   }
-  listeners.forEach((l) => l());
+}
+const live = (s: DemoState) => s.snapshot?.identityId === s.identityId ? s.snapshot : null;
+function requireLive(): DemoSnapshot {
+  const snapshot = live(getSnapshot());
+  if (!snapshot) throw new ApiClientError({ code: "configuration", message: getSnapshot().error ?? "Live services are unavailable. Check server configuration and retry.", retryable: true }, 503);
+  return snapshot;
+}
+const cents = (units: string) => Number(BigInt(units)) / 10_000_000;
+export const availableWalletUnits = (s: DemoState) => {
+  const wallet = live(s)?.wallet;
+  return wallet ? (BigInt(wallet.balanceUnits) - BigInt(wallet.heldUnits)).toString() : "0";
+};
+export const heldWalletUnits = (s: DemoState) => live(s)?.wallet.heldUnits ?? "0";
+export const walletStatus = (s: DemoState) => ({ balanceUnits: live(s)?.wallet.balanceUnits ?? "0",
+  heldUnits: heldWalletUnits(s), availableUnits: availableWalletUnits(s) });
+
+export function getDraft(kind: DraftKind, ownerId: string): Draft | null { return getSnapshot().drafts[draftKey(kind, ownerId)] ?? null; }
+export function saveDraft(kind: DraftKind, ownerId: string, value: string, requestKey?: string): Draft {
+  const key = draftKey(kind, ownerId);
+  const prior = getSnapshot().drafts[key];
+  const sameValue = prior?.value === value;
+  const draft = { value, requestKey: requestKey ?? (sameValue ? prior.requestKey : newRequestKey()),
+    dirty: true as const, operationId: sameValue ? prior.operationId : undefined };
+  setState(s => ({ ...s, drafts: { ...s.drafts, [key]: draft } }));
+  return draft;
+}
+export function clearDraft(kind: DraftKind, ownerId: string, acknowledged?: Draft) {
+  const key = draftKey(kind, ownerId);
+  setState(s => {
+    if (acknowledged && s.drafts[key] !== acknowledged) return s;
+    const drafts = { ...s.drafts }; delete drafts[key]; return { ...s, drafts };
+  });
+}
+function recordDraftOperation(conversationId: string, draft: Draft, operationId: string): Draft {
+  const updated = { ...draft, operationId };
+  const key = draftKey("chat", conversationId);
+  setState(s => s.drafts[key]?.requestKey === draft.requestKey
+    ? { ...s, drafts: { ...s.drafts, [key]: updated } } : s);
+  return updated;
 }
 
-/** null during server render and hydration; the app shell waits for it. */
-export function useDemoSnapshot(): DemoState | null {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-}
-
-/** For components rendered inside the hydrated shell. */
-export function useDemo(): DemoState {
-  const s = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  return s;
-}
-
-const uid = (prefix: string) => `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
-const nowIso = () => new Date().toISOString();
-
-// ---------------------------------------------------------------- selectors
-
-export const switchableIdentities = (): Identity[] => IDENTITIES.filter((i) => i.isSwitchable);
-
-export function identityById(id: string): Identity {
-  return IDENTITIES.find((i) => i.id === id) ?? IDENTITIES[0];
-}
-
-export function currentIdentity(s: DemoState): Identity {
-  const found = IDENTITIES.find((i) => i.id === s.identityId && i.isSwitchable);
-  return found ?? IDENTITIES[0];
-}
-
+export const switchableIdentities = (): Identity[] => IDENTITIES.filter(i => i.isSwitchable);
+export function identityById(id: string): Identity { return IDENTITIES.find(i => i.id === id) ?? IDENTITIES[0]; }
+export function currentIdentity(s: DemoState): Identity { return (live(s)?.identities ?? IDENTITIES).find(i => i.id === s.identityId && i.isSwitchable) ?? IDENTITIES[0]; }
 export function profileFor(s: DemoState, identityId: string): Profile {
-  const base = PROFILES.find((p) => p.identityId === identityId) ?? {
-    identityId,
-    displayName: identityById(identityId).displayName,
-    field: "",
-    credentials: "",
-    yearsExperience: null,
-    contactUrl: "",
-    bio: "",
-    location: "",
-  };
-  return { ...base, ...s.profileEdits[identityId] };
+  return live(s)?.profiles.find(p => p.identityId === identityId) ?? PROFILES.find(p => p.identityId === identityId) ??
+    { identityId, displayName: identityById(identityId).displayName, field: "", credentials: "", yearsExperience: null,
+      contactUrl: "", bio: "", location: "" };
 }
-
-/** Display name follows profile edits (AUTH-03). */
-export function displayName(s: DemoState, identityId: string): string {
-  return profileFor(s, identityId).displayName || identityById(identityId).displayName;
-}
-
-export function allAgents(s: DemoState): Agent[] {
-  return [...AGENTS, ...s.newAgents].map((a) => ({ ...a, ...s.agentEdits[a.id] }));
-}
-
-export function agentById(s: DemoState, id: string): Agent | undefined {
-  return allAgents(s).find((a) => a.id === id || a.slug === id);
-}
-
-export function ledgerFor(s: DemoState, identityId: string): LedgerEntry[] {
-  return [...LEDGER, ...s.ledger]
-    .filter((r) => r.identityId === identityId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export function allLedger(s: DemoState): LedgerEntry[] {
-  return [...LEDGER, ...s.ledger];
-}
-
+export function displayName(s: DemoState, identityId: string): string { return profileFor(s, identityId).displayName || identityById(identityId).displayName; }
+export function allAgents(s: DemoState): Agent[] { return live(s)?.agents ?? []; }
+export function agentById(s: DemoState, id: string): Agent | undefined { return allAgents(s).find(a => a.id === id || a.slug === id); }
+export function ledgerFor(s: DemoState, identityId: string): LedgerEntry[] { return live(s)?.ledger.filter(r => r.identityId === identityId) ?? []; }
+export function allLedger(s: DemoState): LedgerEntry[] { return live(s)?.ledger ?? []; }
 export function balanceOf(s: DemoState, identityId: string): number {
-  return allLedger(s)
-    .filter((r) => r.identityId === identityId)
-    .reduce((sum, r) => sum + r.amountCents, 0);
+  const snapshot = live(s);
+  return identityId === s.identityId && snapshot ? cents(snapshot.wallet.balanceUnits) : 0;
 }
-
-export function allConversations(s: DemoState): Conversation[] {
-  return [...CONVERSATIONS, ...s.conversations].map((c) => ({ ...c, ...s.conversationEdits[c.id] }));
-}
-
+export function allConversations(s: DemoState): Conversation[] { return live(s)?.conversations ?? []; }
 export function messagesFor(s: DemoState, conversationId: string): Message[] {
-  return [...MESSAGES, ...s.messages]
-    .filter((m) => m.conversationId === conversationId)
+  return (live(s)?.messages ?? []).filter(m => m.conversationId === conversationId)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
-
 export function conversationStats(s: DemoState, conversationId: string) {
-  const msgs = messagesFor(s, conversationId);
-  return {
-    messageCount: msgs.length,
-    spentCents: msgs.reduce((sum, m) => sum + (m.role === "assistant" ? (m.costCents ?? 0) : 0), 0),
-    lastMessageAt: msgs.at(-1)?.createdAt ?? null,
-  };
+  const messages = messagesFor(s, conversationId);
+  return { messageCount: messages.length, spentCents: messages.reduce((sum, m) => sum + (m.role === "assistant" ? m.costCents ?? 0 : 0), 0),
+    lastMessageAt: messages.at(-1)?.createdAt ?? null };
 }
-
 export function interviewTurnsFor(s: DemoState, agentId: string): InterviewTurn[] {
-  return [...INTERVIEW_TURNS, ...s.interviewTurns]
-    .filter((t) => t.agentId === agentId)
-    .map((t) => (t.answer === null && s.answeredTurns[t.id] ? { ...t, answer: s.answeredTurns[t.id] } : t))
-    .sort((a, b) => a.position - b.position);
+  return (live(s)?.interviewTurns ?? []).filter(t => t.agentId === agentId).sort((a, b) => a.position - b.position);
 }
-
-/** The question waiting for an answer: a seeded open turn, or the next canned follow-up. */
-export function pendingInterviewQuestion(s: DemoState, agentId: string): { turnId: string | null; question: string } {
-  const turns = interviewTurnsFor(s, agentId);
-  const open = turns.find((t) => t.answer === null);
-  if (open) return { turnId: open.id, question: open.question };
-  if (turns.length === 0) return { turnId: null, question: "Let's start with who you are. What do you do, who comes to you, and what do they usually ask first?" };
-  return { turnId: null, question: nextInterviewQuestion(turns.length) };
-}
-
-/**
- * Interview answers as retrievable chunks (Phase 3 D-02). Seeded answers that
- * already exist in CHUNKS are skipped so they are not cited twice.
- */
-export function interviewChunks(s: DemoState, agentId: string): Chunk[] {
-  const seeded = new Set(CHUNKS.filter((c) => c.agentId === agentId).map((c) => c.content.trim()));
-  return interviewTurnsFor(s, agentId)
-    .filter((t) => t.answer && !seeded.has(t.answer.trim()))
-    .map((t) => ({ id: `ic-${t.id}`, agentId, sourceId: `interview:${agentId}`, page: null, headingPath: null, question: t.question, content: t.answer! }));
-}
-
 export type KnowledgeStats = { answers: number; docChunks: number; total: number; lastUpdatedAt: string };
-
-/** Knowledge counts for the listing, the drawer and the publish gate: seeded counts plus anything answered in this browser. */
 export function knowledgeStats(s: DemoState, agentId: string): KnowledgeStats {
-  const seededShown = interviewTurnsFor({ ...s, interviewTurns: [], answeredTurns: {} }, agentId).filter((t) => t.answer).length;
-  const now = interviewTurnsFor(s, agentId).filter((t) => t.answer).length;
-  // Seeded agents without a transcript still report their interview source's chunk count.
-  const seededAnswers =
-    INTERVIEW_ANSWER_COUNTS[agentId] ?? SOURCES.find((x) => x.agentId === agentId && x.kind === "interview" && x.status === "ready")?.chunkCount ?? seededShown;
-  const answers = seededAnswers + (now - seededShown);
-  const docChunks = SOURCES.filter((x) => x.agentId === agentId && x.kind !== "interview" && x.status === "ready").reduce((n, x) => n + x.chunkCount, 0);
-  const stamps = [
-    ...SOURCES.filter((x) => x.agentId === agentId && x.status === "ready").map((x) => x.createdAt),
-    ...s.interviewTurns.filter((t) => t.agentId === agentId).map((t) => t.createdAt),
-    s.knowledgeTouchedAt[agentId] ?? "",
-    agentById(s, agentId)?.createdAt ?? "",
-  ].filter(Boolean);
-  return { answers, docChunks, total: answers + docChunks, lastUpdatedAt: stamps.sort().at(-1) ?? nowIso() };
+  const answers = interviewTurnsFor(s, agentId).filter(turn => turn.answer !== null).length;
+  const sources = (live(s)?.sources ?? []).filter(source => source.agentId === agentId && source.status === "ready" && source.kind !== "interview");
+  const docChunks = sources.reduce((sum, source) => sum + source.chunkCount, 0);
+  return { answers, docChunks, total: answers + docChunks,
+    lastUpdatedAt: sources.map(source => source.createdAt).sort().at(-1) ?? agentById(s, agentId)?.updatedAt ?? new Date(0).toISOString() };
 }
-
-// ------------------------------------------------------------------ actions
-
+export function pendingInterviewQuestion(s: DemoState, agentId: string): { turnId: string | null; question: string } {
+  const pending = s.interviews[agentId]?.pendingQuestion;
+  if (pending) return { turnId: pending.id, question: pending.text };
+  const open = interviewTurnsFor(s, agentId).find(t => t.answer === null);
+  return open ? { turnId: open.id, question: open.question } : { turnId: null, question: "Start the interview to get your next question." };
+}
 export type Refusal = { ok: false; reason: "insufficient_credits"; neededCents: number; availableCents: number };
+function creditRefusal(error: unknown): Refusal | null {
+  if (!(error instanceof ApiClientError) || error.detail.code !== "insufficient_credits") return null;
+  return { ok: false, reason: "insufficient_credits", neededCents: cents(error.detail.neededUnits ?? "0"),
+    availableCents: cents(error.detail.availableUnits ?? "0") };
+}
 
 export function switchIdentity(identityId: string): Identity | null {
-  const target = IDENTITIES.find((i) => i.id === identityId && i.isSwitchable);
+  const target = switchableIdentities().find(i => i.id === identityId);
   if (!target) return null;
-  setState((s) => ({ ...s, identityId: target.id }));
+  generation++;
+  setState(s => ({ ...s, identityId, snapshot: null, interviews: {}, status: "loading", error: null }));
+  void refreshDemo(true).catch(error => {
+    setState(s => s.identityId === identityId ? { ...s, status: "error", error: error instanceof Error ? error.message : "Identity switch failed." } : s);
+  });
   return target;
 }
-
-export function addCredits(kind: "subscription" | "pack"): { grantedCents: number; balanceCents: number } {
-  const amount = kind === "subscription" ? SUBSCRIPTION_GRANT_CENTS : PACK_GRANT_CENTS;
-  let balance = 0;
-  setState((s) => {
-    const id = currentIdentity(s).id;
-    balance = balanceOf(s, id) + amount;
-    const row: LedgerEntry = {
-      id: uid("l"),
-      identityId: id,
-      kind,
-      amountCents: amount,
-      balanceAfter: balance,
-      purpose: null,
-      refType: null,
-      refId: null,
-      note: kind === "subscription" ? "Mock monthly plan · no payment taken" : "Mock credit pack · no payment taken",
-      createdAt: nowIso(),
-    };
-    return { ...s, ledger: [...s.ledger, row] };
-  });
-  return { grantedCents: amount, balanceCents: balance };
+export async function addCredits(kind: "subscription" | "pack"): Promise<{ grantedCents: number; balanceCents: number }> {
+  const snapshot = requireLive();
+  const draft = saveDraft("grant", snapshot.identityId, kind);
+  const result = await api.grant(kind, draft.requestKey);
+  clearDraft("grant", snapshot.identityId, draft);
+  await refreshDemo();
+  return { grantedCents: cents(result.grantUnits), balanceCents: cents(result.balanceUnits) };
+}
+export const sandboxConversationId = (agentId: string) => `sandbox:${agentId}`;
+export async function sendSandboxMessage(agentId: string, text: string): Promise<{ ok: true; chargedCents: number } | Refusal> {
+  requireLive();
+  const draft = saveDraft("sandbox", agentId, text);
+  let chargedUnits: string | null = null; let done = false;
+  try {
+    for await (const event of streamSandbox(agentId, text, draft.requestKey)) {
+      if (event.type === "cost") chargedUnits = event.chargedUnits;
+      if (event.type === "done") done = true;
+    }
+    if (!done) throw new ApiClientError({ code: "provider", message: "Answer is still running. Replay the operation before sending again.", retryable: true }, 0);
+    await refreshDemo(); clearDraft("sandbox", agentId, draft);
+    return { ok: true, chargedCents: chargedUnits ? cents(chargedUnits) : 0 };
+  } catch (error) { const refusal = creditRefusal(error); if (refusal) return refusal; throw error; }
+}
+export async function readInterview(agentId: string): Promise<InterviewView> {
+  requireLive();
+  const view = await api.interview(agentId);
+  setState(s => ({ ...s, interviews: { ...s.interviews, [agentId]: view } }));
+  return view;
+}
+export async function controlInterview(agentId: string, action: "start" | "pause" | "resume" | "skip" | "continue" | "dismiss-ready", requestKey?: string): Promise<InterviewView> {
+  requireLive();
+  const draft = saveDraft("interview-control", agentId, action, requestKey);
+  const view = await api.interviewControl(agentId, action, draft.requestKey);
+  clearDraft("interview-control", agentId, draft);
+  setState(s => ({ ...s, interviews: { ...s.interviews, [agentId]: view } }));
+  await refreshDemo(); return view;
+}
+export async function answerInterview(agentId: string, answer: string): Promise<{ ok: true; chargedCents: number } | Refusal> {
+  requireLive();
+  const draft = saveDraft("interview", agentId, answer);
+  try {
+    let view = getSnapshot().interviews[agentId] ?? await readInterview(agentId);
+    if (!view.pendingQuestion) {
+      if (view.answers.length === 0) view = await controlInterview(agentId, "start");
+      else {
+        if (view.state === "paused") view = await controlInterview(agentId, "resume");
+        if (!view.pendingQuestion) view = await controlInterview(agentId, "continue");
+      }
+    }
+    if (!view.pendingQuestion) throw new ApiClientError({ code: "conflict", message: "No interview question is open.", retryable: true }, 409);
+    const result = await api.interviewSubmit(agentId, { questionId: view.pendingQuestion.id, text: answer,
+      expectedVersion: view.version }, draft.requestKey);
+    setState(s => ({ ...s, interviews: { ...s.interviews, [agentId]: result } }));
+    await refreshDemo(); clearDraft("interview", agentId, draft);
+    return { ok: true, chargedCents: 0 };
+  } catch (error) { const refusal = creditRefusal(error); if (refusal) return refusal; throw error; }
+}
+export async function saveProfile(identityId: string, profile: Partial<Profile>): Promise<void> {
+  const snapshot = requireLive();
+  if (snapshot.identityId !== identityId) throw new Error("Profile is unavailable.");
+  const draft = saveDraft("profile", identityId, JSON.stringify(profile));
+  const { identityId: _id, origin: _origin, ...patch } = profile;
+  void _id; void _origin;
+  await api.saveProfile(patch, snapshot.backend.profileVersion);
+  await refreshDemo(); clearDraft("profile", identityId, draft);
+}
+export async function savePersona(agentId: string, persona: PersonaForm): Promise<void> {
+  const snapshot = requireLive();
+  const current = snapshot.backend.personaStates[agentId];
+  if (!current) throw new Error("Persona is unavailable.");
+  const draft = saveDraft("persona", agentId, JSON.stringify(persona));
+  const expectedVersions = Object.fromEntries(Object.entries(persona).map(([name]) => [name, current.fields[name as keyof PersonaForm]?.version ?? 0]));
+  await api.savePersona(agentId, persona, expectedVersions);
+  await refreshDemo(); clearDraft("persona", agentId, draft);
+}
+export async function createAgent(input: { name: string; category: Category }): Promise<string> {
+  requireLive();
+  const agent = await api.createAgent(input.name, input.category);
+  await refreshDemo(); return agent.id;
+}
+export async function resetDemo(): Promise<void> {
+  requireLive();
+  const snapshot = await api.reset();
+  setState(s => ({ ...s, snapshot, drafts: {}, interviews: {}, status: "ready", error: null }));
 }
 
-/** Reserve-then-settle for one metered call on the current state. */
-function precheck(s: DemoState, identityId: string, purpose: MeteredPurpose, multiplier = 1): Refusal | null {
-  const needed = estimateCents(purpose, multiplier);
-  const available = balanceOf(s, identityId);
-  return available < needed ? { ok: false, reason: "insufficient_credits", neededCents: needed, availableCents: available } : null;
+/** Legacy money rows are excluded. Original v1 data stays until every record is acknowledged. */
+export async function importLegacyDrafts(): Promise<{ imported: number; remaining: number }> {
+  requireLive();
+  const raw = window.localStorage.getItem(LEGACY_KEY);
+  if (!raw) return { imported: 0, remaining: 0 };
+  const legacy = JSON.parse(raw) as { profileEdits?: Record<string, Partial<Profile>>;
+    agentEdits?: Record<string, Partial<Agent>>; answeredTurns?: Record<string, string>;
+    newAgents?: Agent[]; messages?: Message[] };
+  const records: unknown[] = [];
+  const identityId = getSnapshot().identityId;
+  if (legacy.profileEdits?.[identityId]) {
+    const { identityId: _id, origin: _origin, ...patch } = legacy.profileEdits[identityId];
+    void _id; void _origin;
+    records.push({ key: `profile:${identityId}`, kind: "profile", patch });
+  }
+  for (const [agentId, edit] of Object.entries(legacy.agentEdits ?? {})) if (edit.persona)
+    records.push({ key: `persona:${agentId}`, kind: "persona", agentId, patch: edit.persona });
+  for (const [turnId, answer] of Object.entries(legacy.answeredTurns ?? {})) {
+    const turn = INTERVIEW_TURNS.find(t => t.id === turnId);
+    if (turn && answer.trim()) records.push({ key: `answer:${turnId}`, kind: "answer", agentId: turn.agentId, question: turn.question, text: answer });
+  }
+  const unhandled = (legacy.newAgents?.length ?? 0) + (legacy.messages?.length ?? 0) +
+    Object.keys(legacy.profileEdits ?? {}).filter(id => id !== identityId).length +
+    Object.values(legacy.agentEdits ?? {}).filter(edit => edit.systemPromptOverride !== undefined).length;
+  if (!records.length) return { imported: 0, remaining: unhandled };
+  const result = await api.importLegacy(records);
+  const imported = result.results.filter(item => item.ok).length;
+  if (imported === records.length && unhandled === 0) window.localStorage.removeItem(LEGACY_KEY);
+  if (imported) await refreshDemo();
+  return { imported, remaining: records.length - imported + unhandled };
 }
 
-function debitRow(s: DemoState, identityId: string, amountCents: number, purpose: MeteredPurpose, refType: LedgerEntry["refType"], refId: string, note: string): LedgerEntry {
-  const balance = balanceOf(s, identityId);
-  const debit = Math.min(amountCents, balance);
-  return { id: uid("l"), identityId, kind: "debit", amountCents: -debit, balanceAfter: balance - debit, purpose, refType, refId, note, createdAt: nowIso() };
-}
-
-/** Canned model usage per call (placeholder until the real model runs in Phase 2). */
-const CANNED_USAGE: Record<MeteredPurpose, Parameters<typeof costCentsFromUsage>[0]> = {
-  interview_turn: { model: "claude-sonnet-5", tokensIn: 5000, tokensOut: 400 },
-  embedding: { model: "voyage-4-lite", tokensIn: 400, tokensOut: 0 },
-  sandbox_message: { model: "claude-sonnet-5", tokensIn: 6000, tokensOut: 250 },
-  chat_message: { model: "claude-sonnet-5", tokensIn: 6000, tokensOut: 250 },
-};
-
-export function startConversation(agentId: string, title: string): string {
-  const id = uid("c");
-  setState((s) => ({
-    ...s,
-    conversations: [
-      ...s.conversations,
-      { id, agentId, hirerId: currentIdentity(s).id, title: title.slice(0, 60) || "New conversation", shareTranscript: false, createdAt: nowIso() },
-    ],
-  }));
-  return id;
-}
-
-/** One hirer file per conversation (CHAT-04). Text arrives from /api/extract; it is context, never instructions. */
-export function attachConversationFile(conversationId: string, file: { name: string; text: string; chars: number }) {
-  setState((s) => ({
-    ...s,
-    conversationEdits: { ...s.conversationEdits, [conversationId]: { ...s.conversationEdits[conversationId], fileName: file.name, fileText: file.text, fileChars: file.chars } },
-  }));
-}
-
-export function removeConversationFile(conversationId: string) {
-  setState((s) => ({
-    ...s,
-    conversationEdits: { ...s.conversationEdits, [conversationId]: { ...s.conversationEdits[conversationId], fileName: null, fileText: null, fileChars: null } },
-  }));
-}
-
-export type ChatResult = { ok: true; chargedCents: number; grounded: boolean; messageId: string } | Refusal;
-
-/** Replies created in this browser session, so the chat page can stream them in once (CHAT-01). Not persisted. */
 const freshMessages = new Set<string>();
 export const isFreshMessage = (messageId: string) => freshMessages.has(messageId);
-export const markStreamed = (messageId: string) => {
-  freshMessages.delete(messageId);
-};
+export const markStreamed = (messageId: string) => { freshMessages.delete(messageId); };
 
-/**
- * Hirer message (CHAT-01..05, CHAT-12, CRED-04). Weak retrieval returns the fixed
- * refusal at no charge (D-03); otherwise the canned grounded answer is charged
- * at raw cost × multiplier and split across hirer, platform and expert.
- */
-export async function sendChatMessage(conversationId: string, text: string): Promise<ChatResult> {
-  const s0 = getSnapshot();
-  const conversation = allConversations(s0).find((c) => c.id === conversationId);
-  const agent = conversation && agentById(s0, conversation.agentId);
-  if (!conversation || !agent) throw new Error("Conversation not found");
+export async function startConversation(agentId: string, title: string): Promise<string> {
+  requireLive();
+  const conversation = await api.createConversation(agentId, title);
+  await refreshDemo();
+  return conversation.id;
+}
 
-  const expertName = displayName(s0, agent.ownerId);
-  const chunks = await searchKnowledge(agent, text, 4, interviewChunks(s0, agent.id));
-  /* First reply of the conversation, refusal or not: carries the disclaimer (CHAT-05) and counts as one use (D-13). */
-  const isFirstTurn = messagesFor(s0, conversationId).length === 0;
-  const bumpUsage = (edits: DemoState["agentEdits"]) =>
-    isFirstTurn ? { ...edits, [agent.id]: { ...edits[agent.id], usageCount: agent.usageCount + 1 } } : edits;
-
-  if (isWeakRetrieval(chunks)) {
-    const reply = refusalReply(expertName, profileFor(s0, agent.ownerId).contactUrl || null, isFirstTurn ? disclaimerFor(agent.persona.category) : null);
-    const messageId = uid("m");
+export async function sendChatMessage(conversationId: string, text: string, onEvent?: (event: ChatStreamEvent) => void): Promise<{ ok: true; chargedCents: number; messageId: string } | Refusal> {
+  const snapshot = requireLive();
+  const conversation = snapshot.conversations.find(item => item.id === conversationId && item.hirerId === snapshot.identityId);
+  if (!conversation) throw new ApiClientError({ code: "not_owner", message: "Conversation is unavailable.", retryable: false }, 404);
+  let draft = saveDraft("chat", conversationId, text);
+  let chargedUnits: string | null = null;
+  let messageId: string | null = null;
+  let operationId: string | null = draft.operationId ?? null;
+  try {
+    if (!operationId) {
+      for await (const event of streamChat(conversationId, text, draft.requestKey)) {
+        onEvent?.(event);
+        operationId = event.operationId;
+        if (draft.operationId !== operationId) draft = recordDraftOperation(conversationId, draft, operationId);
+        if (event.type === "cost") chargedUnits = event.chargedUnits;
+        if (event.type === "done") messageId = event.messageId;
+      }
+    }
+    if (!messageId && operationId) {
+      const replay = await api.chatReplay(conversationId, operationId);
+      replay.events.forEach(event => onEvent?.(event));
+      const cost = replay.events.findLast(event => event.type === "cost");
+      const done = replay.events.findLast(event => event.type === "done");
+      if (cost?.type === "cost") chargedUnits = cost.chargedUnits;
+      if (done?.type === "done") messageId = done.messageId;
+    }
+    if (!messageId) throw new ApiClientError({ code: "provider", message: "Answer is still running. Retry the saved message to replay it.", retryable: true, operationId: operationId ?? undefined }, 0);
+    await refreshDemo(); clearDraft("chat", conversationId, draft);
     freshMessages.add(messageId);
-    setState((s) => {
-      const createdAt = nowIso();
-      return {
-        ...s,
-        messages: [
-          ...s.messages,
-          { id: uid("m"), conversationId, role: "user", content: text, citations: [], feedback: null, costCents: null, createdAt },
-          { id: messageId, conversationId, role: "assistant", content: reply, citations: [], feedback: null, costCents: 0, refusal: true, createdAt: new Date(Date.now() + 1).toISOString() },
-        ],
-        agentEdits: bumpUsage(s.agentEdits),
-      };
-    });
-    return { ok: true, chargedCents: 0, grounded: false, messageId };
-  }
-
-  const refusal = precheck(s0, conversation.hirerId, "chat_message", agent.rateMultiplier);
-  if (refusal) return refusal;
-
-  const answer = cannedAnswer(agent, expertName, chunks, isFirstTurn, { fileName: conversation.fileName ?? null });
-  const split = splitUsageCharge({ rawCents: costCentsFromUsage(CANNED_USAGE.chat_message), multiplier: agent.rateMultiplier });
-
-  let charged = 0;
-  const messageId = uid("m");
-  freshMessages.add(messageId);
-  setState((s) => {
-    const hirerRow = debitRow(s, conversation.hirerId, split.hirerDebitCents, "chat_message", "conversation", conversationId, `${agent.persona.name} · 1 message`);
-    charged = -hirerRow.amountCents;
-    const rows: LedgerEntry[] = [hirerRow];
-    const createdAt = nowIso();
-    if (split.expertCreditCents > 0 && agent.ownerId !== conversation.hirerId) {
-      const expertBalance = balanceOf(s, agent.ownerId) + split.expertCreditCents;
-      rows.push({ id: uid("l"), identityId: agent.ownerId, kind: "earnings", amountCents: split.expertCreditCents, balanceAfter: expertBalance, purpose: null, refType: "conversation", refId: conversationId, note: `${conversation.title} · net`, createdAt });
-    }
-    rows.push({ id: uid("l"), identityId: null, kind: "platform_cost", amountCents: split.platformCostCents, balanceAfter: null, purpose: "chat_message", refType: "conversation", refId: conversationId, note: "Raw LLM cost", createdAt });
-    if (split.platformMarginCents > 0) {
-      rows.push({ id: uid("l"), identityId: null, kind: "platform_margin", amountCents: split.platformMarginCents, balanceAfter: null, purpose: "chat_message", refType: "conversation", refId: conversationId, note: "15% of margin", createdAt });
-    }
-    const userMsg: Message = { id: uid("m"), conversationId, role: "user", content: text, citations: [], feedback: null, costCents: null, createdAt };
-    const botMsg: Message = {
-      id: messageId, conversationId, role: "assistant", content: answer.content, citations: answer.citations, feedback: null,
-      costCents: charged, createdAt: new Date(Date.now() + 1).toISOString(),
-    };
-    return { ...s, ledger: [...s.ledger, ...rows], messages: [...s.messages, userMsg, botMsg], agentEdits: bumpUsage(s.agentEdits) };
-  });
-  return { ok: true, chargedCents: charged, grounded: true, messageId };
+    return { ok: true, chargedCents: chargedUnits ? cents(chargedUnits) : 0, messageId };
+  } catch (error) { const refusal = creditRefusal(error); if (refusal) return refusal; throw error; }
 }
 
-export const sandboxConversationId = (agentId: string) => `sandbox:${agentId}`;
-
-/** Test chat: same pipeline, charged to the builder at raw cost (SBOX-01). */
-export async function sendSandboxMessage(agentId: string, text: string): Promise<{ ok: true; chargedCents: number } | Refusal> {
-  const s0 = getSnapshot();
-  const agent = agentById(s0, agentId);
-  if (!agent) throw new Error("Agent not found");
-  const builder = currentIdentity(s0).id;
-  const refusal = precheck(s0, builder, "sandbox_message");
-  if (refusal) return refusal;
-
-  const conversationId = sandboxConversationId(agentId);
-  const chunks = await searchKnowledge(agent, text, 4, interviewChunks(s0, agent.id));
-  const answer = cannedAnswer(agent, displayName(s0, agent.ownerId), chunks, messagesFor(s0, conversationId).length === 0);
-  const cost = toChargeCents(costCentsFromUsage(CANNED_USAGE.sandbox_message));
-
-  let charged = 0;
-  setState((s) => {
-    const row = debitRow(s, builder, cost, "sandbox_message", "agent", agentId, `Sandbox · ${agent.persona.name}`);
-    charged = -row.amountCents;
-    const createdAt = nowIso();
-    return {
-      ...s,
-      ledger: [...s.ledger, row],
-      messages: [
-        ...s.messages,
-        { id: uid("m"), conversationId, role: "user", content: text, citations: [], feedback: null, costCents: null, createdAt },
-        {
-          id: uid("m"), conversationId, role: "assistant", content: answer.content, citations: answer.citations, feedback: null, costCents: charged,
-          retrieved: chunks.map((c) => ({ sourceName: c.sourceName, score: c.score, page: c.page, question: c.question })),
-          createdAt: new Date(Date.now() + 1).toISOString(),
-        },
-      ],
-    };
-  });
-  return { ok: true, chargedCents: charged };
+export async function setRateMultiplier(agentId: string, multiplier: number): Promise<void> {
+  requireLive();
+  await api.rate(agentId, multiplier);
+  await refreshDemo();
 }
-
-/** Interview answer: stored as a turn, charged at raw cost to the builder (INTV-06 mechanics). */
-export function answerInterview(agentId: string, answer: string): { ok: true; chargedCents: number } | Refusal {
-  const s0 = getSnapshot();
-  const agent = agentById(s0, agentId);
-  if (!agent) throw new Error("Agent not found");
-  const builder = currentIdentity(s0).id;
-  const refusal = precheck(s0, builder, "interview_turn");
-  if (refusal) return refusal;
-  const cost = toChargeCents(costCentsFromUsage(CANNED_USAGE.interview_turn));
-
-  let charged = 0;
-  setState((s) => {
-    const pending = pendingInterviewQuestion(s, agentId);
-    const turns = interviewTurnsFor(s, agentId);
-    const row = debitRow(s, builder, cost, "interview_turn", "interview", agentId, `${agent.persona.name} · answer ${turns.filter((t) => t.answer).length + 1}`);
-    charged = -row.amountCents;
-    const knowledgeTouchedAt = { ...s.knowledgeTouchedAt, [agentId]: nowIso() };
-    if (pending.turnId) {
-      return { ...s, ledger: [...s.ledger, row], answeredTurns: { ...s.answeredTurns, [pending.turnId]: answer }, knowledgeTouchedAt };
-    }
-    const turn: InterviewTurn = { id: uid("t"), agentId, position: (turns.at(-1)?.position ?? 0) + 1, question: pending.question, answer, createdAt: nowIso() };
-    return { ...s, ledger: [...s.ledger, row], interviewTurns: [...s.interviewTurns, turn], knowledgeTouchedAt };
-  });
-  return { ok: true, chargedCents: charged };
+export async function publishAgent(agentId: string, opts: { acceptConsent?: boolean } = {}): Promise<void> {
+  requireLive();
+  await api.publish(agentId, true, opts.acceptConsent ?? false);
+  await refreshDemo();
 }
-
-export function saveProfile(identityId: string, profile: Partial<Profile>) {
-  setState((s) => ({ ...s, profileEdits: { ...s.profileEdits, [identityId]: { ...s.profileEdits[identityId], ...profile } } }));
-}
-
-export function updateAgent(agentId: string, patch: Partial<Agent>) {
-  setState((s) => ({ ...s, agentEdits: { ...s.agentEdits, [agentId]: { ...s.agentEdits[agentId], ...patch, updatedAt: nowIso() } } }));
-}
-
-export function savePersona(agentId: string, persona: PersonaForm) {
-  updateAgent(agentId, { persona });
-}
-
-// ------------------------------------------------------------------ publish (PUB-01..03)
-
-export type PublishResult = { ok: true; status: AgentStatus } | { ok: false; blockers: string[] };
-
-export function setRateMultiplier(agentId: string, multiplier: number) {
-  updateAgent(agentId, { rateMultiplier: clampRate(multiplier) });
-}
-
-/** Instant publish once the gate passes and consent is accepted (Phase 3 D-05, D-07). */
-export function publishAgent(agentId: string, opts: { acceptConsent?: boolean } = {}): PublishResult {
-  const s0 = getSnapshot();
-  const agent = agentById(s0, agentId);
-  if (!agent) throw new Error("Agent not found");
-  if (agent.ownerId !== currentIdentity(s0).id) return { ok: false, blockers: ["Only the owner can publish"] };
-  const blockers = publishBlockers(agent.persona, knowledgeStats(s0, agentId).total);
-  if (!agent.consentAcceptedAt && !opts.acceptConsent) blockers.push("Accept the content consent");
-  if (blockers.length) return { ok: false, blockers };
-  updateAgent(agentId, { status: "published", consentAcceptedAt: agent.consentAcceptedAt ?? nowIso() });
-  return { ok: true, status: "published" };
-}
-
-/** Instant unpublish; open chats keep working (Phase 3 D-08). */
-export function unpublishAgent(agentId: string): PublishResult {
-  const s0 = getSnapshot();
-  const agent = agentById(s0, agentId);
-  if (!agent) throw new Error("Agent not found");
-  if (agent.ownerId !== currentIdentity(s0).id) return { ok: false, blockers: ["Only the owner can unpublish"] };
-  updateAgent(agentId, { status: "unpublished" });
-  return { ok: true, status: "unpublished" };
-}
-
-export function createAgent(input: { name: string; category: Category }): string {
-  const base = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "agent";
-  const id = `${base}-${crypto.randomUUID().slice(0, 4)}`;
-  setState((s) => {
-    const owner = currentIdentity(s).id;
-    const agent: Agent = {
-      id, slug: id, ownerId: owner, icon: "bot",
-      persona: { name: input.name, category: input.category, headline: "", description: "", howIWork: "", always: [], never: [], exampleQuestions: [], greeting: "" },
-      systemPromptOverride: null, status: "draft", rateMultiplier: 1, consentAcceptedAt: null,
-      ratingAvg: 0, ratingCount: 0, usageCount: 0, createdAt: nowIso(), updatedAt: nowIso(),
-    };
-    return { ...s, newAgents: [...s.newAgents, agent] };
-  });
-  return id;
-}
-
-export function resetDemo() {
-  setState(() => ({ ...initialState(), identityId: getSnapshot().identityId }));
+export async function unpublishAgent(agentId: string): Promise<void> {
+  requireLive();
+  await api.publish(agentId, false);
+  await refreshDemo();
 }

@@ -5,6 +5,12 @@ describe("stripCitations", () => {
   it("drops [n] markers and collapses the whitespace they leave behind", () => {
     expect(stripCitations("From Maria: rest it. [1]\n\nAlso [2] elevate.")).toBe("From Maria: rest it. Also elevate.");
   });
+  it("also drops persisted expert and web evidence IDs", () => {
+    expect(stripCitations("Rest. [expert:chunk-1] Read more. [web:result-2]"))
+      .toBe("Rest. Read more.");
+    const plan = planSpeech("Rest. [expert:chunk-1] Read more.");
+    expect(plan.startsAt[1]).toBe(plan.startsAt[0]);
+  });
 });
 
 describe("planSpeech", () => {

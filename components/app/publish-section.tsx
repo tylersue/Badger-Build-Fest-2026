@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Circle, CircleCheck, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { Card, PageBody, PageHeader, StatusPill, buttonClass } from "@/components/app/ui";
@@ -13,34 +13,51 @@ import { CONSENT_TEXT, RATE_MAX, RATE_MIN, RATE_STEP } from "@/lib/config/publis
 import { formatCredits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Agent } from "@/lib/types";
+import { api } from "@/lib/api-client";
 
 /* Publish tab (PUB-01..04): checklist gate, rate slider, consent, instant publish and unpublish. */
 export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: boolean }) {
   const s = useDemo();
   const stats = knowledgeStats(s, agent.id);
-  const checklist = publishChecklist(agent.persona, stats.total);
+  const [activeChunks, setActiveChunks] = useState<number | null>(null);
+  const [rateOverride, setRateOverride] = useState<number | null>(null);
+  const rate = rateOverride ?? agent.rateMultiplier;
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!isOwner || s.status !== "ready") return;
+    let active = true;
+    void api.publishStatus(agent.id).then(value => { if (active) setActiveChunks(value.activeChunks); },
+      error => { if (active) toast.error(error instanceof Error ? error.message : "Publish checklist unavailable."); });
+    return () => { active = false; };
+  }, [agent.id, isOwner, s.status, s.snapshot]);
+  const checklist = publishChecklist(agent.persona, activeChunks ?? 0);
   const ready = checklist.every((item) => item.ok);
   const accepted = !!agent.consentAcceptedAt;
   const [consent, setConsent] = useState(false);
   const [confirmUnpublish, setConfirmUnpublish] = useState(false);
   const published = agent.status === "published";
-  const canPublishNow = isOwner && ready && (accepted || consent);
-  const split = splitUsageCharge({ rawCents: TYPICAL_CALL_CENTS.chat_message, multiplier: agent.rateMultiplier });
+  const canPublishNow = isOwner && activeChunks !== null && ready && (accepted || consent) && !busy;
+  const split = splitUsageCharge({ rawCents: TYPICAL_CALL_CENTS.chat_message, multiplier: rate });
   const base = `/build/${agent.id}`;
 
-  const publish = () => {
-    const result = publishAgent(agent.id, { acceptConsent: consent });
-    if (!result.ok) {
-      toast(`Can't publish yet: ${result.blockers.join(", ")}`);
-      return;
-    }
-    toast("Agent published · it's live in the marketplace");
+  const publish = async () => {
+    setBusy(true);
+    try { await publishAgent(agent.id, { acceptConsent: consent }); toast("Agent published · it's live in the marketplace"); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Could not publish agent."); }
+    finally { setBusy(false); }
   };
 
-  const unpublish = () => {
-    const result = unpublishAgent(agent.id);
-    setConfirmUnpublish(false);
-    toast(result.ok ? "Agent unpublished" : result.blockers.join(", "));
+  const unpublish = async () => {
+    setBusy(true);
+    try { await unpublishAgent(agent.id); setConfirmUnpublish(false); toast("Agent unpublished"); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Could not unpublish agent."); }
+    finally { setBusy(false); }
+  };
+  const changeRate = async (next: number) => {
+    setRateOverride(next); setBusy(true);
+    try { await setRateMultiplier(agent.id, next); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Could not save rate."); }
+    finally { setRateOverride(null); setBusy(false); }
   };
 
   return (
@@ -71,7 +88,7 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h3 className="text-sm font-semibold">Rate multiplier</h3>
             <span data-testid="rate-value" className="text-sm tabular-nums">
-              {agent.rateMultiplier}× · about {typicalMessageCents(agent.rateMultiplier)} credits per message
+              {rate}× · about {typicalMessageCents(rate)} credits per message
             </span>
           </div>
           <input
@@ -80,9 +97,9 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
             min={RATE_MIN}
             max={RATE_MAX}
             step={RATE_STEP}
-            value={agent.rateMultiplier}
-            disabled={!isOwner}
-            onChange={(e) => setRateMultiplier(agent.id, Number(e.target.value))}
+            value={rate}
+            disabled={!isOwner || busy}
+            onChange={(e) => void changeRate(Number(e.target.value))}
             aria-label="Rate multiplier"
             className="mt-3 w-full accent-brand"
           />
@@ -123,11 +140,11 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
                 {published ? "View listing" : "Preview listing"}
               </Link>
               {published ? (
-                <button data-testid="unpublish" onClick={() => setConfirmUnpublish(true)} disabled={!isOwner} className={buttonClass("destructive", "lg")}>
+                <button data-testid="unpublish" onClick={() => setConfirmUnpublish(true)} disabled={!isOwner || busy} className={buttonClass("destructive", "lg")}>
                   Unpublish
                 </button>
               ) : (
-                <button data-testid="publish" onClick={publish} disabled={!canPublishNow} className={buttonClass("primary", "lg")}>
+                <button data-testid="publish" onClick={() => void publish()} disabled={!canPublishNow} className={buttonClass("primary", "lg")}>
                   <Rocket />
                   Publish agent
                 </button>
@@ -142,7 +159,7 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
               <div className="font-semibold">Unpublish agent</div>
               <p className="mt-1 text-fg-tertiary">{agent.persona.name} leaves the marketplace now. Open chats keep working.</p>
               <div className="mt-3 flex gap-2">
-                <button data-testid="unpublish-confirm-button" onClick={unpublish} className={buttonClass("destructive")}>
+                <button data-testid="unpublish-confirm-button" onClick={() => void unpublish()} disabled={busy} className={buttonClass("destructive")}>
                   Unpublish
                 </button>
                 <button onClick={() => setConfirmUnpublish(false)} className={buttonClass("secondary")}>

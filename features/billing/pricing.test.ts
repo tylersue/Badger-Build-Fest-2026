@@ -1,30 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { costCentsFromUsage, estimateCents, splitUsageCharge, toChargeCents } from "./pricing";
-
+import { costCentsFromUsage, costUnitsFromUsage, estimateCents, priceUsage, splitUsageCharge, toChargeCents } from "./pricing";
 describe("billing math", () => {
-  it("prices usage in fractional cents", () => {
-    expect(costCentsFromUsage({ model: "claude-sonnet-5", tokensIn: 1200, tokensOut: 300 })).toBeCloseTo(0.54);
-    expect(costCentsFromUsage({ model: "voyage-4-lite", tokensIn: 1_000_000, tokensOut: 0 })).toBe(2);
+  it("prices fractional credits and all usage components", () => {
+    expect(costUnitsFromUsage({ model: "claude-sonnet-5", tokensIn: 1200, tokensOut: 300 })).toBe(BigInt("5400000"));
+    expect(costCentsFromUsage({ model: "claude-sonnet-5", tokensIn: 1200, tokensOut: 300 })).toBe(0.54);
+    expect(costUnitsFromUsage({ model: "voyage-4-lite", embeddingTokens: 1_000_000 })).toBe(BigInt("20000000"));
+    expect(costUnitsFromUsage({ model: "claude-sonnet-5", cacheReadTokens: 1_000_000, cacheWriteTokens: 1_000_000, successfulSearchCount: 2 })).toBe(BigInt("2720000000"));
+    expect(costUnitsFromUsage({ model: "claude-haiku-4-5", tokensIn: 1 })).toBe(BigInt("1000"));
+    expect(priceUsage({ model: "claude-haiku-4-5", tokensIn: 1 })).toMatchObject({ policy: "standard", grossUnits: BigInt("1000"), effectiveUnits: BigInt("1000") });
+    expect(() => costUnitsFromUsage({ model: "claude-sonnet-5", tokensIn: -1 })).toThrow(RangeError);
   });
-
-  it("reserves the typical cost times the multiplier", () => {
+  it("retains estimates only as display metadata", () => {
     expect(estimateCents("chat_message", 3)).toBe(9);
     expect(estimateCents("interview_turn")).toBe(2);
+    expect(toChargeCents(0.54)).toBe(0.54);
   });
-
-  it("charges at least one credit for any non-zero cost", () => {
-    expect(toChargeCents(0.54)).toBe(1);
-    expect(toChargeCents(0)).toBe(0);
-  });
-
-  it("splits a chat charge so every credit is accounted for", () => {
-    expect(splitUsageCharge({ rawCents: 10, multiplier: 3 })).toEqual({ hirerDebitCents: 30, platformCostCents: 10, platformMarginCents: 3, expertCreditCents: 17 });
-    for (let raw = 0.3; raw < 40; raw += 1.7) {
-      for (const m of [1, 1.5, 2, 3, 4.5, 5]) {
-        const s = splitUsageCharge({ rawCents: raw, multiplier: m });
-        expect(s.hirerDebitCents).toBe(s.platformCostCents + s.platformMarginCents + s.expertCreditCents);
-        expect(s.expertCreditCents).toBeGreaterThanOrEqual(0);
-      }
+  it("conserves fractional usage in legacy split selectors", () => {
+    for (const raw of [0.001, 0.3, 10, 39.9]) for (const multiplier of [1, 1.5, 2, 3, 4.5, 5]) {
+      const split = splitUsageCharge({ rawCents: raw, multiplier });
+      expect(split.hirerDebitCents).toBeCloseTo(split.platformCostCents + split.platformMarginCents + split.expertCreditCents, 10);
+      expect(split.expertCreditCents).toBeGreaterThanOrEqual(0);
     }
     expect(() => splitUsageCharge({ rawCents: 1, multiplier: 6 })).toThrow(RangeError);
   });

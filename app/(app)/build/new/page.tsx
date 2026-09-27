@@ -15,10 +15,15 @@ export default function NewAgentPage() {
   const [name, setName] = useState(`${displayName(s, me.id)} · `);
   const [category, setCategory] = useState<Category>("health_pt");
 
-  const create = () => {
-    const id = createAgent({ name: name.trim() || "Untitled agent", category });
-    router.push(`/build/${id}/interview`);
+  const create = async () => {
+    try {
+      const id = await createAgent({ name: name.trim() || "Untitled agent", category });
+      router.push(`/build/${id}/interview`);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not create agent.");
+    }
   };
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <>
@@ -39,10 +44,11 @@ export default function NewAgentPage() {
             </select>
           </Field>
           <div>
-            <button data-testid="create-agent" onClick={create} className={buttonClass("primary", "lg")}>
+            <button data-testid="create-agent" onClick={() => void create()} className={buttonClass("primary", "lg")}>
               Start interview
             </button>
           </div>
+          {error && <p role="alert" className="text-sm text-danger">{error}</p>}
           {me.kind === "hirer" && <p className="text-xs text-fg-muted">You&apos;re viewing as a hirer. Anyone can build an agent; it will be owned by {displayName(s, me.id)}.</p>}
         </Card>
       </PageBody>

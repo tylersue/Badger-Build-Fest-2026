@@ -8,7 +8,7 @@ The MVP is one working loop: **BUILD → PUBLISH → HIRE → USE.** It is a pre
 
 ## Core Value
 
-An expert with no audience and no technical skill can put their knowledge into an agent that answers in their words, grounded only in what they actually said and wrote, and earn from it. If everything else fails, an answer must still cite the expert's own material and say "I don't know" when it isn't there.
+An expert with no audience and no technical skill can put their knowledge into an agent that answers from what they actually said and wrote, and earn from it. When that material is insufficient, the agent can answer from cited online sources while clearly identifying the gap and keeping external findings separate from the expert's knowledge.
 
 ## Requirements
 
@@ -23,7 +23,7 @@ An expert with no audience and no technical skill can put their knowledge into a
 - [ ] Expert can pause and resume the interview; can see and edit what has been captured
 - [ ] The interview drafts the agent's persona (name, headline, how it works, always/never); expert edits a short form
 - [ ] Expert can optionally upload PDF / DOCX / TXT / MD or paste text; it is chunked, embedded, and retrievable alongside interview answers
-- [ ] Expert can test the agent in a sandbox and see which knowledge was retrieved for each answer
+- [ ] Expert can test the agent in a sandbox and see retrieved knowledge and any web-search tool steps for each answer
 - [ ] Expert sets a rate multiplier (1x–5x on raw LLM cost) and publishes instantly; can unpublish instantly
 
 **Publish / Marketplace**
@@ -33,8 +33,8 @@ An expert with no audience and no technical skill can put their knowledge into a
 - [ ] Anyone can flag an agent; admin can unpublish it
 
 **Use**
-- [ ] Hirer chats with an agent; answers stream, are grounded in that agent's knowledge only, and cite the source (interview answer or document + page)
-- [ ] Agent says it doesn't have the answer and points to the expert's contact link when retrieval is weak
+- [ ] Hirer chats with an agent; answers stream and cite interview answers, documents, or clearly labeled external web sources
+- [ ] When expert knowledge is insufficient, the agent searches online, answers with citations, explains the knowledge gap, and shows expandable tool steps; online findings do not become expert knowledge
 - [ ] Hirer can upload one file in a conversation (resume, essay, tax form); its text is used in that conversation's prompt
 - [ ] Regulated categories (legal, medical, financial, mental health) show a fixed disclaimer; emergency / self-harm patterns get a resource reply instead of an agent answer
 - [ ] Hirer can opt in, per conversation, to share the transcript with the expert; otherwise the expert sees aggregates only (top questions, thumbs-down)
@@ -63,7 +63,7 @@ An expert with no audience and no technical skill can put their knowledge into a
 - **Real payment rails (Stripe, payouts, KYC)** — purchases and cash-out are mock buttons that write rows; the metering and ledger are real so rails can be attached later
 - **Voice interview** — typed first; voice (speech-to-text) is the first post-MVP addition and the interview is designed so either input feeds the same pipeline
 - **Voice / video / avatar clones** — Delphi's most expensive feature; not the value here
-- **Visual workflow / graph builder, tools, web access for agents** — the visual-builder tier collapsed in 2026 (OpenAI Agent Builder, Flowise, Vellum); our agent is persona + knowledge + fixed pipeline
+- **Visual workflow / graph builder and arbitrary agent tools** — the agent uses a fixed pipeline with one scoped web-search fallback, not an expert-configurable tool graph
 - **Admin approval before publish** — publishing is instant so the loop has no human gate; add a review queue when strangers start publishing
 - **Credential / identity verification, "Licensed" badge** — self-reported with a label in MVP; verification is the first trust feature after
 - **Teams, SSO, audit logs, mobile apps, fine-tuning, second LLM provider** — not needed for the loop
@@ -115,6 +115,7 @@ An expert with no audience and no technical skill can put their knowledge into a
 | Run the hackathon demo locally without Vercel deployment | Local presentation is the team's chosen delivery setup | Decided 2026-09-26 |
 | Wallet reserves the estimated cost before a call and hard-stops at zero | Balance never goes negative; user preference over overdraft | Decided 2026-09-26 |
 | Regulated categories = health/PT and tax/finance, kept in config | Provisional; expected to change | Decided 2026-09-26 |
+| Web fallback when expert knowledge is insufficient, with external citations, a gap note, and visible tool steps in sandbox and hirer chat | Give useful answers without attributing online material to the expert; external findings stay outside the agent's knowledge | Decided 2026-09-26 (Phase 2 discussion); supersedes expert-only refusal and no-web-access scope |
 
 ## Evolution
 
@@ -134,4 +135,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-26 after the Phase 1 discussion (presentation MVP, no auth) and recording the BuildFest track, tentative challenge pair, awards, and deadline conflict*
+*Last updated: 2026-09-26 after the Phase 2 discussion added a labeled web fallback*

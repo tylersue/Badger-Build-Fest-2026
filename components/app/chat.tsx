@@ -8,6 +8,14 @@ import { FlowWords } from "@/components/app/flow";
 import { formatCredits, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Citation, Message } from "@/lib/types";
+import type { EvidenceCitation, RetrievedChunk } from "@/lib/contracts/phase2";
+import { formatCreditUnits } from "@/lib/format";
+import { evidenceGroups, retainDraftOnResult, type StreamCost } from "./chat-state";
+
+export function safeExternalUrl(value: string): string | null {
+  try { const url = new URL(value); return ["https:", "http:"].includes(url.protocol) ? url.href : null; }
+  catch { return null; }
+}
 
 export function UserMessage({ content }: { content: string }) {
   return (
@@ -17,36 +25,42 @@ export function UserMessage({ content }: { content: string }) {
   );
 }
 
-/* Assistant turns are plain text, no bubble; [n] markers become citation chips with a hover card.
-   `flow` marks a reply that is arriving (useVoice passes the growing text): its words ease in as
-   they appear. Set at mount, so an answer keeps its fade when the turn settles and history never animates. */
+/* Arriving words ease in while citation chips retain their stable evidence IDs. */
 export function AssistantMessage({
-  content, citations = [], caption, flow = false,
-}: { content: string; citations?: Citation[]; caption?: ReactNode; flow?: boolean }) {
+  content, citations = [], caption, flow = false, gap,
+}: { content: string; citations?: Citation[] | EvidenceCitation[]; caption?: ReactNode; flow?: boolean; gap?: string | null }) {
   const [flowing] = useState(flow);
-  const parts = content.split(/(\[\d+\])/g);
+  const parts = content.split(/(\[(?:\d+|(?:expert|web):[^\]\s]+)\])/g);
+  const modern = citations.filter((item): item is EvidenceCitation => "evidenceId" in item);
+  const legacy = citations.filter((item): item is Citation => "n" in item);
   return (
     <div className="mb-5" data-testid="assistant-message">
       <div className="text-base leading-[1.6] whitespace-pre-line">
         {parts.map((part, i) => {
-          const m = part.match(/^\[(\d+)\]$/);
-          const c = m && citations.find((x) => x.n === Number(m[1]));
+          const m = part.match(/^\[([^\]]+)\]$/);
+          if (!m) return <FlowWords key={i} text={part} flowing={flowing} />;
+          const c = modern.find(item => item.evidenceId === m[1]) ?? legacy.find(item => String(item.n) === m[1]);
           if (!c) return <FlowWords key={i} text={part} flowing={flowing} />;
+          const number = "ordinal" in c ? c.ordinal : c.n;
+          const online = "evidenceId" in c && c.sourceType === "web";
+          const url = online ? safeExternalUrl(c.url) : null;
           return (
             <Tooltip key={i}>
               <TooltipTrigger asChild>
-                <sup data-testid="citation" className={cn("mx-0.5 cursor-help rounded bg-surface-3 px-[5px] text-xs text-selected-fg", flowing && "flow-word")}>
-                  {c.n}
-                </sup>
+                <sup data-testid="citation" className={cn("mx-0.5 cursor-help rounded bg-surface-3 px-[5px] text-xs text-selected-fg", flowing && "flow-word")}>{number}</sup>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
-                <div className="font-medium">{c.sourceName}</div>
-                <div className="opacity-80">{c.page ? `Page ${c.page}${c.headingPath ? ` · ${c.headingPath}` : ""}` : c.question ? `Q: ${c.question}` : "Interview answer"}</div>
+                <div className="font-medium">{online ? "Online source" : c.sourceType === "document" ? "Expert document" : "Expert interview"} · {c.sourceName}</div>
+                {!online && <div className="opacity-80">{c.page ? `Page ${c.page}${c.headingPath ? ` · ${c.headingPath}` : ""}` : c.question ? `Q: ${c.question}` : "Interview answer"}</div>}
+                {"evidenceId" in c && <div className="mt-1 opacity-80">{c.excerpt}</div>}
+                {url && <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 block underline">Open source</a>}
               </TooltipContent>
             </Tooltip>
           );
         })}
       </div>
+      {gap && <p className="mt-3 rounded-lg border border-warning/40 bg-warning-surface/20 p-3 text-sm">Knowledge gap: {gap} Online sources are separate from the expert&apos;s views.</p>}
+      {modern.length > 0 && <div className="mt-3 text-xs text-fg-muted">{([['Expert sources', evidenceGroups(modern).expert], ['Online sources', evidenceGroups(modern).online]] as const).map(([label, group]) => group.length > 0 && <span key={label} className="mr-3">{label}: {group.map(item => item.sourceName).join(", ")}</span>)}</div>}
       {caption && <div className="mt-1.5 flex items-center gap-2 text-xs text-fg-muted">{caption}</div>}
     </div>
   );
@@ -62,7 +76,7 @@ export function ToolChip({ icon: Icon, label }: { icon: LucideIcon; label: strin
 }
 
 /* Fleet-style collapsible tool chip listing retrieved chunks and scores (SBOX-02). */
-export function RetrievedSources({ items }: { items: NonNullable<Message["retrieved"]> }) {
+export function RetrievedSources({ items }: { items: NonNullable<Message["retrieved"]> | RetrievedChunk[] }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="mb-2">
@@ -76,7 +90,7 @@ export function RetrievedSources({ items }: { items: NonNullable<Message["retrie
           {items.map((r, i) => (
             <div key={i} className="flex items-center gap-2">
               <span className="text-selected-fg">[{i + 1}]</span>
-              <span className="truncate">{r.sourceName}{r.page ? ` · page ${r.page}` : ""}{r.question ? ` · ${r.question}` : ""}</span>
+              <span className="truncate">{r.sourceName}{r.page ? ` · page ${r.page}` : ""}{r.question ? ` · ${r.question}` : ""}{"content" in r ? ` · ${r.content.slice(0, 100)}` : ""}</span>
               <span className="ml-auto tabular-nums text-fg-muted">score {r.score.toFixed(2)}</span>
             </div>
           ))}
@@ -89,11 +103,17 @@ export function RetrievedSources({ items }: { items: NonNullable<Message["retrie
 export function CostCaption({ message }: { message: Message }) {
   return (
     <>
-      <span data-testid="message-cost">{formatCredits(message.costCents ?? 0)}</span>
+      <span data-testid="message-cost">{message.costCents === null ? "Charge pending" : `Charged ${formatCredits(message.costCents)}`}</span>
       <ThumbsUp className={cn("size-3", message.feedback === "up" && "text-success")} />
       <ThumbsDown className={cn("size-3", message.feedback === "down" && "text-danger")} />
     </>
   );
+}
+
+export function StreamCostCaption({ cost, estimateUnits }: { cost?: StreamCost | null; estimateUnits?: string | null }) {
+  if (cost?.status === "settled" && cost.chargedUnits !== null) return <span>Charged {formatCreditUnits(cost.chargedUnits)}</span>;
+  if (cost?.status === "pending") return <span>Charge pending · Estimated {formatCreditUnits(cost.estimateUnits)}</span>;
+  return estimateUnits ? <span>Estimated {formatCreditUnits(estimateUnits)}</span> : <span>Charge pending</span>;
 }
 
 export function SavedChip({ credits }: { credits: number }) {
@@ -109,6 +129,7 @@ export type Attachment = { name: string; chars: number };
    A non-streamed message always shows its whole current content, so a caller may grow it word by word. */
 export function Composer({
   placeholder, onSend, disabled, hint, attachment, onAttach, onRemoveAttachment, attaching, attachError, onFocusChange,
+  draft, onError, sendLabel = "Send message",
 }: {
   placeholder: string;
   onSend: (text: string) => Promise<boolean> | boolean;
@@ -120,16 +141,30 @@ export function Composer({
   attaching?: boolean;
   attachError?: string | null;
   onFocusChange?: (focused: boolean) => void;
+  draft?: { value: string; onChange: (value: string) => void };
+  onError?: (error: unknown) => void;
+  sendLabel?: string;
 }) {
-  const [text, setText] = useState("");
+  const [localText, setLocalText] = useState("");
+  const text = draft?.value ?? localText;
+  const setText = draft?.onChange ?? setLocalText;
+  const textRef = useRef(text);
   const [busy, setBusy] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const submit = async () => {
-    const t = text.trim();
+    const t = textRef.current.trim();
     if (!t || busy || disabled) return;
     setBusy(true);
     try {
-      if ((await onSend(t)) !== false) setText("");
+      const acknowledged = (await onSend(t)) !== false;
+      if (textRef.current === t) {
+        const next = retainDraftOnResult(acknowledged, textRef.current);
+        textRef.current = next; setText(next);
+      }
+    } catch (error) {
+      if (onError) onError(error);
+      else setSendError(error instanceof Error ? error.message : "Could not send. Your draft is still here.");
     } finally {
       setBusy(false);
     }
@@ -137,10 +172,11 @@ export function Composer({
   return (
     <div className="flex shrink-0 justify-center px-4 pt-3 pb-4">
       <div className="flex min-h-24 w-full max-w-[752px] flex-col gap-3 rounded-xl border border-line-subtle bg-surface-2 p-4">
+        {sendError && <p role="alert" className="text-sm text-danger">{sendError}</p>}
         <textarea
           data-testid="composer-input"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { textRef.current = e.target.value; setText(e.target.value); setSendError(null); }}
           onFocus={() => onFocusChange?.(true)}
           onBlur={() => onFocusChange?.(false)}
           onKeyDown={(e) => {
@@ -203,7 +239,7 @@ export function Composer({
             onClick={() => void submit()}
             disabled={disabled || busy || !text.trim()}
             className="ml-auto grid size-6 place-items-center rounded-full bg-brand text-white disabled:opacity-40"
-            aria-label="Send"
+          aria-label={sendLabel}
           >
             <ArrowUp className="size-3.5" />
           </button>

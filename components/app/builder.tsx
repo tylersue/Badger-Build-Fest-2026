@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useRef, useState, useSyncExternalStore, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { BookOpen, ChevronDown, ChevronRight, Ellipsis, Eye, FileText, Menu, Mic, Plus, Rocket, Settings2, UserRound, X } from "lucide-react";
-import { AgentTile, PlaceholderNote, StatusPill, buttonClass } from "@/components/app/ui";
+import { AgentTile, StatusPill, buttonClass } from "@/components/app/ui";
 import { agentById, currentIdentity, displayName, knowledgeStats, useDemo, type DemoState } from "@/lib/demo-store";
-import { SOURCES } from "@/lib/data/seed";
 import { categoryLabel } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
 import { cn } from "@/lib/utils";
@@ -19,11 +18,11 @@ export function useBuilderAgent(): { s: DemoState; agent: Agent | undefined; isO
   return { s, agent, isOwner: !!agent && agent.ownerId === currentIdentity(s).id };
 }
 
-export function sourcesFor(agentId: string) {
-  return SOURCES.filter((x) => x.agentId === agentId);
+export function sourcesFor(s: DemoState, agentId: string) {
+  return (s.snapshot?.sources ?? []).filter((x) => x.agentId === agentId);
 }
 
-/** Answers captured so far: the seeded count plus anything answered in this session. */
+/** Answers captured in the selected identity's server snapshot. */
 export function answerCount(s: DemoState, agentId: string) {
   return knowledgeStats(s, agentId).answers;
 }
@@ -57,7 +56,7 @@ export function BuilderSplit({ agent, thread, children, composer }: { agent: Age
 function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   const { s } = useBuilderAgent();
   const base = `/build/${agent.id}`;
-  const sources = sourcesFor(agent.id);
+  const sources = sourcesFor(s, agent.id);
   const answers = answerCount(s, agent.id);
   const drawerWidth = useDrawerWidth();
   return (
@@ -113,8 +112,7 @@ function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void
           </div>
         </DrawerSection>
         <div className="mx-4 mb-4">
-          <PlaceholderNote feature="interview and persona drafting" phase={2} />
-          <p className="mt-1 text-xs text-fg-muted">Owner: {displayName(s, agent.ownerId)}</p>
+          <p className="text-xs text-fg-muted">Owner: {displayName(s, agent.ownerId)}</p>
         </div>
       </aside>
     </div>
