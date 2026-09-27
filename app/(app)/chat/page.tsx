@@ -25,17 +25,17 @@ export default function ChatsPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Chats" }]} />
+      <Breadcrumbs items={[{ label: "Agents" }]} />
       <PageBody>
-        <PageHeader title="Chats" />
+        <PageHeader title="Agents" />
         <Toolbar>
-          <SearchField placeholder="Search chats…" value={query} onChange={setQuery} />
+          <SearchField placeholder="Search agents…" value={query} onChange={setQuery} />
         </Toolbar>
         {mine.length === 0 ? (
-          <EmptyState icon={MessageSquare} heading="No conversations yet" body="Hire an agent from the Marketplace to start one." action={{ label: "Browse marketplace", href: "/marketplace" }} />
+          <EmptyState icon={MessageSquare} heading="No agents yet" body="Buy or hire an agent from the Marketplace to start." action={{ label: "Browse marketplace", href: "/marketplace" }} />
         ) : rows.length === 0 ? (
           <p className="rounded-xl border border-line-subtle bg-surface-1 px-4 py-8 text-center text-sm text-fg-muted">
-            No chats match &ldquo;{query}&rdquo;.
+            No agents match &ldquo;{query}&rdquo;.
           </p>
         ) : (
           <ul className="divide-y divide-line-subtle overflow-hidden rounded-xl border border-line-subtle bg-surface-1" data-testid="conversation-list">

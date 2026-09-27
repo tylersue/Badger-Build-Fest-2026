@@ -13,6 +13,7 @@ import type { SourceListItem, SourceOverview } from "@/features/knowledge/intake
 import { personaToSystemPrompt } from "@/features/builder/prompt-template";
 import { modelForCategory } from "@/lib/config/models";
 import { PLATFORM_MARGIN_SHARE, SUBSCRIPTION_GRANT_CENTS, PACK_GRANT_CENTS } from "@/lib/config/credits";
+import { PURCHASE_EXPERT_SHARE, agentPriceCredits } from "@/lib/config/purchase";
 import * as seed from "./seed";
 import { INTERVIEW_LENGTH, STYLE_LABELS, applyDraft, composeAnswer, formOf, interviewQuestion, parseFeedback, personaDraft, personaState, rawCostCredits, seedKnowledge, toneFromAnswers, type AnswerStyle, type ComposedAnswer, type KnowledgeChunk } from "./engine";
 
@@ -43,6 +44,8 @@ type Db = {
   estimates: Record<string, { agentId: string; name: string; kind: SourceEstimate["kind"]; byteCount: number; chunks: number; pages: number | null; credits: number; text: string }>;
   /** Persona Voice & tone per agent: tone traits and how answers are said. Optional so older saved data still loads. */
   styles?: Record<string, AnswerStyle[]>; tone?: Record<string, string[]>; toneEdited?: Record<string, boolean>;
+  /** Agents each identity bought from the marketplace, with the chat created for it. */
+  purchases?: Record<string, { agentId: string; conversationId: string; credits: number; purchasedAt: string }[]>;
 };
 
 // State ------------------------------------------------------------------------------------------
@@ -242,7 +245,7 @@ function snapshot(): DemoSnapshot {
     }),
     conversations: conversations.map((c) => ({ id: c.id, agentId: c.agentId, hirerId: c.hirerId, title: c.title, shareTranscript: c.shareTranscript, createdAt: c.createdAt, origin: c.origin ?? "live" })),
     messages: d.messages.filter((m) => conversationIds.has(m.conversationId)),
-    ledger, earningAgents,
+    ledger, earningAgents, purchases: d.purchases?.[me] ?? [],
     wallet: { balanceUnits: balanceUnits(me), heldUnits: "0", balanceCents: credits(balanceUnits(me)) },
     backend: {
       configured: true,
@@ -410,7 +413,9 @@ function runAnswer(job: AnswerJob): { events: ChatStreamEvent[]; commit: () => v
   const answer = job.override ?? composeAnswer({ agent: job.agent, expertName: expertName(job.agent), question: job.text,
     knowledge: knowledgeFor(job.agent.id), attachment, now, styles: d.styles?.[job.agent.id] });
   const raw = rawCostCredits(answer.text);
-  const charge = job.mode === "chat" ? Math.round(raw * job.agent.rateMultiplier * 100) / 100 : raw;
+  // Chats with an agent the hirer bought are included in the purchase.
+  const owned = job.mode === "chat" && (d.purchases?.[me] ?? []).some((p) => p.agentId === job.agent.id);
+  const charge = owned ? 0 : job.mode === "chat" ? Math.round(raw * job.agent.rateMultiplier * 100) / 100 : raw;
   const operationId = id("op");
   const operation: Operation = { id: operationId, requestKey: job.requestKey, identityId: me, agentId: job.agent.id,
     purpose: job.mode, state: "settled", estimateUnits: units(charge), heldUnits: "0", actualUnits: units(charge),
@@ -448,10 +453,12 @@ function runAnswer(job: AnswerJob): { events: ChatStreamEvent[]; commit: () => v
       const margin = Math.round((charge - raw) * PLATFORM_MARGIN_SHARE * 100) / 100;
       const net = Math.round((charge - raw - margin) * 100) / 100;
       const ref = { purpose: "chat_message" as const, refType: "conversation" as const, refId: conversationId };
-      post(me, "debit", -charge, `${job.agent.persona.name} · 1 message`, ref);
-      post(null, "platform_cost", raw, "Raw LLM cost", ref);
-      if (margin > 0) post(null, "platform_margin", margin, "15% of margin", ref);
-      post(job.agent.ownerId, "earnings", net, `${conversation.title} · net`, { refType: "conversation", refId: conversationId });
+      if (!owned) {
+        post(me, "debit", -charge, `${job.agent.persona.name} · 1 message`, ref);
+        post(null, "platform_cost", raw, "Raw LLM cost", ref);
+        if (margin > 0) post(null, "platform_margin", margin, "15% of margin", ref);
+        post(job.agent.ownerId, "earnings", net, `${conversation.title} · net`, { refType: "conversation", refId: conversationId });
+      }
       d.messages.push({ id: id("msg-u"), conversationId, role: "user", content: job.text, citations: [], feedback: null, costCents: null, createdAt: now, origin: "live" });
       d.messages.push({ id: messageId, conversationId, role: "assistant", content: answer.text, citations: answer.citations, feedback: null,
         costCents: charge, retrieved: answer.sources, gap: answer.gap, steps, createdAt: iso(), origin: "live" });
@@ -651,6 +658,30 @@ async function route(method: string, url: URL, init?: RequestInit): Promise<Resp
       const answers = (d.interviews[agentId]?.answers.length ?? 0) + d.sources.filter((s) => s.agentId === agentId && s.kind === "interview").reduce((sum, s) => sum + s.chunkCount, 0);
       const documents = d.sources.filter((s) => s.agentId === agentId && s.kind !== "interview").length;
       return ok({ answers, documents, activeChunks: activeChunks(agentId), lastUpdatedAt: agentOf(agentId).updatedAt });
+    }
+    if (third === "purchase" && method === "POST") {
+      // One-click checkout: debit the buyer, pay the expert, add the agent to My agents with a chat ready.
+      const agent = agentOf(agentId);
+      if (agent.ownerId === d.identityId) return fail("invalid_input", "This is your own agent.", 400);
+      const mine = ((d.purchases ??= {})[d.identityId] ??= []);
+      const existing = mine.find((p) => p.agentId === agent.id);
+      if (existing) return ok({ ...existing, balanceUnits: balanceUnits(d.identityId), replayed: true });
+      const price = agentPriceCredits(agent.rateMultiplier);
+      if (credits(balanceUnits(d.identityId)) < price)
+        return new Response(JSON.stringify({ ok: false, error: { code: "insufficient_credits", message: "Not enough credits to buy this agent.", retryable: false,
+          neededUnits: units(price), availableUnits: balanceUnits(d.identityId) } }), { status: 402, headers: { "Content-Type": "application/json" } });
+      const conversation: Conversation = { id: id("c"), agentId: agent.id, hirerId: d.identityId, title: agent.persona.name, shareTranscript: false, createdAt: iso(), origin: "live" };
+      d.conversations.push(conversation);
+      const expertShare = Math.round(price * PURCHASE_EXPERT_SHARE * 100) / 100;
+      const ref = { refType: "agent" as const, refId: agent.id };
+      post(d.identityId, "debit", -price, `Bought ${agent.persona.name}`, ref);
+      post(agent.ownerId, "earnings", expertShare, `Sale · ${agent.persona.name}`, ref);
+      post(null, "platform_margin", Math.round((price - expertShare) * 100) / 100, "15% of sale", ref);
+      agent.usageCount += 1;
+      const purchase = { agentId: agent.id, conversationId: conversation.id, credits: price, purchasedAt: iso() };
+      mine.push(purchase);
+      save();
+      return ok({ ...purchase, balanceUnits: balanceUnits(d.identityId), replayed: false });
     }
     if (third === "rate") {
       const agent = ownedAgent(agentId);

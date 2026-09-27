@@ -18,7 +18,7 @@ import {
 import { AgentTile } from "@/components/app/ui";
 import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
 import { APP_NAME } from "@/lib/config/app";
-import { allAgents, balanceOf, currentIdentity, displayName, switchableIdentities, switchIdentity, useDemo, useDemoSnapshot } from "@/lib/demo-store";
+import { agentById, allAgents, balanceOf, currentIdentity, displayName, purchasesFor, switchableIdentities, switchIdentity, useDemo, useDemoSnapshot } from "@/lib/demo-store";
 import { allConversations } from "@/lib/demo-store";
 import { formatCredits } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -29,7 +29,7 @@ type NavItem = { label: string; href: string; icon: LucideIcon; side: Side; matc
 
 const NAV = {
   marketplace: { label: "Marketplace", href: "/marketplace", icon: Store, side: "hirer", match: (p: string) => p === "/" || p.startsWith("/marketplace") || p.startsWith("/agents"), testId: "nav-marketplace" },
-  chats: { label: "Chats", href: "/chat", icon: MessageSquare, side: "hirer", match: (p: string) => p.startsWith("/chat"), testId: "nav-chats" },
+  chats: { label: "Agents", href: "/chat", icon: MessageSquare, side: "hirer", match: (p: string) => p.startsWith("/chat"), testId: "nav-chats" },
   benchmarks: { label: "Benchmarks", href: "/benchmarks", icon: Trophy, side: "both", match: (p: string) => p.startsWith("/benchmarks"), testId: "nav-benchmarks" },
   myAgents: { label: "My agents", href: "/build", icon: Bot, side: "expert", match: (p: string) => p === "/build", testId: "nav-my-agents" },
   wallet: { label: "Wallet", href: "/wallet", icon: Wallet, side: "both", match: (p: string) => p.startsWith("/wallet"), testId: "nav-wallet" },
@@ -69,6 +69,8 @@ function AppSidebar() {
   const pathname = usePathname();
   const me = currentIdentity(s);
   const myAgents = allAgents(s).filter((a) => a.ownerId === me.id);
+  // Agents bought from the marketplace sit under My agents too, opening straight into their chat.
+  const boughtAgents = purchasesFor(s).flatMap((p) => { const agent = agentById(s, p.agentId); return agent ? [{ agent, conversationId: p.conversationId }] : []; });
   const chatCount = allConversations(s).filter((c) => c.hirerId === me.id).length;
 
   const row = (item: NavItem, extra?: ReactNode) => (
@@ -116,7 +118,7 @@ function AppSidebar() {
 
         <Group label="Build">
           {row(NAV.myAgents)}
-          {myAgents.length > 0 && (
+          {(myAgents.length > 0 || boughtAgents.length > 0) && (
             <SidebarMenuItem>
               {/* The expert's own agents sit under "My agents", indented on a guide line. */}
               <SidebarMenuSub className="mr-0 gap-0.5 border-line-subtle pr-0">
@@ -127,6 +129,17 @@ function AppSidebar() {
                         <AgentTile icon={a.icon} size="xs" />
                         <span className="truncate">{a.persona.name.includes("·") ? a.persona.name.split("·").slice(1).join("·").trim() : a.persona.name}</span>
                         {a.status !== "published" && <span className="ml-auto shrink-0 text-[11px] text-fg-muted">Draft</span>}
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                ))}
+                {boughtAgents.map(({ agent: a, conversationId }) => (
+                  <SidebarMenuSubItem key={`bought-${a.id}`}>
+                    <SidebarMenuSubButton asChild isActive={pathname === `/chat/${conversationId}`} className={cn("h-7", navRowClass("both", me.kind))}>
+                      <Link href={`/chat/${conversationId}`} title={a.persona.name} data-testid="nav-bought-agent">
+                        <AgentTile icon={a.icon} size="xs" />
+                        <span className="truncate">{a.persona.name.includes("·") ? a.persona.name.split("·").slice(1).join("·").trim() : a.persona.name}</span>
+                        <span className="ml-auto shrink-0 text-[11px] text-fg-muted">Bought</span>
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>

@@ -99,6 +99,8 @@ export const api = {
   publishStatus: (agentId: string) => apiRequest<{ activeChunks: number }>(`/api/agents/${encodeURIComponent(agentId)}/publish`),
   publicStats: (agentId: string) => apiRequest<{ answers: number; documents: number; activeChunks: number; lastUpdatedAt: string }>(
     `/api/agents/${encodeURIComponent(agentId)}/stats`),
+  purchase: (agentId: string) => apiRequest<{ agentId: string; conversationId: string; credits: number; purchasedAt: string; balanceUnits: string; replayed: boolean }>(
+    `/api/agents/${encodeURIComponent(agentId)}/purchase`, { method: "POST", body: {} }),
   rate: (agentId: string, multiplier: number) => apiRequest<{ multiplier: number }>(`/api/agents/${encodeURIComponent(agentId)}/rate`,
     { method: "PATCH", body: { multiplier } }),
   createConversation: (agentId: string, title: string) => apiRequest<{ id: string }>("/api/conversations",

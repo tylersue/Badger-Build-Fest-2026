@@ -67,8 +67,8 @@ export default function ChatPage() {
   if (!conversation || !agent) {
     return (
       <>
-        <Breadcrumbs items={[{ label: "Chats", href: "/chat" }, { label: "Not found" }]} />
-        <EmptyState icon={MessageSquareOff} heading="Conversation not found" body="It may belong to a different browser session." action={{ label: "Back to chats", href: "/chat" }} />
+        <Breadcrumbs items={[{ label: "Agents", href: "/chat" }, { label: "Not found" }]} />
+        <EmptyState icon={MessageSquareOff} heading="Conversation not found" body="It may belong to a different browser session." action={{ label: "Back to agents", href: "/chat" }} />
       </>
     );
   }
@@ -133,7 +133,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-svh flex-col">
-      <Breadcrumbs items={[{ label: "Chats", href: "/chat" }, { label: conversation.title }]} />
+      <Breadcrumbs items={[{ label: "Agents", href: "/chat" }, { label: conversation.title }]} />
       <div className="flex shrink-0 items-center gap-3 border-b border-line-subtle px-4 py-2.5" data-testid="chat-header">
         <IdentityLogo identityId={agent.ownerId} size={36} />
         <div className="min-w-0 flex-1">

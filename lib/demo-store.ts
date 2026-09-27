@@ -418,6 +418,20 @@ export async function sendChatMessage(conversationId: string, text: string, onEv
   } catch (error) { const refusal = creditRefusal(error); if (refusal) return refusal; throw error; }
 }
 
+/** Agents the selected identity bought (demo backend), newest first. */
+export function purchasesFor(s: DemoState) {
+  return [...(live(s)?.purchases ?? [])].sort((a, b) => b.purchasedAt.localeCompare(a.purchasedAt));
+}
+/** One-click checkout: buys the agent and returns the chat created for it. */
+export async function purchaseAgent(agentId: string): Promise<{ ok: true; conversationId: string } | Refusal> {
+  requireLive();
+  try {
+    const result = await api.purchase(agentId);
+    await refreshDemo();
+    return { ok: true, conversationId: result.conversationId };
+  } catch (error) { const refusal = creditRefusal(error); if (refusal) return refusal; throw error; }
+}
+
 export async function setRateMultiplier(agentId: string, multiplier: number): Promise<void> {
   requireLive();
   await api.rate(agentId, multiplier);

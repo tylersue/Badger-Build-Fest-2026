@@ -7,10 +7,12 @@ import { CircleCheck, EyeOff, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import { Breadcrumbs, Card, EmptyState, PageBody, Pill, buttonClass } from "@/components/app/ui";
 import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
-import { agentById, currentIdentity, displayName, knowledgeStats, profileFor, sendChatMessage, startConversation, useDemo } from "@/lib/demo-store";
+import { agentById, currentIdentity, displayName, knowledgeStats, profileFor, purchasesFor, sendChatMessage, startConversation, useDemo } from "@/lib/demo-store";
+import { CheckoutDialog } from "@/components/app/checkout-dialog";
+import { agentPriceCredits } from "@/lib/config/purchase";
 import { categoryLabel, disclaimerFor } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
-import { formatRelative } from "@/lib/format";
+import { formatCredits, formatRelative } from "@/lib/format";
 import { AgentListingExtras } from "@/components/trust/listing-extras";
 import { api } from "@/lib/api-client";
 
@@ -21,6 +23,7 @@ export default function ListingPage() {
   const s = useDemo();
   const agent = agentById(s, slug);
   const agentId = agent?.id;
+  const [checkout, setCheckout] = useState(false);
   const [publicStats, setPublicStats] = useState<{ answers: number; documents: number; activeChunks: number; lastUpdatedAt: string } | null>(null);
   useEffect(() => {
     if (!agentId || s.status !== "ready") return;
@@ -42,6 +45,7 @@ export default function ListingPage() {
 
   const me = currentIdentity(s);
   const isOwner = agent.ownerId === me.id;
+  const bought = purchasesFor(s).find((p) => p.agentId === agent.id);
 
   if (agent.status !== "published" && !isOwner) {
     return (
@@ -86,9 +90,13 @@ export default function ListingPage() {
         actions={
           <>
             {isOwner && agent.status !== "published" && <Pill>Preview · {agent.status}</Pill>}
+            {!isOwner && (bought
+              ? <Link href={`/chat/${bought.conversationId}`} data-testid="open-bought" className={buttonClass("secondary", "lg")}><CircleCheck className="text-success" /> In My agents · Open chat</Link>
+              : <button type="button" data-testid="buy-agent" onClick={() => setCheckout(true)} className={buttonClass("secondary", "lg")}>Buy · {formatCredits(agentPriceCredits(agent.rateMultiplier))}</button>)}
             <button data-testid="start-chat" onClick={() => void start()} className={buttonClass("primary", "lg")}>
               {isOwner ? "Test agent" : "Start chat"}
             </button>
+            {!isOwner && <CheckoutDialog agent={agent} open={checkout} onOpenChange={setCheckout} />}
           </>
         }
       />

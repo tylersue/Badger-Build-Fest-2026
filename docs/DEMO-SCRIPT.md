@@ -30,9 +30,12 @@ The cast:
 
 1. On **Marketplace**, click the **Validation & research** filter.
 2. Open **Cynthia Pham · Idea stress test**. Point at the rating, reviews, credentials and benchmark score.
-3. Click the example question **"Stress-test my idea: a marketplace where founders hire AI agents built by experts"**. The answer streams in with numbered citations.
-4. Click a citation chip (for example **[2]**) to show the exact interview answer it came from.
-5. Click **Attach one file** and choose `docs/demo/Proxier-one-pager.md`. Type:
+3. Click **Buy · 2,000 credits**. The checkout shows what's included, the price and Austin's balance before and after. Click **Buy now**. You'll see **Added to My agents**, and the agent appears under **My agents** in the sidebar marked *Bought*.
+4. Click **Start using it**, then type:
+   > Stress-test my idea: a marketplace where founders hire AI agents built by experts
+
+   The answer streams in with numbered citations, including one of Cynthia's own essays, and the caption reads **Included with your purchase**. Click a citation chip, for example **[2]**, to show the exact interview answer it came from. Open the essay citation and click **Read the full essay** to show Cynthia's published piece.
+5. Click **Attach a file** and choose `docs/demo/Proxier-one-pager.md`. Type:
    > Review our one-pager
 
    The agent reads the file, picks out the strongest evidence in it ("6 hours a week…"), and lists what Cynthia would push on, each point cited.
@@ -40,7 +43,7 @@ The cast:
    > How do we research our competitors?
 
    Cynthia's knowledge doesn't cover it, so the agent says so, searches online, and labels the answer as an online source that is **not** Cynthia's knowledge. The tool steps show the search.
-7. Point at the credits charged per message in the header.
+7. Open **My agents** to show the bought agent, then **Wallet** to show the purchase.
 
 ## Scene 3: Who builds the agents? (0:55–1:05)
 
