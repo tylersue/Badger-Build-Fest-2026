@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { AssistantMessage, ChatColumn, Composer, CostCaption, NotEnoughCredits, RetrievedSources, StreamCostCaption, UserMessage } from "@/components/app/chat";
 import { ToolSteps } from "@/components/app/tool-steps";
 import { emptyAnswer, reduceAnswer, type AnswerState } from "@/components/app/chat-state";
-import { AgentTile, Breadcrumbs, EmptyState, Pill, buttonClass } from "@/components/app/ui";
+import { Breadcrumbs, EmptyState, Pill, buttonClass } from "@/components/app/ui";
+import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
 import { AgentTurn, turnPhase, useVoice, type Utterance } from "@/components/app/voice";
 import { AnswerFeedback } from "@/components/trust/answer-feedback";
 import { ConversationControls } from "@/components/trust/conversation-controls";
@@ -18,7 +19,7 @@ import {
 } from "@/lib/demo-store";
 import { api } from "@/lib/api-client";
 import { disclaimerFor } from "@/lib/config/categories";
-import { formatCredits, formatNumber } from "@/lib/format";
+import { formatCredits, formatNumber, formatRelative } from "@/lib/format";
 
 /* Hirer chat keeps Phase 3's voice presentation over Phase 2's durable answer path. */
 export default function ChatPage() {
@@ -66,8 +67,8 @@ export default function ChatPage() {
   if (!conversation || !agent) {
     return (
       <>
-        <Breadcrumbs items={[{ label: "Chats", href: "/chat" }, { label: "Not found" }]} />
-        <EmptyState icon={MessageSquareOff} heading="Conversation not found" body="It may belong to a different browser session." action={{ label: "Back to chats", href: "/chat" }} />
+        <Breadcrumbs items={[{ label: "Agents", href: "/chat" }, { label: "Not found" }]} />
+        <EmptyState icon={MessageSquareOff} heading="Conversation not found" body="It may belong to a different browser session." action={{ label: "Back to agents", href: "/chat" }} />
       </>
     );
   }
@@ -75,7 +76,9 @@ export default function ChatPage() {
   const me = currentIdentity(s);
   const isHirer = me.id === conversation.hirerId;
   const expert = profileFor(s, agent.ownerId);
-  const expertFirst = displayName(s, agent.ownerId).split(" ")[0];
+  const expertName = displayName(s, agent.ownerId);
+  const company = companyFor(agent.ownerId);
+  const expertFirst = expertName.split(" ")[0];
   const disclaimer = disclaimerFor(agent.persona.category);
   const turnLabel = phase === "thinking" ? `Searching ${expertFirst}'s answers…` : "Typing…";
 
@@ -130,24 +133,29 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-svh flex-col">
-      <Breadcrumbs items={[{ label: "Chats", href: "/chat" }, { label: conversation.title }]} />
-      <div className="flex h-10 shrink-0 items-center gap-3 px-4 text-sm font-medium">
-        <AgentTile icon={agent.icon} size="sm" />
-        <span className="truncate">{agent.persona.name}</span>
-        <span className="hidden text-xs font-normal text-fg-muted sm:inline">
-          by {displayName(s, agent.ownerId)} ·{" "}
-          {expert.contactUrl ? (
-            <Link href={expert.contactUrl} target="_blank" data-testid="contact-expert" className="text-foreground underline decoration-line-outline underline-offset-2 hover:decoration-current">
-              Contact the expert
-            </Link>
-          ) : (
-            "Contact the expert"
-          )}
-        </span>
-        <span className="ml-auto flex items-center gap-2">
+      <Breadcrumbs items={[{ label: "Agents", href: "/chat" }, { label: conversation.title }]} />
+      <div className="flex shrink-0 items-center gap-3 border-b border-line-subtle px-4 py-2.5" data-testid="chat-header">
+        <IdentityLogo identityId={agent.ownerId} size={36} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold text-foreground">{agent.persona.name}</div>
+          <div className="flex min-w-0 items-center gap-1.5 text-xs text-fg-muted">
+            <span className="truncate">by {expertName}{company ? ` · ${company}` : ""}</span>
+            <span aria-hidden className="hidden sm:inline">·</span>
+            <span className="hidden shrink-0 sm:inline">
+              {expert.contactUrl ? (
+                <Link href={expert.contactUrl} target="_blank" data-testid="contact-expert" className="text-fg-secondary underline decoration-line-outline underline-offset-2 hover:text-foreground hover:decoration-current">
+                  Contact the expert
+                </Link>
+              ) : (
+                "Contact the expert"
+              )}
+            </span>
+          </div>
+        </div>
+        <span className="flex shrink-0 items-center gap-2">
           <ConversationControls conversation={conversation} agent={agent} />
           <Pill className="bg-selected text-selected-fg">
-            <span data-testid="chat-balance">{formatCredits(balanceOf(s, conversation.hirerId))}</span>
+            <span data-testid="chat-balance" className="tabular-nums">{formatCredits(balanceOf(s, conversation.hirerId))}</span>
           </Pill>
         </span>
       </div>
@@ -158,7 +166,7 @@ export default function ChatPage() {
             <AgentTurn name={agent.persona.name} phase={phase} label={turnLabel} listening onSkip={voice.skip}>
               {voice.spoken ? <AssistantMessage content={voice.spoken} flow /> : null}
             </AgentTurn>
-            {disclaimer && <p className="mb-5 text-xs text-fg-muted">{disclaimer}</p>}
+            {disclaimer && <p className="-mt-4 mb-8 text-xs text-fg-muted sm:pl-[42px]">{disclaimer}</p>}
           </>
         )}
         {messages.map((m) =>
@@ -171,7 +179,7 @@ export default function ChatPage() {
               {voice.spoken ? <AssistantMessage content={voice.spoken} citations={m.citations} gap={m.gap} flow /> : null}
             </AgentTurn>
           ) : (
-            <AgentTurn key={m.id} name={agent.persona.name} phase="done" listening={m.id === latest?.id}>
+            <AgentTurn key={m.id} name={agent.persona.name} phase="done" listening={m.id === latest?.id} detail={formatRelative(m.createdAt)}>
               {!!m.steps?.length && <ToolSteps steps={m.steps} />}
               {!!m.retrieved?.length && <RetrievedSources items={m.retrieved} />}
               <AssistantMessage content={m.content} citations={m.citations} gap={m.gap} caption={captionFor(m)} />
@@ -186,9 +194,9 @@ export default function ChatPage() {
           {liveAnswer?.text && <AssistantMessage content={liveAnswer.text} citations={liveAnswer.citations}
             gap={liveAnswer.gap} flow caption={<StreamCostCaption cost={liveAnswer.cost} />} />}
         </AgentTurn>}
-        {sendError && <div role="alert" className="mb-5 text-sm text-danger">
+        {sendError && <div role="alert" className="mb-8 rounded-lg border border-danger/25 bg-danger-surface px-3.5 py-3 text-sm text-danger">
           <p>{sendError}</p>
-          {pendingText && !busy && <button className={buttonClass("secondary")} onClick={() => void send(pendingText)}>
+          {pendingText && !busy && <button className={`${buttonClass("secondary")} mt-2`} onClick={() => void send(pendingText)}>
             Retry saved message
           </button>}
         </div>}

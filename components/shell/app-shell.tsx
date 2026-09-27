@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
-  Bot, ChartNoAxesCombined, Check, ChevronDown, ChevronsUpDown, MessageSquare, Plus, Search, Settings, Shield, Sparkles, Store, TrendingUp, Trophy, Wallet,
+  Bot, ChartNoAxesCombined, Check, ChevronDown, ChevronsUpDown, MessageSquare, Search, Settings, Shield, Sparkles, Store, TrendingUp, Trophy, Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -13,11 +13,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarProvider, SidebarRail, SidebarTrigger, useSidebar,
+  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarProvider, SidebarRail, SidebarTrigger, useSidebar,
 } from "@/components/ui/sidebar";
-import { AgentTile, IdentityAvatar } from "@/components/app/ui";
+import { AgentTile } from "@/components/app/ui";
+import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
 import { APP_NAME } from "@/lib/config/app";
-import { allAgents, balanceOf, currentIdentity, displayName, profileFor, switchableIdentities, switchIdentity, useDemo, useDemoSnapshot } from "@/lib/demo-store";
+import { agentById, allAgents, balanceOf, currentIdentity, displayName, purchasesFor, switchableIdentities, switchIdentity, useDemo, useDemoSnapshot } from "@/lib/demo-store";
 import { allConversations } from "@/lib/demo-store";
 import { formatCredits } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,7 @@ type NavItem = { label: string; href: string; icon: LucideIcon; side: Side; matc
 
 const NAV = {
   marketplace: { label: "Marketplace", href: "/marketplace", icon: Store, side: "hirer", match: (p: string) => p === "/" || p.startsWith("/marketplace") || p.startsWith("/agents"), testId: "nav-marketplace" },
-  chats: { label: "Chats", href: "/chat", icon: MessageSquare, side: "hirer", match: (p: string) => p.startsWith("/chat"), testId: "nav-chats" },
+  chats: { label: "Agents", href: "/chat", icon: MessageSquare, side: "hirer", match: (p: string) => p.startsWith("/chat"), testId: "nav-chats" },
   benchmarks: { label: "Benchmarks", href: "/benchmarks", icon: Trophy, side: "both", match: (p: string) => p.startsWith("/benchmarks"), testId: "nav-benchmarks" },
   myAgents: { label: "My agents", href: "/build", icon: Bot, side: "expert", match: (p: string) => p === "/build", testId: "nav-my-agents" },
   wallet: { label: "Wallet", href: "/wallet", icon: Wallet, side: "both", match: (p: string) => p.startsWith("/wallet"), testId: "nav-wallet" },
@@ -68,6 +69,8 @@ function AppSidebar() {
   const pathname = usePathname();
   const me = currentIdentity(s);
   const myAgents = allAgents(s).filter((a) => a.ownerId === me.id);
+  // Agents bought from the marketplace sit under My agents too, opening straight into their chat.
+  const boughtAgents = purchasesFor(s).flatMap((p) => { const agent = agentById(s, p.agentId); return agent ? [{ agent, conversationId: p.conversationId }] : []; });
   const chatCount = allConversations(s).filter((c) => c.hirerId === me.id).length;
 
   const row = (item: NavItem, extra?: ReactNode) => (
@@ -115,6 +118,35 @@ function AppSidebar() {
 
         <Group label="Build">
           {row(NAV.myAgents)}
+          {(myAgents.length > 0 || boughtAgents.length > 0) && (
+            <SidebarMenuItem>
+              {/* The expert's own agents sit under "My agents", indented on a guide line. */}
+              <SidebarMenuSub className="mr-0 gap-0.5 border-line-subtle pr-0">
+                {myAgents.map((a) => (
+                  <SidebarMenuSubItem key={a.id}>
+                    <SidebarMenuSubButton asChild isActive={pathname.startsWith(`/build/${a.id}`)} className={cn("h-7", navRowClass("expert", me.kind))}>
+                      <Link href={`/build/${a.id}/interview`} title={a.persona.name}>
+                        <AgentTile icon={a.icon} size="xs" />
+                        <span className="truncate">{a.persona.name.includes("·") ? a.persona.name.split("·").slice(1).join("·").trim() : a.persona.name}</span>
+                        {a.status !== "published" && <span className="ml-auto shrink-0 text-[11px] text-fg-muted">Draft</span>}
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                ))}
+                {boughtAgents.map(({ agent: a, conversationId }) => (
+                  <SidebarMenuSubItem key={`bought-${a.id}`}>
+                    <SidebarMenuSubButton asChild isActive={pathname === `/chat/${conversationId}`} className={cn("h-7", navRowClass("both", me.kind))}>
+                      <Link href={`/chat/${conversationId}`} title={a.persona.name} data-testid="nav-bought-agent">
+                        <AgentTile icon={a.icon} size="xs" />
+                        <span className="truncate">{a.persona.name.includes("·") ? a.persona.name.split("·").slice(1).join("·").trim() : a.persona.name}</span>
+                        <span className="ml-auto shrink-0 text-[11px] text-fg-muted">Bought</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                ))}
+              </SidebarMenuSub>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="New agent" isActive={pathname === "/build/new"} className={cn("h-8 bg-surface-2", navRowClass("expert", me.kind))}>
               <Link href="/build/new" data-testid="nav-new-agent" data-side={me.kind === "expert" ? "own" : "other"}>
@@ -126,21 +158,6 @@ function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </Group>
-
-        {myAgents.length > 0 && (
-          <Group label="My agents" action={<Link href="/build/new" aria-label="New agent"><Plus className="size-3.5" /></Link>}>
-            {myAgents.map((a) => (
-              <SidebarMenuItem key={a.id}>
-                <SidebarMenuButton asChild tooltip={a.persona.name} isActive={pathname.startsWith(`/build/${a.id}`)} className={navRowClass("expert", me.kind)}>
-                  <Link href={`/build/${a.id}/interview`}>
-                    <AgentTile icon={a.icon} size="xs" />
-                    <span>{a.persona.name}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </Group>
-        )}
 
         <Group label="Credits">
           {row(NAV.wallet)}
@@ -214,9 +231,12 @@ function IdentitySwitcher() {
       data-testid="identity-card"
       className="flex h-16 w-full items-center gap-2.5 rounded-md p-3 text-left hover:bg-surface-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0"
     >
-      <IdentityAvatar initial={me.avatarInitial} photoUrl={profileFor(s, me.id).photoUrl} size={sidebarState === "collapsed" ? 32 : 40} />
+      <IdentityLogo identityId={me.id} size={sidebarState === "collapsed" ? 32 : 40} />
       <span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
-        <span data-testid="identity-name" className="block truncate text-[13px] font-semibold">{displayName(s, me.id)}</span>
+        <span className="flex min-w-0 items-baseline gap-1 text-[13px]">
+          <span data-testid="identity-name" className="truncate font-semibold">{displayName(s, me.id)}</span>
+          {companyFor(me.id) && <span className="min-w-0 truncate text-fg-muted">· {companyFor(me.id)}</span>}
+        </span>
         <span data-testid="sidebar-balance" className="block truncate text-xs text-fg-muted tabular-nums">{roleLine}</span>
       </span>
       <ChevronsUpDown className="size-4 text-fg-muted group-data-[collapsible=icon]:hidden" />
@@ -230,7 +250,7 @@ function IdentitySwitcher() {
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>{card}</PopoverTrigger>
           </TooltipTrigger>
-          <TooltipContent side="right">{displayName(s, me.id)} · {roleLine}</TooltipContent>
+          <TooltipContent side="right">{[displayName(s, me.id), companyFor(me.id), roleLine].filter(Boolean).join(" · ")}</TooltipContent>
         </Tooltip>
       ) : (
         <PopoverTrigger asChild>{card}</PopoverTrigger>
@@ -244,9 +264,10 @@ function IdentitySwitcher() {
             onClick={() => choose(i.id)}
             className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 text-left text-[13px] hover:bg-surface-3"
           >
-            <IdentityAvatar initial={i.avatarInitial} photoUrl={profileFor(s, i.id).photoUrl} size={28} />
-            <span className="truncate">
-              {displayName(s, i.id)} — {i.kind === "expert" ? "Expert" : "Hirer"}
+            <IdentityLogo identityId={i.id} size={28} />
+            <span className="min-w-0">
+              <span className="block truncate">{displayName(s, i.id)} — {i.kind === "expert" ? "Expert" : "Hirer"}</span>
+              {companyFor(i.id) && <span className="block truncate text-xs text-fg-muted">{companyFor(i.id)}</span>}
             </span>
             {i.id === me.id && <Check className="ml-auto size-4 text-selected-fg" />}
           </button>

@@ -7,13 +7,16 @@ import { modelForCategory } from "@/lib/config/models";
 import type { PersonaFieldName, PersonaState } from "@/lib/contracts/phase2";
 import type { Agent, PersonaForm } from "@/lib/types";
 import { api, apiRequest } from "@/lib/api-client";
-import { clearDraft, getDraft, readDemoState, refreshDemo, saveDraft, useDemo } from "@/lib/demo-store";
+import { clearDraft, displayName, getDraft, readDemoState, refreshDemo, saveDraft, useDemo } from "@/lib/demo-store";
 import { personaToSystemPrompt } from "@/features/builder/prompt-template";
 import { EmptyState, PageBody, PageHeader, buttonClass } from "@/components/app/ui";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { UserRound } from "lucide-react";
+import { VoiceTone, type VoiceSettings } from "@/components/app/voice-tone";
 
-export type PersonaPayload = { state: PersonaState; form: PersonaForm; generatedPrompt: string; activePrompt: string; model: string; reviewFieldIds: PersonaFieldName[] };
+export type PersonaPayload = { state: PersonaState; form: PersonaForm; generatedPrompt: string; activePrompt: string; model: string; reviewFieldIds: PersonaFieldName[];
+  /** Demo backend only: tone traits and reply style. */
+  voice?: VoiceSettings };
 export type PersonaDraft = { values: PersonaForm; dirty: Partial<Record<PersonaFieldName, boolean>>;
   customPrompt: string; customDirty: boolean; promptVersion: number };
 const FIELDS: PersonaFieldName[] = ["name", "category", "headline", "description", "howIWork", "always", "never", "exampleQuestions", "greeting"];
@@ -131,6 +134,16 @@ export function PersonaView({ agent, isOwner }: { agent: Agent; isOwner: boolean
     setNotice(""); setError("");
   }
 
+  async function saveVoice(next: { tone?: string[]; styles?: string[] }) {
+    if (!isOwner) return;
+    setError("");
+    try {
+      const saved = await apiRequest<PersonaPayload>(`/api/agents/${encodeURIComponent(agent.id)}/persona`, { method: "PATCH", body: { action: "voice", ...next } });
+      setPayload(saved); setNotice("Voice & tone saved");
+      await refreshDemo().catch(() => undefined);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Couldn't save voice & tone."); }
+  }
+
   async function saveCustom() {
     if (!isOwner || !draft || !payload || busy) return;
     setBusy(true); setNotice("Saving custom prompt"); setError("");
@@ -165,12 +178,13 @@ export function PersonaView({ agent, isOwner }: { agent: Agent; isOwner: boolean
     finally { setBusy(false); }
   }
 
-  if (loadedFor !== `${demo.identityId}:${agent.id}` || !payload || !draft) return <PageBody><PageHeader title="Persona" subtitle="Shape how your agent introduces itself and responds." />{error || demo.error ? <p role="alert" className="text-sm text-danger">{error || demo.error}<button type="button" className={`${buttonClass()} ml-3`} onClick={() => void refresh().then(() => setLoadedFor(`${demo.identityId}:${agent.id}`)).catch(cause => setError(cause instanceof Error ? cause.message : "Could not load persona."))}>Retry loading</button></p> : <p className="text-sm text-fg-muted">Loading persona…</p>}</PageBody>;
+  if (loadedFor !== `${demo.identityId}:${agent.id}` || !payload || !draft) return <PageBody><PageHeader title="Persona" />{error || demo.error ? <p role="alert" className="text-sm text-danger">{error || demo.error}<button type="button" className={`${buttonClass()} ml-3`} onClick={() => void refresh().then(() => setLoadedFor(`${demo.identityId}:${agent.id}`)).catch(cause => setError(cause instanceof Error ? cause.message : "Could not load persona."))}>Retry loading</button></p> : <p className="text-sm text-fg-muted">Loading persona…</p>}</PageBody>;
 
   const hasContent = FIELDS.some(field => field !== "category" && (Array.isArray(draft.values[field]) ? draft.values[field].length : draft.values[field]));
   const custom = payload.state.promptMode === "custom" || draft.customDirty;
-  return <PageBody className="max-w-[800px]"><PageHeader title="Persona" subtitle="Shape how your agent introduces itself and responds." />
+  return <PageBody className="max-w-[800px]"><PageHeader title="Persona" />
     {demo.status === "error" && <p role="alert" className="mb-4 rounded border border-warning/40 bg-warning-surface p-3 text-sm">{demo.error ?? "The latest agent summary could not load. Your persona draft is still here."}</p>}
+    {payload.voice && <VoiceTone agent={agent} expertFirst={(displayName(demo, agent.ownerId).split(" ")[0]) || "The expert"} voice={payload.voice} isOwner={isOwner} onSave={saveVoice} />}
     {!hasContent && <EmptyState icon={UserRound} heading="Your persona will take shape here" body="Answer the opening questions or add your own details." action={{ label: "Continue interview", href: `/build/${agent.id}/interview` }} />}
     <div className="space-y-5 rounded-xl border border-line-subtle bg-surface-1 p-4 sm:p-6">
       {FIELDS.map(field => {

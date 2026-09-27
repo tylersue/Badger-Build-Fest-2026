@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowDownUp, Plus, Search, Store, X } from "lucide-react";
-import { Breadcrumbs, EmptyState, IdentityAvatar, PageBody, PageHeader, Pill, buttonClass } from "@/components/app/ui";
-import { allAgents, currentIdentity, displayName, identityById, profileFor, useDemo } from "@/lib/demo-store";
+import { Breadcrumbs, EmptyState, PageBody, PageHeader, Pill, buttonClass } from "@/components/app/ui";
+import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
+import { allAgents, currentIdentity, displayName, profileFor, useDemo } from "@/lib/demo-store";
 import { CATEGORIES, categoryLabel, type Category } from "@/lib/config/categories";
 import { BenchmarkScoreBadge } from "@/components/benchmark/benchmark-ui";
 import { typicalMessageCents } from "@/features/billing/pricing";
@@ -31,7 +32,7 @@ export function MarketplaceView() {
       .filter(
         (a) =>
           !q ||
-          `${a.persona.name} ${a.persona.headline} ${a.persona.description} ${categoryLabel(a.persona.category)} ${displayName(s, a.ownerId)}`
+          `${a.persona.name} ${a.persona.headline} ${a.persona.description} ${categoryLabel(a.persona.category)} ${displayName(s, a.ownerId)} ${companyFor(a.ownerId)}`
             .toLowerCase()
             .includes(q),
       )
@@ -56,7 +57,7 @@ export function MarketplaceView() {
         }
       />
       <PageBody>
-        <PageHeader title="Marketplace" subtitle="Agents built from real experts' own answers. Every reply cites what they said." />
+        <PageHeader title="Marketplace" />
 
         <label className="flex h-10 items-center gap-2.5 rounded-lg border border-line-default bg-surface-2 px-3 text-sm focus-within:border-brand-border">
           <Search className="size-4 shrink-0 text-fg-muted" />
@@ -125,8 +126,8 @@ export function MarketplaceView() {
 /* The card leads with the expert (DESIGN.md): who they are, what the agent helps with, then category and price. */
 function AgentCard({ agent: a }: { agent: Agent }) {
   const s = useDemo();
-  const owner = identityById(a.ownerId);
   const profile = profileFor(s, a.ownerId);
+  const company = companyFor(a.ownerId);
   return (
     <Link
       href={`/agents/${a.slug}`}
@@ -134,9 +135,12 @@ function AgentCard({ agent: a }: { agent: Agent }) {
       className="group flex min-w-0 w-full flex-col rounded-xl border border-line-subtle bg-surface-1 p-4 transition-colors hover:border-line-outline focus-visible:border-brand-border focus-visible:outline-none"
     >
       <div className="flex items-center gap-3">
-        <IdentityAvatar initial={owner.avatarInitial} photoUrl={profile.photoUrl} />
+        <IdentityLogo identityId={a.ownerId} size={40} />
         <div className="min-w-0">
-          <h2 className="truncate text-[15px] leading-tight font-semibold">{displayName(s, a.ownerId)}</h2>
+          <h2 className="truncate text-[15px] leading-tight font-semibold">
+            {displayName(s, a.ownerId)}
+            {company && <span className="font-normal text-fg-muted"> · {company}</span>}
+          </h2>
           <p className="mt-1 truncate text-xs text-fg-muted">{[profile.field, profile.credentials].filter(Boolean).join(" · ")}</p>
         </div>
       </div>

@@ -179,7 +179,7 @@ export function SandboxView({ agent, isOwner }: { agent: Agent; isOwner: boolean
       setAtBottom(element.scrollHeight - element.scrollTop - element.clientHeight < 80);
     }} className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
       <div className="mx-auto w-full max-w-[752px]">
-        <PageHeader title="Test" subtitle="Ask what a hirer would ask. Inspect the answer and its sources." />
+        <PageHeader title="Test" />
         {demo.status !== "ready" && <p role="status" className="mb-4 text-sm text-warning">{demo.error ?? "Connecting to live services…"}</p>}
         {rows.length === 0 && !pendingText && <EmptyState icon={FlaskConical} heading="Test your agent" body="Ask a question to inspect its answer and sources." />}
         {rows.map(row => row.role === "user" ? <UserMessage key={row.id} content={row.content} /> :

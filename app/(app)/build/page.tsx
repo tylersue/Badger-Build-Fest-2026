@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { Bot, Plus } from "lucide-react";
 import { answerCount } from "@/components/app/builder";
 import { AgentTile, Breadcrumbs, DataTable, EmptyState, Num, NumberPill, PageBody, PageHeader, SearchField, StatusPill, Toolbar, buttonClass } from "@/components/app/ui";
-import { allAgents, allConversations, currentIdentity, useDemo } from "@/lib/demo-store";
+import { agentById, allAgents, allConversations, currentIdentity, displayName, purchasesFor, useDemo } from "@/lib/demo-store";
+import { IdentityLogo } from "@/components/app/identity-logo";
+import { formatCredits } from "@/lib/format";
 import { categoryLabel } from "@/lib/config/categories";
 import { formatRelative, isoDaysAgo } from "@/lib/format";
 
@@ -15,12 +17,13 @@ export default function MyAgentsPage() {
   const me = currentIdentity(s);
   const agents = allAgents(s).filter((a) => a.ownerId === me.id);
   const weekAgo = isoDaysAgo(7);
+  const bought = purchasesFor(s).flatMap((p) => { const agent = agentById(s, p.agentId); return agent ? [{ ...p, agent }] : []; });
 
   return (
     <>
       <Breadcrumbs items={[{ label: "My agents" }]} />
       <PageBody>
-        <PageHeader title="My agents" subtitle="Everything you've built. Publish when the persona is done and the interview has enough answers." />
+        <PageHeader title="My agents" />
         <Toolbar>
           <Link href="/build/new" className={buttonClass("primary")}>
             <Plus />
@@ -28,7 +31,24 @@ export default function MyAgentsPage() {
           </Link>
           <SearchField placeholder="Search by name…" />
         </Toolbar>
-        {agents.length === 0 ? (
+        {bought.length > 0 && (
+          <section className="mb-8" aria-labelledby="bought-heading">
+            <h2 id="bought-heading" className="mb-3 text-sm font-semibold">Bought from the marketplace</h2>
+            <DataTable head={[{ label: "Agent" }, { label: "Expert" }, { label: "Category" }, { label: "Paid", numeric: true }, { label: "Bought" }]}>
+              {bought.map(({ agent: a, conversationId, credits, purchasedAt }) => (
+                <tr key={a.id} data-testid="bought-row" className="cursor-pointer" onClick={() => router.push(`/chat/${conversationId}`)}>
+                  <td><span className="flex items-center gap-2"><AgentTile icon={a.icon} size="sm" />{a.persona.name}</span></td>
+                  <td><span className="flex items-center gap-2"><IdentityLogo identityId={a.ownerId} size={22} />{displayName(s, a.ownerId)}</span></td>
+                  <td className="text-fg-tertiary">{categoryLabel(a.persona.category)}</td>
+                  <Num>{formatCredits(credits)}</Num>
+                  <td className="text-fg-muted">{formatRelative(purchasedAt)}</td>
+                </tr>
+              ))}
+            </DataTable>
+          </section>
+        )}
+        {bought.length > 0 && agents.length > 0 && <h2 className="mb-3 text-sm font-semibold">Built by you</h2>}
+        {agents.length === 0 && bought.length > 0 ? null : agents.length === 0 ? (
           <EmptyState icon={Bot} heading="No agents yet" body="Start an interview and your first agent takes shape from your answers." action={{ label: "New agent", href: "/build/new" }} />
         ) : (
           <DataTable head={[{ label: "Name" }, { label: "Status" }, { label: "Category" }, { label: "Answers", numeric: true }, { label: "Chats (7d)", numeric: true }, { label: "Rating", numeric: true }, { label: "Updated" }]}>

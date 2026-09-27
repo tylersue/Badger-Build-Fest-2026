@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { FLAGS, IDENTITIES, INTERVIEW_TURNS, MARIA, PROFILES, REVIEWS } from "@/lib/data/seed";
+import { FLAGS, IDENTITIES, INTERVIEW_TURNS, MARIA, PROFILES, REVIEWS } from "@/lib/data/active-seed";
 import type { Category } from "@/lib/config/categories";
 import type { Agent, Conversation, Flag, Identity, InterviewTurn, LedgerEntry, Message, ModerationAction, Payout, PersonaForm, Profile, Review } from "@/lib/types";
 import type { DemoSnapshot } from "@/lib/server/demo";
@@ -415,6 +415,20 @@ export async function sendChatMessage(conversationId: string, text: string, onEv
     await refreshDemo(); clearDraft("chat", conversationId, draft);
     freshMessages.add(messageId);
     return { ok: true, chargedCents: chargedUnits ? cents(chargedUnits) : 0, messageId };
+  } catch (error) { const refusal = creditRefusal(error); if (refusal) return refusal; throw error; }
+}
+
+/** Agents the selected identity bought (demo backend), newest first. */
+export function purchasesFor(s: DemoState) {
+  return [...(live(s)?.purchases ?? [])].sort((a, b) => b.purchasedAt.localeCompare(a.purchasedAt));
+}
+/** One-click checkout: buys the agent and returns the chat created for it. */
+export async function purchaseAgent(agentId: string): Promise<{ ok: true; conversationId: string } | Refusal> {
+  requireLive();
+  try {
+    const result = await api.purchase(agentId);
+    await refreshDemo();
+    return { ok: true, conversationId: result.conversationId };
   } catch (error) { const refusal = creditRefusal(error); if (refusal) return refusal; throw error; }
 }
 

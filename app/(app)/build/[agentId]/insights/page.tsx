@@ -19,7 +19,7 @@ export default function InsightsPage() {
 
   return (
     <PageBody>
-      <PageHeader title="Insights" subtitle="What hirers ask this agent. Transcripts appear only when the hirer chose to share them." />
+      <PageHeader title="Insights" />
       {convs.length === 0 ? (
         <EmptyState icon={BarChart3} heading="No conversations yet" body="Publish the agent and hirers' questions show up here." action={{ label: "Publish agent", href: `/build/${agent.id}/publish` }} />
       ) : (

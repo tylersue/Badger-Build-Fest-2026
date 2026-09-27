@@ -5,7 +5,6 @@ import type { OrbState } from "thinking-orbs";
 import { Orb, type OrbMood } from "@/components/app/orb";
 import { currentIdentity, useDemo } from "@/lib/demo-store";
 import { planSpeech, shownAt, spokenPrefix } from "@/features/runtime/speech";
-import { cn } from "@/lib/utils";
 
 /*
  * The shared "talking to an AI" pieces, for every AI conversation in the app:
@@ -112,9 +111,10 @@ export function ThinkingPill({ label, mood }: { label: string; mood: OrbMood }) 
 
 /* One agent answer in a chat: the compact pill while it searches (thinking breath) and writes
    (talking breath), then a small orb and the agent's name once the answer is complete. The latest
-   answer's orb keeps breathing slowly while it listens for your next message; older ones are still. */
+   answer's orb keeps breathing slowly while it listens for your next message; older ones are still.
+   The answer body sits in its own column under the header, so a turn reads as one unit. */
 export function AgentTurn({
-  name, phase, label, listening = false, onSkip, children,
+  name, phase, label, listening = false, onSkip, detail, children,
 }: {
   name: string;
   phase: TurnPhase;
@@ -123,29 +123,34 @@ export function AgentTurn({
   /** The latest answer, waiting on the next message: its orb breathes slowly instead of resting. */
   listening?: boolean;
   onSkip?: () => void;
+  /** Quiet text after the name once the answer is complete, e.g. when it was sent. */
+  detail?: ReactNode;
   children?: ReactNode;
 }) {
   const live = phase !== "done";
   const design = useOrbDesign();
   return (
-    <div data-testid="agent-turn" data-phase={phase} className={cn(!children && "mb-5")}>
+    <div data-testid="agent-turn" data-phase={phase} className="mb-8">
       <button
         type="button"
         onClick={onSkip}
         disabled={!live}
         aria-label={live ? "Show the whole reply now" : undefined}
-        className="mb-1.5 flex h-10 items-center gap-2 text-xs text-fg-muted disabled:cursor-default"
+        className="mb-2 flex h-10 max-w-full min-w-0 items-center gap-2.5 text-left text-xs text-fg-muted disabled:cursor-default"
       >
         {live ? (
           <ThinkingPill label={label ?? "Thinking…"} mood={phase === "typing" ? "talking" : "thinking"} />
         ) : (
           <>
-            <Orb state={design} mood={listening ? "listening" : "still"} size={20} label={listening ? `${name} is listening` : `${name}'s reply`} />
-            <span className="font-medium text-fg-tertiary">{name}</span>
+            <span className="grid size-8 shrink-0 place-items-center rounded-full border border-line-subtle bg-sidebar">
+              <Orb state={design} mood={listening ? "listening" : "still"} size={22} label={listening ? `${name} is listening` : `${name}'s reply`} />
+            </span>
+            <span className="truncate text-[13px] font-semibold text-foreground">{name}</span>
+            {detail && <span className="shrink-0 text-xs text-fg-muted">{detail}</span>}
           </>
         )}
       </button>
-      {children}
+      {children && <div className="min-w-0 sm:pl-[42px]">{children}</div>}
     </div>
   );
 }

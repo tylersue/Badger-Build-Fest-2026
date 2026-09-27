@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
-  Activity, Bot, Briefcase, Calculator, ChevronRight, Footprints, GraduationCap, HeartPulse, PiggyBank, Search,
+  Activity, Bot, Briefcase, Building2, Calculator, ChartLine, ChartPie, ChevronRight, ClipboardCheck, Cpu, FileSearch, FlaskConical, Footprints,
+  GraduationCap, HandCoins, Handshake, HeartPulse, Landmark, Megaphone, MessagesSquare, Newspaper, PenTool, PiggyBank, Presentation, Repeat,
+  Rocket, Search, Send, Server, Store, Tag, Target, TrendingUp, UserPlus, Users, Zap,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -129,6 +131,32 @@ export const AGENT_ICONS: Record<string, LucideIcon> = {
   briefcase: Briefcase,
   footprints: Footprints,
   bot: Bot,
+  "flask-conical": FlaskConical,
+  presentation: Presentation,
+  users: Users,
+  "trending-up": TrendingUp,
+  target: Target,
+  rocket: Rocket,
+  "chart-line": ChartLine,
+  server: Server,
+  "pen-tool": PenTool,
+  megaphone: Megaphone,
+  store: Store,
+  repeat: Repeat,
+  cpu: Cpu,
+  "file-search": FileSearch,
+  "chart-pie": ChartPie,
+  "clipboard-check": ClipboardCheck,
+  "hand-coins": HandCoins,
+  landmark: Landmark,
+  "user-plus": UserPlus,
+  tag: Tag,
+  send: Send,
+  newspaper: Newspaper,
+  "messages-square": MessagesSquare,
+  "building-2": Building2,
+  zap: Zap,
+  handshake: Handshake,
 };
 
 /* Neutral agent tile: agents get no color of their own (DESIGN.md). */

@@ -85,6 +85,8 @@ export type DemoSnapshot = {
   messages: Message[];
   ledger: LedgerEntry[];
   earningAgents: Record<string, string>;
+  /** Hackathon demo backend only: agents the selected identity bought, each with its ready chat. */
+  purchases?: { agentId: string; conversationId: string; credits: number; purchasedAt: string }[];
   wallet: { balanceUnits: MoneyAmount; heldUnits: MoneyAmount; balanceCents: number | null };
   backend: {
     configured: true;
