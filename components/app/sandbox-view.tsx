@@ -11,7 +11,7 @@ import { clearDraft, getDraft, refreshDemo, saveDraft, useDemo } from "@/lib/dem
 import type { Agent } from "@/lib/types";
 import type { EvidenceCitation, Operation, RetrievedChunk, ToolStep } from "@/lib/contracts/phase2";
 import { formatCreditUnits } from "@/lib/format";
-import { emptyAnswer, reduceAnswer, replayAnswer, type AnswerState } from "./chat-state";
+import { emptyAnswer, markDeletedSources, reduceAnswer, replayAnswer, type AnswerState } from "./chat-state";
 
 type StoredMessage = { id: string; role: "user" | "assistant"; content: string; operationId: string | null;
   citations: EvidenceCitation[]; sources: RetrievedChunk[]; gap: string | null; steps: ToolStep[];
@@ -54,6 +54,9 @@ export function SandboxView({ agent, isOwner }: { agent: Agent; isOwner: boolean
   const bottomRef = useRef<HTMLDivElement>(null);
   const generation = useRef(0);
   const identityId = demo.identityId;
+  const displayCitations = (citations: EvidenceCitation[]): EvidenceCitation[] =>
+    demo.status === "ready" && demo.snapshot ? markDeletedSources(citations,
+      new Set(Object.keys(demo.snapshot.backend.sourceStates)), new Set(Object.keys(demo.snapshot.backend.answerStates))) : citations;
 
   const loadTranscript = useCallback(async (ticket = generation.current) => {
     const response = await api.sandboxTranscript(agent.id);
@@ -174,7 +177,7 @@ export function SandboxView({ agent, isOwner }: { agent: Agent; isOwner: boolean
             <ToolSteps steps={answers[row.operationId ?? ""]?.steps ?? row.steps} />
             <RetrievedSources items={answers[row.operationId ?? ""]?.sources ?? row.sources} />
             <AssistantMessage content={answers[row.operationId ?? ""]?.text ?? row.content}
-              citations={answers[row.operationId ?? ""]?.citations ?? row.citations}
+              citations={displayCitations(answers[row.operationId ?? ""]?.citations ?? row.citations)}
               gap={answers[row.operationId ?? ""]?.gap ?? row.gap}
               caption={answers[row.operationId ?? ""]?.cost ? <StreamCostCaption cost={answers[row.operationId ?? ""].cost} /> :
                 row.chargedUnits !== null ? `Charged ${formatCreditUnits(row.chargedUnits)}` : "Charge pending"} />
@@ -184,7 +187,7 @@ export function SandboxView({ agent, isOwner }: { agent: Agent; isOwner: boolean
           {operationId && <div>
             <ToolSteps steps={answers[operationId]?.steps ?? []} />
             {answers[operationId]?.sources && <RetrievedSources items={answers[operationId].sources} />}
-            <AssistantMessage content={answers[operationId]?.text ?? ""} citations={answers[operationId]?.citations ?? []}
+            <AssistantMessage content={answers[operationId]?.text ?? ""} citations={displayCitations(answers[operationId]?.citations ?? [])}
               gap={answers[operationId]?.gap} caption={<StreamCostCaption cost={answers[operationId]?.cost}
                 estimateUnits={answers[operationId]?.cost?.estimateUnits ?? null} />} />
           </div>}

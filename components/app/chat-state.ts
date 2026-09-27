@@ -42,6 +42,15 @@ export function evidenceGroups(citations: EvidenceCitation[]) {
     online: citations.filter(citation => citation.sourceType === "web") };
 }
 
+/** A snapshot stays immutable; current active IDs only affect the historical UI label. */
+export function markDeletedSources(citations: EvidenceCitation[], activeDocuments: ReadonlySet<string>, activeAnswers: ReadonlySet<string>): EvidenceCitation[] {
+  return citations.map(citation => {
+    if (citation.sourceType === "web" || citation.historical) return citation;
+    const active = citation.sourceType === "document" ? activeDocuments : activeAnswers;
+    return active.has(citation.sourceId) ? citation : { ...citation, historical: true };
+  });
+}
+
 export function retainDraftOnResult(acknowledged: boolean, current: string): string {
   return acknowledged ? "" : current;
 }
