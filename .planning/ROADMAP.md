@@ -98,7 +98,7 @@ Before parallel implementation, record the four owners in the project board and 
 - [x] 02-15-PLAN.md — Render streaming evidence, web steps and retained composers.
 
 **Wave 9 (after Wave 8)**
-- [ ] 02-16-PLAN.md — Wire builder views and migrate remaining shell mutations.
+- [x] 02-16-PLAN.md — Wire builder views and migrate remaining shell mutations.
 
 **Wave 10 (after Wave 9)**
 - [ ] 02-17-PLAN.md — Complete offline acceptance and prepare real-service diagnostics.
@@ -147,6 +147,6 @@ Before parallel implementation, record the four owners in the project board and 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Complete for local demo | 2026-09-26 |
-| 2. Interview-First Agent Building | 15/18 | In Progress|  |
+| 2. Interview-First Agent Building | 16/18 | In Progress|  |
 | 3. Publish, Discover & Use | 0/TBD | Not started | - |
 | 4. Trust, Insights & Launch Readiness | 0/TBD | Not started | - |
