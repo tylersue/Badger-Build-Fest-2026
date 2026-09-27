@@ -1,61 +1,54 @@
 import { PLATFORM_MARGIN_SHARE, TYPICAL_CALL_CENTS, type MeteredPurpose } from "@/lib/config/credits";
 import type { ModelId } from "@/lib/config/models";
 
-/** Cents per million tokens (claude-api pricing, 2026). */
-export const PRICING_CENTS_PER_MTOK: Record<ModelId | "voyage-4-lite", { input: number; output: number; cacheRead: number }> = {
-  "claude-sonnet-5": { input: 200, output: 1000, cacheRead: 10 },
-  "claude-opus-5-5": { input: 400, output: 2000, cacheRead: 20 },
-  "claude-haiku-4-5": { input: 100, output: 500, cacheRead: 5 },
-  "voyage-4-lite": { input: 2, output: 0, cacheRead: 0 },
+export const PRICE_VERSION = "2026-09-26-standard-v1";
+/** Nanodollars per million tokens; immutable versioned standard-rate snapshot. */
+export const PRICING_UNITS_PER_MTOK: Record<ModelId | "voyage-4-lite", { input: bigint; output: bigint; cacheRead: bigint; cacheWrite: bigint; embedding: bigint }> = {
+  "claude-sonnet-5": { input: BigInt("2000000000"), output: BigInt("10000000000"), cacheRead: BigInt("200000000"), cacheWrite: BigInt("2500000000"), embedding: BigInt("0") },
+  "claude-opus-5-5": { input: BigInt("4000000000"), output: BigInt("20000000000"), cacheRead: BigInt("200000000"), cacheWrite: BigInt("5000000000"), embedding: BigInt("0") },
+  "claude-haiku-4-5": { input: BigInt("1000000000"), output: BigInt("5000000000"), cacheRead: BigInt("100000000"), cacheWrite: BigInt("1250000000"), embedding: BigInt("0") },
+  "voyage-4-lite": { input: BigInt("0"), output: BigInt("0"), cacheRead: BigInt("0"), cacheWrite: BigInt("0"), embedding: BigInt("20000000") },
 };
-
-export type Usage = { model: keyof typeof PRICING_CENTS_PER_MTOK; tokensIn: number; tokensOut: number; cacheReadTokens?: number };
-
-/** Raw cost of one call in fractional cents. */
-export function costCentsFromUsage(usage: Usage): number {
-  const p = PRICING_CENTS_PER_MTOK[usage.model];
-  return (usage.tokensIn * p.input + usage.tokensOut * p.output + (usage.cacheReadTokens ?? 0) * p.cacheRead) / 1_000_000;
+export const SEARCH_FEE_UNITS = BigInt("10000000");
+export const PRICING_CENTS_PER_MTOK = Object.fromEntries(Object.entries(PRICING_UNITS_PER_MTOK).map(([model, rate]) => [model, {
+  input: Number(rate.input || rate.embedding) / 10_000_000, output: Number(rate.output) / 10_000_000, cacheRead: Number(rate.cacheRead) / 10_000_000,
+}])) as Record<keyof typeof PRICING_UNITS_PER_MTOK, { input: number; output: number; cacheRead: number }>;
+export type Usage = { model: keyof typeof PRICING_UNITS_PER_MTOK; tokensIn?: number; tokensOut?: number; cacheReadTokens?: number; cacheWriteTokens?: number; embeddingTokens?: number; successfulSearchCount?: number };
+function count(value: number | undefined): bigint {
+  if (value === undefined) return BigInt("0");
+  if (!Number.isSafeInteger(value) || value < 0) throw new RangeError("usage counts must be nonnegative safe integers");
+  return BigInt(value);
 }
-
-/** The amount reserved before a metered call (D-10). */
-export function estimateCents(purpose: MeteredPurpose, multiplier = 1): number {
-  return Math.ceil(TYPICAL_CALL_CENTS[purpose] * multiplier);
+/** Round once after summing token components. Search fees are per successful search. */
+export function costUnitsFromUsage(usage: Usage): bigint {
+  const rate = PRICING_UNITS_PER_MTOK[usage.model];
+  const numerator = count(usage.tokensIn) * rate.input + count(usage.tokensOut) * rate.output
+    + count(usage.cacheReadTokens) * rate.cacheRead + count(usage.cacheWriteTokens) * rate.cacheWrite
+    + count(usage.embeddingTokens) * rate.embedding;
+  return (numerator === BigInt("0") ? BigInt("0") : (numerator + BigInt("999999")) / BigInt("1000000")) + count(usage.successfulSearchCount) * SEARCH_FEE_UNITS;
 }
-
-/** Whole credits charged for a raw cost: at least 1 credit for any non-zero cost. */
+export type PriceSnapshot = { version: typeof PRICE_VERSION; policy: "standard"; grossUnits: bigint; effectiveUnits: bigint };
+/** Discounts require a future verified policy; computed standard usage is the default. */
+export function priceUsage(usage: Usage): PriceSnapshot {
+  const grossUnits = costUnitsFromUsage(usage);
+  return { version: PRICE_VERSION, policy: "standard", grossUnits, effectiveUnits: grossUnits };
+}
+/** Display-only compatibility selectors. Floating point never enters settlement. */
+export function costCentsFromUsage(usage: Usage): number { return Number(costUnitsFromUsage(usage)) / 10_000_000; }
+export function estimateCents(purpose: MeteredPurpose, multiplier = 1): number { return Math.ceil(TYPICAL_CALL_CENTS[purpose] * multiplier); }
 export function toChargeCents(rawCents: number): number {
-  if (rawCents <= 0) return 0;
-  return Math.max(1, Math.ceil(rawCents));
+  if (!Number.isFinite(rawCents) || rawCents < 0) throw new RangeError("invalid charge");
+  return rawCents;
 }
-
-export type UsageSplit = {
-  hirerDebitCents: number;
-  platformCostCents: number;
-  platformMarginCents: number;
-  expertCreditCents: number;
-};
-
-/**
- * Chat charge = raw cost x the agent's multiplier. The platform keeps the raw
- * cost plus its share of the margin; the rest credits the expert (CRED-04).
- * Invariant: hirerDebit = platformCost + platformMargin + expertCredit.
- */
+export type UsageSplit = { hirerDebitCents: number; platformCostCents: number; platformMarginCents: number; expertCreditCents: number };
+/** Phase 1 display compatibility. Phase 3 owns transactional hirer/expert settlement. */
 export function splitUsageCharge(input: { rawCents: number; multiplier: number; marginShare?: number }): UsageSplit {
   const { rawCents, multiplier, marginShare = PLATFORM_MARGIN_SHARE } = input;
-  if (multiplier < 1 || multiplier > 5) throw new RangeError("multiplier must be between 1 and 5");
+  if (multiplier < 1 || multiplier > 5 || !Number.isFinite(multiplier)) throw new RangeError("multiplier must be between 1 and 5");
   const platformCostCents = toChargeCents(rawCents);
-  const hirerDebitCents = Math.ceil(platformCostCents * multiplier);
+  const hirerDebitCents = platformCostCents * multiplier;
   const margin = hirerDebitCents - platformCostCents;
-  const platformMarginCents = Math.round(margin * marginShare);
-  return {
-    hirerDebitCents,
-    platformCostCents,
-    platformMarginCents,
-    expertCreditCents: margin - platformMarginCents,
-  };
+  const platformMarginCents = margin * marginShare;
+  return { hirerDebitCents, platformCostCents, platformMarginCents, expertCreditCents: margin - platformMarginCents };
 }
-
-/** Listing price signal: typical credits per message for a multiplier. */
-export function typicalMessageCents(multiplier: number): number {
-  return estimateCents("chat_message", multiplier);
-}
+export function typicalMessageCents(multiplier: number): number { return estimateCents("chat_message", multiplier); }
