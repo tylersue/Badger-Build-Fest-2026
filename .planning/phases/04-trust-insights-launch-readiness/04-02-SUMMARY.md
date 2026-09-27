@@ -19,7 +19,7 @@ affects: [04-03, 04-04, 04-05, 04-06]
 actuals:
   tokens: 15500
   tasks: 3
-  commits: 5
+  commits: 6
 
 # Tech tracking
 tech-stack:
@@ -60,8 +60,10 @@ coverage:
       - kind: unit
         ref: "features/trust/moderation.test.ts — queue, resolve, unpublish, marketplace filter and persistence cases"
         status: pass
-    human_judgment: true
-    rationale: "The admin table layout and required-note dialog still need a visual pass in the running app."
+      - kind: manual_procedural
+        ref: "Local browser: open/resolved queue tabs and required-note dialog; whitespace stays disabled, valid note enables Unpublish"
+        status: pass
+    human_judgment: false
   - id: D2
     description: "A hirer can toggle feedback on any assistant answer and share or hide their transcript; choices persist."
     requirement: CHAT-08
@@ -69,8 +71,10 @@ coverage:
       - kind: unit
         ref: "features/trust/conversation.test.ts — feedback/share permissions and reload persistence"
         status: pass
-    human_judgment: true
-    rationale: "Disabled controls and chat-header layout need a visual pass in the running app."
+      - kind: manual_procedural
+        ref: "Local browser: hirer controls enabled, expert controls disabled; transcript toggle survives reload and was restored off"
+        status: pass
+    human_judgment: false
   - id: D3
     description: "Anyone can flag a conversation from chat and admins see the new flag without transcript content."
     requirement: MKT-06
@@ -78,8 +82,10 @@ coverage:
       - kind: unit
         ref: "features/trust/flags.test.ts — 11 flag validation, duplicate, queue and persistence cases"
         status: pass
-    human_judgment: true
-    rationale: "Dialog focus, radio selection and inline validation need a visual pass in the running app."
+      - kind: manual_procedural
+        ref: "Local browser: conversation flag reasons render; Send stays disabled for blank Something else details and enables with details"
+        status: pass
+    human_judgment: false
   - id: D4
     description: "Zero-charge refusal replies also expose answer feedback controls."
     requirement: CHAT-08
@@ -103,7 +109,7 @@ status: complete
 
 - **Duration:** About 3h wall clock across sessions
 - **Started:** 2026-09-27T01:36:23Z
-- **Completed:** 2026-09-27T04:31:00Z
+- **Completed:** 2026-09-27T04:37:34Z
 - **Tasks:** 3 (admin moderation, feedback/sharing, chat flag controls)
 - **Files modified:** 13
 
@@ -112,7 +118,7 @@ status: complete
 - Added an admin queue for open and resolved agent and conversation flags, with search, flag resolution, and a required-note unpublish flow that resolves the agent's open flags.
 - Added persistent thumbs feedback to assistant answers, including refusal replies, and a per-conversation transcript-sharing toggle restricted to the hirer.
 - Added conversation flagging with four reasons, required details for “Something else,” duplicate-open-flag prevention, and admin queue integration.
-- Verified the full suite (97 tests), typecheck, lint, production build, and the D-05 slot limits.
+- Verified the full suite (97 tests), typecheck, lint, production build, D-05 slot limits, and the key admin/chat flows in the local browser.
 
 ## Task Commits
 
@@ -121,6 +127,7 @@ status: complete
 3. **Task 2 GREEN: Feedback and transcript sharing** - `5f7769c` (feat)
 4. **Task 3 RED: Conversation flag tests** - `6fe2675` (test)
 5. **Task 3 GREEN: Chat sharing and conversation flags** - `e1f5900` (feat)
+6. **Task 3 follow-up: Require details for “Something else”** - `aa586ea` (fix)
 
 **Plan metadata:** included with this summary
 
@@ -155,7 +162,7 @@ None — no external service configuration is required.
 
 - Plan 04-05 can reuse `FlagButton` for agent listing flags.
 - Plan 04-03 can proceed with the moderation and feedback foundations in place.
-- The human visual checks recorded under coverage remain useful during app review.
+- Browser review covered the moderation queue, note validation, disabled/enabled chat controls, flag details validation, and transcript-sharing reload persistence; test toggles were restored afterward.
 
 ---
 *Phase: 04-trust-insights-launch-readiness*
