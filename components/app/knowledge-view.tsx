@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen, FileText, Plus } from "lucide-react";
 import { AddCreditsButton } from "@/components/app/add-credits";
+import { KnowledgeGraph, type GraphInput, type GraphTarget } from "@/components/app/knowledge-graph";
 import { SourceIntake } from "@/components/app/source-intake";
 import { buttonClass } from "@/components/app/ui";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +13,8 @@ import { api, apiRequest, ApiClientError, newRequestKey } from "@/lib/api-client
 import type { SourceEstimate } from "@/lib/contracts/phase2";
 import { refreshDemo, useDemo } from "@/lib/demo-store";
 import { formatCreditUnits, formatNumber } from "@/lib/format";
+import { EXPERT_MEDIA } from "@/lib/demo-backend/media";
+import { cn } from "@/lib/utils";
 import type { Agent } from "@/lib/types";
 import type { InterviewView } from "@/features/builder/interview";
 import type { SourceListItem, SourceOverview } from "@/features/knowledge/intake";
@@ -60,6 +64,43 @@ function AgentKnowledgeView({ agent, isOwner, identityId, renderAnswerActions }:
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [resumeKeys, setResumeKeys] = useState<Record<string, string>>({});
+  const [highlight, setHighlight] = useState<string | null>(null);
+  const highlightTimer = useRef<number | undefined>(undefined);
+  const router = useRouter();
+  const [indexedAnswers, setIndexedAnswers] = useState(0);
+  useEffect(() => () => window.clearTimeout(highlightTimer.current), []);
+  useEffect(() => {
+    if (!isOwner) return;
+    let live = true;
+    void api.publicStats(agent.id).then(stats => { if (live) setIndexedAnswers(stats.answers); }, () => undefined);
+    return () => { live = false; };
+  }, [agent.id, isOwner, reload]);
+  const graphInput = useMemo<GraphInput | null>(() => {
+    // Below three answers a graph is just a couple of dots; the list says it better.
+    if (!interview || interview.answers.length < 3) return null;
+    return {
+      seed: agent.id,
+      answers: interview.answers.map(answer => ({ id: answer.id, question: answer.question, text: answer.text, parentId: answer.parentAnswerId ?? null })),
+      documents: (overview?.sources ?? []).filter(source => !source.deletedAt && source.kind !== "interview" && source.state === "ready")
+        .map(source => ({ id: source.id, name: source.name, chunkCount: source.chunkCount })),
+      publications: EXPERT_MEDIA.filter(item => item.agentId === agent.id).map(item => ({ id: item.id, title: item.title, kind: item.kind, text: `${item.keywords} ${item.excerpt}` })),
+      interviewChunks: indexedAnswers,
+    };
+  }, [agent.id, interview, overview, indexedAnswers]);
+  /* A graph node jumps to its row in the list below and lights it up for a moment; publications open their page. */
+  const jumpTo = (target: GraphTarget) => {
+    if (target.type === "publication") { router.push(`/sources/${target.id}`); return; }
+    const elementId = `knowledge-${target.type}-${target.id}`;
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    element.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    element.focus({ preventScroll: true });
+    setHighlight(elementId);
+    window.clearTimeout(highlightTimer.current);
+    highlightTimer.current = window.setTimeout(() => setHighlight(null), 2400);
+  };
+  const rowClass = (elementId: string) => cn("min-w-0 scroll-mt-24 rounded-xl border border-line-muted bg-surface-2 p-4 outline-none transition-colors duration-500",
+    highlight === elementId && "border-fg-tertiary bg-surface-3");
 
   useEffect(() => {
     if (!isOwner) return;
@@ -138,7 +179,7 @@ function AgentKnowledgeView({ agent, isOwner, identityId, renderAnswerActions }:
   const documents = overview?.sources.filter(source => !source.deletedAt && source.kind !== "interview") ?? [];
   const deleteSource = documents.find(source => source.id === deleteId);
   const retrySource = documents.find(source => source.id === retryReview?.sourceId);
-  const renderAnswer = (answer: KnowledgeAnswer, linked = false) => <article key={answer.id} className="min-w-0 rounded-xl border border-line-muted bg-surface-2 p-4">
+  const renderAnswer = (answer: KnowledgeAnswer, linked = false) => <article key={answer.id} id={`knowledge-answer-${answer.id}`} tabIndex={-1} className={rowClass(`knowledge-answer-${answer.id}`)}>
     {linked && <p className="text-xs font-semibold text-fg-muted">Linked detail</p>}
     <h3 className="break-words text-sm font-semibold">{answer.question}</h3>
     <p className="mt-2 whitespace-pre-wrap break-words text-sm">{answer.text}</p>
@@ -149,6 +190,7 @@ function AgentKnowledgeView({ agent, isOwner, identityId, renderAnswerActions }:
 
   return <main className="mx-auto w-full max-w-[900px] min-w-0 space-y-8 px-4 py-6 sm:px-6">
     <header><h1 className="text-2xl font-semibold">Knowledge</h1><p className="mt-1 text-sm text-fg-muted">Saved interview answers and optional documents used by your agent.</p></header>
+    {graphInput && <KnowledgeGraph input={graphInput} onSelect={jumpTo} />}
     <section aria-labelledby="interview-answers-heading" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2"><div><h2 id="interview-answers-heading" className="text-base font-semibold">Interview answers</h2>
         <p className="text-xs text-fg-muted">{formatNumber(answers.length)} saved answers and linked details</p></div>
@@ -172,7 +214,7 @@ function AgentKnowledgeView({ agent, isOwner, identityId, renderAnswerActions }:
       {overview && !documents.length && <div className="rounded-xl border border-line-muted bg-surface-2 p-6 text-center"><FileText className="mx-auto size-6 text-fg-muted" aria-hidden="true" />
         <h3 className="mt-3 text-base font-semibold">No documents added</h3><p className="mt-1 text-sm text-fg-muted">Documents are optional. Upload a file or paste text to add more knowledge.</p>
         <button type="button" onClick={() => setIntakeOpen(true)} className={buttonClass("primary", "lg") + " mt-4"}>Add document</button></div>}
-      {documents.map(source => <article key={source.id} className="min-w-0 rounded-xl border border-line-muted bg-surface-2 p-4">
+      {documents.map(source => <article key={source.id} id={`knowledge-source-${source.id}`} tabIndex={-1} className={rowClass(`knowledge-source-${source.id}`)}>
         <div className="flex flex-wrap items-start justify-between gap-2"><div className="min-w-0"><h3 className="break-words text-sm font-semibold">{source.name}</h3>
           <p className="mt-1 text-xs text-fg-muted">{source.kind.toUpperCase()} · {deletingId === source.id ? "Deleting source" : sourceStatus(source)}</p></div>
           <p className="text-xs tabular-nums text-fg-muted">Pages: {source.pageCount ?? "—"} · Chunks: {formatNumber(source.chunkCount)}</p></div>
