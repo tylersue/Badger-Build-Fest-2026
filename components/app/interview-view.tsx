@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Mic } from "lucide-react";
 import { AddCreditsButton } from "@/components/app/add-credits";
+import { ApiClientError } from "@/lib/api-client";
+import { formatCredits } from "@/lib/format";
 import { AnswerEditor } from "@/components/app/answer-editor";
 import { BuilderSplit } from "@/components/app/builder";
-import { EmptyState, PageHeader, buttonClass } from "@/components/app/ui";
+import { PageHeader, buttonClass } from "@/components/app/ui";
 import { answerInterview, controlInterview, getDraft, readDemoState, readInterview, saveDraft, useDemo } from "@/lib/demo-store";
 import type { Agent } from "@/lib/types";
 import type { InterviewView as InterviewSnapshot } from "@/features/builder/interview";
@@ -14,6 +15,7 @@ import type { InterviewView as InterviewSnapshot } from "@/features/builder/inte
 export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boolean }) {
   const state = useDemo();
   const [view, setView] = useState<InterviewSnapshot | null>(null);
+  const [loadedFor, setLoadedFor] = useState("");
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -24,20 +26,20 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
   useEffect(() => {
     let active = true;
     const identity = state.identityId;
-    queueMicrotask(() => {
-      if (!active) return;
-      setView(null); setError(""); setDraft(getDraft("interview", agent.id)?.value ?? "");
-    });
-    if (state.status === "ready") void readInterview(agent.id).then(next => {
-      if (active && readDemoState().identityId === identity) setView(next);
+    if (state.status === "ready" && isOwner) void readInterview(agent.id).then(next => {
+      if (active && readDemoState().identityId === identity) { setView(next); setLoadedFor(`${identity}:${agent.id}`); }
     }).catch(cause => { if (active) setError(cause instanceof Error ? cause.message : "Interview unavailable."); });
     return () => { active = false; };
-  }, [agent.id, state.identityId, state.status]);
+  }, [agent.id, isOwner, state.identityId, state.status]);
+
+  useEffect(() => {
+    queueMicrotask(() => { setError(""); setDraft(getDraft("interview", agent.id)?.value ?? ""); });
+  }, [agent.id, state.identityId]);
 
   async function refresh() {
     if (refreshing) return;
     setRefreshing(true);
-    try { setView(await readInterview(agent.id)); setError(""); }
+    try { setView(await readInterview(agent.id)); setLoadedFor(`${state.identityId}:${agent.id}`); setError(""); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Interview unavailable."); }
     finally { setRefreshing(false); }
   }
@@ -47,15 +49,18 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
     setBusy(true); setError(""); setCreditRefusal(null);
     setStatus(action === "skip" ? "Skipping question" : `${action[0].toUpperCase()}${action.slice(1)} interview`);
     try {
-      setView(await controlInterview(agent.id, action));
+      setView(await controlInterview(agent.id, action)); setLoadedFor(`${state.identityId}:${agent.id}`);
       setStatus(action === "pause" ? "Interview paused" : action === "dismiss-ready" ? "Suggestion dismissed" : "Interview ready");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Interview unavailable. Try again."); setStatus(""); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Interview unavailable. Try again.");
+      if (cause instanceof ApiClientError && cause.detail.code === "insufficient_credits")
+        setCreditRefusal({ needed: Number(BigInt(cause.detail.neededUnits ?? "0")) / 10_000_000, available: Number(BigInt(cause.detail.availableUnits ?? "0")) / 10_000_000 });
+      setStatus(""); }
     finally { setBusy(false); }
   }
 
   async function submit() {
     const text = draft.trim();
-    if (!isOwner || busy || !text || !view?.pendingQuestion || view.state !== "active") return;
+    if (!isOwner || busy || !text || !visibleView?.pendingQuestion || visibleView.state !== "active") return;
     setBusy(true); setError(""); setCreditRefusal(null); setStatus("Saving answer");
     const submitted = saveDraft("interview", agent.id, draft);
     try {
@@ -66,7 +71,7 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
       }
       const currentDraft = getDraft("interview", agent.id);
       if (!currentDraft || currentDraft === submitted || currentDraft.value === text) setDraft("");
-      setView(await readInterview(agent.id));
+      setView(await readInterview(agent.id)); setLoadedFor(`${state.identityId}:${agent.id}`);
       setStatus("Answer saved. Updating knowledge");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Couldn't save your answer. Your draft is still here. Try again.");
@@ -74,8 +79,9 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
     } finally { setBusy(false); }
   }
 
-  const hasAnswers = !!view?.answers.length;
-  const canSend = isOwner && state.status === "ready" && view?.state === "active" && !!view.pendingQuestion;
+  const visibleView = loadedFor === `${state.identityId}:${agent.id}` ? view : null;
+  const hasAnswers = !!visibleView?.answers.length;
+  const canSend = isOwner && state.status === "ready" && visibleView?.state === "active" && !!visibleView.pendingQuestion;
   const base = `/build/${agent.id}`;
   return <BuilderSplit agent={agent} thread="· Interview" composer={<div className="shrink-0 border-t border-line-faint bg-surface-1 px-4 py-3">
     <div className="mx-auto max-w-[752px] rounded-xl border border-line-subtle bg-surface-2 p-4">
@@ -92,18 +98,18 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
     <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6"><div className="mx-auto max-w-[752px] space-y-5">
       <PageHeader title="Interview" subtitle="Answer one question at a time. You can skip a question or add detail later." />
       {state.status !== "ready" && <p role="alert" className="rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm">{state.error ?? "Loading interview…"}</p>}
-      {state.status === "ready" && !view && !error && <p className="text-sm text-fg-muted">Loading interview…</p>}
-      {view?.readiness.suggested && <div className="rounded-xl border border-success/40 bg-surface-1 p-4">
+      {!isOwner && <p className="rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm text-fg-muted">Interview answers are available to the agent owner.</p>}
+      {state.status === "ready" && !visibleView && !error && isOwner && <p className="text-sm text-fg-muted">Loading interview…</p>}
+      {visibleView?.readiness.suggested && <div className="rounded-xl border border-success/40 bg-surface-1 p-4">
         <div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold">Ready for a first test</h2><p className="mt-1 text-sm text-fg-muted">You have examples and working principles to try. Review the draft persona or keep adding detail.</p></div>
           {isOwner && <button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("dismiss-ready")}>Dismiss</button>}</div>
         <div className="mt-3 flex flex-wrap gap-2"><Link className={buttonClass("primary", "lg")} href={`${base}/persona`}>Review persona</Link><Link className={buttonClass("secondary", "lg")} href={`${base}/test`}>Test agent</Link>{isOwner && <button type="button" className={buttonClass("secondary", "lg")} disabled={busy} onClick={() => void control("continue")}>Continue interview</button>}</div>
       </div>}
-      {view?.state === "paused" && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><h2 className="font-semibold">Interview paused</h2><p className="mt-1 text-sm text-fg-muted">Your saved answers are here. Continue when you&apos;re ready.</p>{isOwner && <button type="button" className={`${buttonClass("primary", "lg")} mt-3`} disabled={busy} onClick={() => void control("resume")}>Resume interview</button>}</div>}
-      {view && view.state !== "paused" && !view.pendingQuestion && isOwner && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><h2 className="font-semibold">{hasAnswers ? "Continue your interview" : "Build your agent from your experience"}</h2><p className="mt-1 text-sm text-fg-muted">Answer one question at a time. You can skip a question or add detail later.</p><button type="button" className={`${buttonClass("primary", "lg")} mt-3`} disabled={busy} onClick={() => void control(hasAnswers ? "continue" : "start")}>{hasAnswers ? "Continue interview" : "Start interview"}</button></div>}
-      {view?.pendingQuestion && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><p className="text-xs font-semibold text-fg-muted">Current question</p><h2 className="mt-2 whitespace-pre-wrap text-base font-semibold">{view.pendingQuestion.text}</h2>{isOwner && view.state === "active" && <div className="mt-4 flex flex-wrap gap-2"><button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("skip")}>Skip question</button><button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("pause")}>Pause interview</button></div>}</div>}
-      {!hasAnswers && !view?.pendingQuestion && !isOwner && <EmptyState icon={Mic} heading="No interview answers yet" body="Your saved answers and their questions will appear here." />}
-      {hasAnswers && <section aria-label="Saved answers" className="space-y-3"><h2 className="text-base font-semibold">Saved answers</h2>{view?.answers.map(answer => <AnswerEditor key={answer.id} agentId={agent.id} answer={answer} isOwner={isOwner} onChange={refresh} />)}</section>}
-      {creditRefusal && <div role="alert" className="rounded-xl border border-warning/40 bg-warning-surface p-4 text-sm"><h2 className="font-semibold">Not enough credits</h2><p className="mt-1">This needs about {creditRefusal.needed} credits; you have {creditRefusal.available}. Add credits to continue. Your draft is saved.</p><div className="mt-3 flex gap-2"><AddCreditsButton size="sm" /><button type="button" className={buttonClass()} onClick={() => setCreditRefusal(null)}>Keep draft</button></div></div>}
+      {visibleView?.state === "paused" && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><h2 className="font-semibold">Interview paused</h2><p className="mt-1 text-sm text-fg-muted">Your saved answers are here. Continue when you&apos;re ready.</p>{isOwner && <button type="button" className={`${buttonClass("primary", "lg")} mt-3`} disabled={busy} onClick={() => void control("resume")}>Resume interview</button>}</div>}
+      {visibleView && visibleView.state !== "paused" && !visibleView.pendingQuestion && isOwner && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><h2 className="font-semibold">{hasAnswers ? "Continue your interview" : "Build your agent from your experience"}</h2><p className="mt-1 text-sm text-fg-muted">Answer one question at a time. You can skip a question or add detail later.</p><button type="button" className={`${buttonClass("primary", "lg")} mt-3`} disabled={busy} onClick={() => void control(hasAnswers ? "continue" : "start")}>{hasAnswers ? "Continue interview" : "Start interview"}</button></div>}
+      {visibleView?.pendingQuestion && <div className="rounded-xl border border-line-subtle bg-surface-1 p-4"><p className="text-xs font-semibold text-fg-muted">Current question</p><h2 className="mt-2 whitespace-pre-wrap text-base font-semibold">{visibleView.pendingQuestion.text}</h2>{isOwner && visibleView.state === "active" && <div className="mt-4 flex flex-wrap gap-2"><button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("skip")}>Skip question</button><button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("pause")}>Pause interview</button></div>}</div>}
+      {hasAnswers && <section aria-label="Saved answers" className="space-y-3"><h2 className="text-base font-semibold">Saved answers</h2>{visibleView?.answers.map(answer => <AnswerEditor key={answer.id} agentId={agent.id} answer={answer} isOwner={isOwner} onChange={refresh} />)}</section>}
+      {creditRefusal && <div role="alert" className="rounded-xl border border-warning/40 bg-warning-surface p-4 text-sm"><h2 className="font-semibold">Not enough credits</h2><p className="mt-1">This needs about {formatCredits(creditRefusal.needed)}; you have {formatCredits(creditRefusal.available)}. Add credits to continue. Your draft is saved.</p><div className="mt-3 flex gap-2"><AddCreditsButton size="sm" /><button type="button" className={buttonClass()} onClick={() => setCreditRefusal(null)}>Keep draft</button></div></div>}
       {error && <div role="alert" className="rounded-xl border border-danger/40 bg-danger-surface p-4 text-sm">{error}<button type="button" className={`${buttonClass()} ml-3`} disabled={refreshing} onClick={() => void refresh()}>Refresh interview</button></div>}
       <p className="sr-only" aria-live="polite">{status}</p>
     </div></div>

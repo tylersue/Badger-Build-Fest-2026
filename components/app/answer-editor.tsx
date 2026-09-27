@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { api, newRequestKey } from "@/lib/api-client";
+import { api, ApiClientError, newRequestKey } from "@/lib/api-client";
 import { readInterview, refreshDemo } from "@/lib/demo-store";
 import type { InterviewView as InterviewSnapshot } from "@/features/builder/interview";
 import { buttonClass } from "@/components/app/ui";
+import { AddCreditsButton } from "@/components/app/add-credits";
 
 export type CapturedAnswer = InterviewSnapshot["answers"][number];
 type Action = "edit" | "add-detail" | "retry-index" | "delete";
@@ -18,6 +19,7 @@ export function AnswerEditor({ agentId, answer, isOwner, onChange }: {
   const [error, setError] = useState<string | null>(null);
   const [pendingKey, setPendingKey] = useState<{ action: Action; text?: string; key: string } | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [needsCredits, setNeedsCredits] = useState(false);
 
   async function perform(action: Action, content?: string) {
     if (!isOwner || busy) return;
@@ -27,7 +29,7 @@ export function AnswerEditor({ agentId, answer, isOwner, onChange }: {
     }
     const key = pendingKey?.action === action && pendingKey.text === submitted ? pendingKey.key : newRequestKey();
     setPendingKey({ action, text: submitted, key });
-    setBusy(true); setError(null);
+    setBusy(true); setError(null); setNeedsCredits(false);
     setAnnouncement(action === "retry-index" ? "Updating knowledge" : action === "delete" ? "Deleting answer" : "Saving answer");
     try {
       if (action === "delete") await api.deleteAnswer(agentId, answer.id, answer.version, key);
@@ -38,6 +40,7 @@ export function AnswerEditor({ agentId, answer, isOwner, onChange }: {
       catch { setError("Saved, but the latest status could not load. Refresh to check knowledge indexing."); }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Couldn't save your changes. Your draft is still here. Check your connection and try again.");
+      setNeedsCredits(cause instanceof ApiClientError && cause.detail.code === "insufficient_credits");
       setAnnouncement("Update failed");
     } finally { setBusy(false); }
   }
@@ -73,7 +76,7 @@ export function AnswerEditor({ agentId, answer, isOwner, onChange }: {
       <p>Delete this answer? It and its linked details will stop being used as knowledge. The question stays in the transcript.</p>
       <div className="mt-3 flex gap-2"><button type="button" className={buttonClass()} disabled={busy} onClick={() => setMode("read")}>Keep answer</button><button type="button" className={buttonClass("destructive", "lg")} disabled={busy} onClick={() => void perform("delete")}>Delete answer</button></div>
     </div>}
-    {error && <p role="alert" className="mt-3 text-xs text-danger">{error}</p>}
+    {error && <div role="alert" className="mt-3 text-xs text-danger"><p>{error}</p>{needsCredits && <div className="mt-2"><AddCreditsButton size="sm" /></div>}</div>}
     <span className="sr-only" aria-live="polite">{announcement}</span>
   </article>;
 }
