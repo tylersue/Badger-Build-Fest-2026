@@ -1,5 +1,5 @@
 import "server-only";
-import { generateText, Output, streamText, type LanguageModelUsage, type TextStreamPart } from "ai";
+import { generateText, Output, stepCountIs, streamText, type LanguageModelUsage, type TextStreamPart } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import type { MeteredStreamInput, MeteredStructuredInput, ServiceResult } from "@/lib/contracts/phase2";
 import { getAnthropicEnv } from "@/lib/server/env";
@@ -35,7 +35,7 @@ export function anthropicAdapter(): ServiceResult<AnthropicAdapter> {
       try {
         const result = await generateText({ model: provider(input.model), instructions: input.instructions, prompt: input.input,
           output: Output.object({ schema }), maxOutputTokens: input.limits.maxOutputTokens,
-          timeout: input.limits.timeoutMs, maxRetries: 0,
+          timeout: input.limits.timeoutMs, maxRetries: 0, stopWhen: stepCountIs(1),
           onStepFinish: (step) => { captured.push(step.usage); requestId = step.response.id ?? requestId; } });
         const steps = result.steps.map((step) => step.usage);
         return { value: result.output, steps, providerRequestId: result.finalStep?.response?.id ?? requestId,
@@ -54,11 +54,12 @@ export function anthropicAdapter(): ServiceResult<AnthropicAdapter> {
       } : undefined;
       const result = streamText({ model: provider(input.model), instructions: input.instructions, prompt: input.input,
         maxOutputTokens: options.web ? Math.min(input.limits.maxOutputTokens, 1200) : input.limits.maxOutputTokens,
-        timeout: input.limits.timeoutMs, maxRetries: 0, streamRetries: 0, tools });
+        timeout: input.limits.timeoutMs, maxRetries: 0, streamRetries: 0, stopWhen: stepCountIs(1), tools });
       const steps: ProviderUsage[] = [];
       const text: string[] = [];
       let requestId: string | null = null;
       let toolSearches = 0;
+      let requestedSearches = 0;
       try {
         for await (const part of result.fullStream) {
           if (part.type === "text-delta") text.push(part.text);
@@ -67,6 +68,7 @@ export function anthropicAdapter(): ServiceResult<AnthropicAdapter> {
             requestId = part.response.id ?? requestId;
           }
           if (part.type === "tool-result" && part.toolName === "web_search") toolSearches++;
+          if (part.type === "tool-call" && part.toolName === "web_search") requestedSearches++;
           if (part.type === "error" || part.type === "abort") throw new Error("Provider stream did not complete");
           if (options.onEvent) await options.onEvent(part as AnthropicEvent);
         }
@@ -74,10 +76,12 @@ export function anthropicAdapter(): ServiceResult<AnthropicAdapter> {
         if (!steps.length) throw new Error("Provider usage unavailable");
         if (options.web && rawSearches(steps) === null) throw new Error("Web search usage unavailable");
         return { value: text.join(""), steps, providerRequestId: requestId,
-          successfulSearchCount: rawSearches(steps) ?? toolSearches, failed: true };
+          successfulSearchCount: Math.max(rawSearches(steps) ?? 0, toolSearches), failed: true };
       }
+      if (options.web && rawSearches(steps) === null && requestedSearches > toolSearches)
+        throw new Error("Web search usage unavailable");
       return { value: text.join(""), steps, providerRequestId: requestId,
-        successfulSearchCount: rawSearches(steps) ?? toolSearches };
+        successfulSearchCount: Math.max(rawSearches(steps) ?? 0, toolSearches) };
     },
   } };
 }
