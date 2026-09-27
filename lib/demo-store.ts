@@ -14,7 +14,7 @@ import { PACK_GRANT_CENTS, SUBSCRIPTION_GRANT_CENTS, type MeteredPurpose } from 
 import type { Category } from "@/lib/config/categories";
 import { costCentsFromUsage, estimateCents, splitUsageCharge, toChargeCents } from "@/features/billing/pricing";
 import { searchKnowledge } from "@/features/knowledge/legacy-search";
-import { cannedAnswer, nextInterviewQuestion } from "@/features/runtime/agent";
+import { cannedAnswer, nextInterviewQuestion } from "@/features/runtime/legacy-agent";
 import type { Agent, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile } from "@/lib/types";
 
 const STORAGE_KEY = "bx-demo-v1";
