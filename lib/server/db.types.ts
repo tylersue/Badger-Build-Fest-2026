@@ -35,7 +35,14 @@ export type Database = {
       seed_imports: Table<Id & { identity_id: string; import_key: string; payload_hash: string; result: Json; created_at: string }>;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      persona_cas_field: {
+        Args: { p_agent_id: string; p_field: string; p_expected_version: number; p_value: Json;
+          p_origin: "blank" | "interview" | "expert"; p_evidence_revision_ids: string[];
+          p_pending_suggestion: Json | null };
+        Returns: boolean;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
