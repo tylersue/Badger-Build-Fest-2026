@@ -29,7 +29,7 @@ patterns-established:
   - "Reserve one answer operation; retrieval, sufficiency, web and synthesis stages use settle:false; settle in the durable completion path."
   - "Keep platform rules in immutable provider instructions and persona/evidence in tool-free prompt data."
 requirements-completed: [SBOX-01, SBOX-02, RETR-01, RETR-02, CRED-02, CRED-03]
-duration: 13min
+duration: 15min
 completed: 2026-09-27
 ---
 
@@ -40,8 +40,8 @@ completed: 2026-09-27
 ## Performance
 
 - **Started:** 2026-09-27T02:29:19Z
-- **Completed:** 2026-09-27T02:42:08Z
-- **Duration:** 13 minutes
+- **Completed:** 2026-09-27T02:44:03Z
+- **Duration:** 15 minutes
 - **Tasks:** 2 of 2
 - **Files created/modified:** 8
 
@@ -57,6 +57,7 @@ completed: 2026-09-27
 1. **Task 1: Evidence sufficiency and minimized web research** — `c997984`
 2. **Task 2: Durable shared cited answers and settlement** — `6b1d2d7`
 3. **Task 1 privacy correction: Public query allowlist** — `aeddde1`
+4. **Task 1 provider event correction: Early tool start ID** — `171c3fe`
 
 ## Verification
 
@@ -93,7 +94,15 @@ completed: 2026-09-27
 - **Verification:** Full offline suite and typecheck.
 - **Committed in:** `6b1d2d7`
 
-**Total deviations:** 2 auto-fixed, both required for privacy or build correctness.
+**3. [Rule 1 - Bug] Emitted early provider tool-start events**
+- **Found during:** Final provider event review
+- **Issue:** AI SDK `tool-input-start` parts identify the call with `id`; later tool parts use `toolCallId`. Reading only `toolCallId` delayed the first visible step until the complete tool call.
+- **Fix:** Match both IDs and test the actual early event shape.
+- **Files modified:** `features/runtime/web.ts`, `features/runtime/web.test.ts`
+- **Verification:** Full offline suite, typecheck, targeted lint.
+- **Committed in:** `171c3fe`
+
+**Total deviations:** 3 auto-fixed, required for privacy, build correctness and immediate tool progress.
 
 ## Known Stubs
 
@@ -110,7 +119,7 @@ Plan 02-12 can call `runAnswer` from a server route, with server-resolved actor/
 
 ## Self-Check: PASSED
 
-All eight created or modified code files and this summary exist; all three task/correction commits resolve; no tracked files were deleted. The offline suite, typecheck, targeted lint and whitespace check passed.
+All eight created or modified code files and this summary exist; all four task/correction commits resolve; no tracked files were deleted. The offline suite, typecheck, targeted lint and whitespace check passed.
 
 ---
 *Phase: 02-interview-first-agent-building*
