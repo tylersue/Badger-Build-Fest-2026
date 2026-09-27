@@ -41,6 +41,7 @@ yarn-error.log*
 
 # tool scratch
 .playwright-mcp/
+.claude/worktrees/
 
 # next.js / tests
 next-env.d.ts
