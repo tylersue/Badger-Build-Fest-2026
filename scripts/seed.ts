@@ -1,6 +1,8 @@
-/** Idempotent presentation fixtures. All rows retain their original text IDs. */
+/** Idempotent presentation fixtures. Run with `node --experimental-strip-types scripts/seed.ts`. */
 import { createClient } from "@supabase/supabase-js";
-import { AGENTS, CONVERSATIONS, IDENTITIES, INTERVIEW_TURNS, MESSAGES, PROFILES, SOURCES } from "../lib/data/seed";
+// Node's native TypeScript runner requires this extension; the app's tsconfig does not enable it.
+// @ts-expect-error TS5097
+import { AGENTS, CONVERSATIONS, IDENTITIES, INTERVIEW_TURNS, MESSAGES, PROFILES, SOURCES } from "../lib/data/seed.ts";
 import type { ServiceDb } from "../lib/server/db";
 
 function checked(error: { message: string } | null): void {

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import type { ServiceDb } from "./db";
 import { bootstrapDemoSeed } from "@/scripts/seed";
-import { getDemoSnapshot, importLegacyDraft, resetPresentationFixtures } from "./demo";
+import { createAgent, getDemoSnapshot, importLegacyDraft, resetPresentationFixtures, saveProfile } from "./demo";
 
 type Row = Record<string, unknown>;
 type TableName = string;
@@ -81,6 +81,16 @@ function fakeDatabase() {
         imports.set(key, { hash: String(args.p_payload_hash), result });
         return { data: result, error: null };
       }
+      if (name === "create_demo_agent") {
+        const id = String(args.p_agent_id);
+        rows("agents").push({ id, owner_id: args.p_identity_id, slug: id, icon: "bot",
+          category: args.p_category, status: "draft", rate_multiplier: 1,
+          rating_avg: 0, rating_count: 0, usage_count: 0, origin: "live",
+          created_at: "2026-01-01", updated_at: "2026-01-01" });
+        rows("interview_sessions").push({ id: `session:${id}`, agent_id: id, state: "paused" });
+        rows("persona_fields").push({ agent_id: id, field: "name", value: args.p_name, origin: "expert" });
+        return { data: id, error: null };
+      }
       return { data: null, error: { code: "unknown" } };
     },
   };
@@ -105,14 +115,20 @@ describe("server demo continuity", () => {
   it("scopes wallet, ledger, drafts, turns and conversations to the selected identity", async () => {
     const fake = fakeDatabase();
     await bootstrapDemoSeed(fake.db);
+    Object.assign(fake.rows("agents").find((row) => row.id === "maria-chen-physical-therapy")!,
+      { prompt_mode: "custom", custom_prompt: "private expert instructions" });
     const snapshot = await getDemoSnapshot("sam", fake.db);
     expect(snapshot.wallet.balanceUnits).toBe("50000000000");
     expect(snapshot.ledger.every((entry) => entry.identityId === "sam")).toBe(true);
     expect(snapshot.agents.some((agent) => agent.status === "draft" && agent.ownerId === "maria")).toBe(false);
     expect(snapshot.interviewTurns).toHaveLength(0);
     expect(snapshot.sources).toHaveLength(0);
+    expect(snapshot.agents.find((agent) => agent.id === "maria-chen-physical-therapy")?.systemPromptOverride).toBeNull();
     expect(snapshot.conversations.every((conversation) => conversation.hirerId === "sam")).toBe(true);
     expect(snapshot.messages.every((message) => snapshot.conversations.some((conversation) => conversation.id === message.conversationId))).toBe(true);
+    const expertView = await getDemoSnapshot("maria", fake.db);
+    expect(expertView.conversations.some((conversation) => conversation.id === "c-shoulder-plan")).toBe(true);
+    expect(expertView.conversations.some((conversation) => conversation.id === "c-knee-swelling")).toBe(false);
     await expect(getDemoSnapshot("dev", fake.db)).rejects.toMatchObject({ code: "invalid_input" });
   });
 
@@ -134,6 +150,7 @@ describe("server demo continuity", () => {
 
   it("rejects browser financial fields and protects original draft keys", async () => {
     const fake = fakeDatabase();
+    await bootstrapDemoSeed(fake.db);
     const results = await importLegacyDraft("maria", [
       { kind: "profile", key: "local-1", patch: { displayName: "Updated Maria", balanceCents: 99999 } },
       { kind: "answer", key: "local-2", agentId: "maria-chen-running-form-clinic",
@@ -149,5 +166,33 @@ describe("server demo continuity", () => {
       agentId: "maria-chen-running-form-clinic", question: "Changed question", text: "Different text" }], fake.db);
     expect(conflict[0]).toEqual({ key: "local-2", ok: false, code: "conflict" });
     expect(fake.calls.filter((call) => call.table === "commit_legacy_draft")).toHaveLength(3);
+  });
+
+  it("creates an owned draft with a full ID and initial interview session", async () => {
+    const fake = fakeDatabase();
+    await bootstrapDemoSeed(fake.db);
+    const agent = await createAgent("maria", { name: "Running basics", category: "health_pt" }, fake.db);
+    expect(agent.id).toMatch(/^agent-[0-9a-f-]{36}$/);
+    expect(agent.ownerId).toBe("maria");
+    expect(agent.status).toBe("draft");
+    expect(fake.rows("interview_sessions").some((row) => row.agent_id === agent.id)).toBe(true);
+    expect((await getDemoSnapshot("maria", fake.db)).agents.some((row) => row.id === agent.id)).toBe(true);
+    await expect(createAgent("sam", { name: "No", category: "health_pt" }, fake.db))
+      .rejects.toMatchObject({ code: "not_owner" });
+    await expect(createAgent("maria", { name: "No", category: "other" }, fake.db))
+      .rejects.toMatchObject({ code: "invalid_input" });
+  });
+
+  it("rejects unsafe profile URLs and stale profile versions", async () => {
+    const fake = fakeDatabase();
+    await bootstrapDemoSeed(fake.db);
+    await expect(saveProfile("maria", { patch: { contactUrl: "javascript:alert(1)" }, expectedVersion: 1 }, fake.db))
+      .rejects.toMatchObject({ code: "invalid_input" });
+    const first = await saveProfile("maria", { patch: { bio: "New bio" }, expectedVersion: 1 }, fake.db);
+    expect(first.profile.bio).toBe("New bio");
+    expect(first.version).toBe(2);
+    await expect(saveProfile("maria", { patch: { bio: "Stale write" }, expectedVersion: 1 }, fake.db))
+      .rejects.toMatchObject({ code: "conflict" });
+    expect(fake.rows("profiles").find((row) => row.identity_id === "maria")?.bio).toBe("New bio");
   });
 });

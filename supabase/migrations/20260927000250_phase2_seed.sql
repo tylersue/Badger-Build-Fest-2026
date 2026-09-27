@@ -90,6 +90,9 @@ begin
           values (v_agent_id,field_name,field_value,'expert')
           on conflict(agent_id,field) do update set value = excluded.value, origin = 'expert';
       end loop;
+      if p_payload->'patch' ? 'category' then
+        update public.agents set category = p_payload->'patch'->>'category' where id = v_agent_id;
+      end if;
       record_id := v_agent_id;
     elsif p_kind = 'answer' then
       perform 1 from public.interview_sessions where agent_id = v_agent_id for update;

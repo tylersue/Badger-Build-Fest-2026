@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { CATEGORIES } from "@/lib/config/categories";
 import type { Agent, Citation, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile, Source } from "@/lib/types";
-import type { MoneyAmount } from "@/lib/contracts/phase2";
+import type { MoneyAmount, PersonaState } from "@/lib/contracts/phase2";
 import { DatabaseFailure, requireServiceDb, type ServiceDb } from "./db";
 import { ApiRequestError } from "./request";
 import { bootstrapDemoSeed } from "@/scripts/seed";
@@ -90,6 +90,8 @@ export type DemoSnapshot = {
     agentOrigins: Record<string, "fixture" | "live">;
     sourceStates: Record<string, { origin: "fixture" | "live"; state: string; currentRevisionId: string | null; activeRevisionId: string | null }>;
     answerStates: Record<string, { origin: "fixture" | "live"; state: string; currentRevisionId: string | null; indexedRevisionId: string | null }>;
+    personaStates: Record<string, PersonaState>;
+    indexJobs: Record<string, { state: string; completedBatches: number; totalBatches: number; indexedChunks: number }>;
     profileVersion: number;
   };
 };
@@ -111,31 +113,42 @@ export async function getDemoSnapshot(identityId: string, db: ServiceDb = requir
   const walletRow = value(wallet);
   if (!profileRow || !walletRow) throw new DatabaseFailure("Demo identity is not seeded.", false, "configuration");
   const ledgerRows = value(ledger) ?? [];
-  const conversationRows = value(conversations) ?? [];
+  const selectedConversationRows = value(conversations) ?? [];
   const ownedIds = agentRows.filter((agent) => agent.owner_id === identityId).map((agent) => agent.id);
   const allIds = agentRows.map((agent) => agent.id);
+  const sharedRows = ownedIds.length ? value(await db.from("conversations").select("*")
+    .in("agent_id", ownedIds).eq("share_transcript", true)) ?? [] : [];
+  const conversationRows = [...new Map([...selectedConversationRows, ...sharedRows]
+    .map((row) => [row.id, row])).values()];
   const conversationIds = conversationRows.map((conversation) => conversation.id);
-  const [personaResult, sourceResult, questionResult, answerResult, messageResult] = await Promise.all([
+  const [personaResult, sourceResult, questionResult, answerResult, messageResult, jobsResult] = await Promise.all([
     allIds.length ? db.from("persona_fields").select("*").in("agent_id", allIds) : Promise.resolve({ data: [], error: null }),
     ownedIds.length ? db.from("sources").select("*").in("agent_id", ownedIds).is("deleted_at", null) : Promise.resolve({ data: [], error: null }),
     ownedIds.length ? db.from("questions").select("*").in("agent_id", ownedIds).order("position") : Promise.resolve({ data: [], error: null }),
     ownedIds.length ? db.from("answers").select("*").in("agent_id", ownedIds).is("deleted_at", null) : Promise.resolve({ data: [], error: null }),
     conversationIds.length ? db.from("messages").select("*").in("conversation_id", conversationIds).order("created_at") : Promise.resolve({ data: [], error: null }),
+    ownedIds.length ? db.from("index_jobs").select("*").in("agent_id", ownedIds) : Promise.resolve({ data: [], error: null }),
   ]);
   const personaRows = value(personaResult) ?? [];
   const sourceRows = value(sourceResult) ?? [];
   const questionRows = value(questionResult) ?? [];
   const answerRows = value(answerResult) ?? [];
   const messageRows = value(messageResult) ?? [];
+  const jobRows = value(jobsResult) ?? [];
   const revisionIds = answerRows.map((answer) => answer.current_revision_id).filter((id): id is string => id !== null);
   const revisions = revisionIds.length ? value(await db.from("answer_revisions").select("id,text").in("id", revisionIds)) ?? [] : [];
   const textByRevision = new Map(revisions.map((revision) => [revision.id, revision.text]));
   const answerByQuestion = new Map(answerRows.map((answer) => [answer.question_id, answer]));
   const personaByAgent = new Map<string, Record<string, unknown>>();
+  const fieldStateByAgent = new Map<string, Record<string, unknown>>();
   for (const row of personaRows) {
     const fields = personaByAgent.get(row.agent_id) ?? {};
     fields[row.field] = row.value;
     personaByAgent.set(row.agent_id, fields);
+    const fieldStates = fieldStateByAgent.get(row.agent_id) ?? {};
+    fieldStates[row.field] = { value: row.value, origin: row.origin, version: row.version,
+      evidenceRevisionIds: row.evidence_revision_ids ?? [], pendingSuggestion: row.pending_suggestion };
+    fieldStateByAgent.set(row.agent_id, fieldStates);
   }
   const defaults = (categoryValue: Agent["persona"]["category"]): Agent["persona"] => ({
     name: "", category: categoryValue, headline: "", description: "", howIWork: "",
@@ -147,7 +160,7 @@ export async function getDemoSnapshot(identityId: string, db: ServiceDb = requir
     consentAcceptedAt: row.consent_accepted_at, ratingAvg: row.rating_avg,
     ratingCount: row.rating_count, usageCount: row.usage_count,
     createdAt: row.created_at, updatedAt: row.updated_at, origin: row.origin,
-    systemPromptOverride: row.prompt_mode === "custom" ? row.custom_prompt : null,
+    systemPromptOverride: row.owner_id === identityId && row.prompt_mode === "custom" ? row.custom_prompt : null,
     persona: { ...defaults(row.category as Agent["persona"]["category"]),
       ...personaByAgent.get(row.id), category: row.category } as Agent["persona"],
   }));
@@ -196,6 +209,13 @@ export async function getDemoSnapshot(identityId: string, db: ServiceDb = requir
       answerStates: Object.fromEntries(answerRows.map((row) => [row.id,
         { origin: row.origin, state: row.state, currentRevisionId: row.current_revision_id,
           indexedRevisionId: row.indexed_revision_id }])),
+      personaStates: Object.fromEntries(agentRows.filter((row) => row.owner_id === identityId).map((row) => [row.id,
+        { fields: fieldStateByAgent.get(row.id) ?? {}, version: row.version,
+          promptMode: row.prompt_mode, customPrompt: row.custom_prompt,
+          promptVersion: row.prompt_version } as PersonaState])),
+      indexJobs: Object.fromEntries(jobRows.map((row) => [row.id,
+        { state: row.state, completedBatches: row.completed_batches,
+          totalBatches: row.total_batches, indexedChunks: row.indexed_chunks }])),
     },
   };
 }
@@ -256,6 +276,18 @@ export async function importLegacyDraft(identityId: string, records: unknown[], 
     const payload = record.kind === "profile" ? record.patch : record.kind === "persona"
       ? { agentId: record.agentId, patch: record.patch }
       : { agentId: record.agentId, question: record.question, text: record.text };
+    if (record.kind !== "profile") {
+      try {
+        const owner = value(await db.from("agents").select("owner_id,status").eq("id", record.agentId).is("deleted_at", null).maybeSingle());
+        if (owner?.owner_id !== identityId || owner.status !== "draft") {
+          results.push({ key: record.key, ok: false, code: "not_owner" });
+          continue;
+        }
+      } catch {
+        results.push({ key: record.key, ok: false, code: "indexing" });
+        continue;
+      }
+    }
     const hash = createHash("sha256").update(stableJson({ kind: record.kind, payload })).digest("hex");
     try {
       const response = await db.rpc("commit_legacy_draft" as never, {
