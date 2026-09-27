@@ -308,7 +308,21 @@ export const LEDGER: LedgerEntry[] = [
   row(null, "platform_cost", 2, null, 2 * DAY, "Raw LLM cost", chat("c-shin-splints")),
 ];
 
-export const FLAGS: Flag[] = [];
+export const FLAGS: Flag[] = [
+  {
+    id: "f-seed-1", targetType: "agent", agentId: "luis-ortega-strength-coaching", conversationId: null,
+    reason: "Inaccurate or unsafe advice: Told me to keep squatting on a sore knee", reporterId: "alex", status: "open", createdAt: ago(2 * DAY),
+  },
+  {
+    id: "f-seed-2", targetType: "conversation", agentId: "maria-chen-physical-therapy", conversationId: "c-shin-splints",
+    reason: "Something else: The answer skipped my question about shin pain", reporterId: "alex", status: "open", createdAt: ago(1 * DAY),
+  },
+  {
+    id: "f-seed-3", targetType: "agent", agentId: "hannah-kim-first-job-finances", conversationId: null,
+    reason: "Spam or advertising: Kept mentioning one credit card", reporterId: "riley", status: "resolved",
+    createdAt: ago(5 * DAY), resolvedAt: ago(4 * DAY), resolutionNote: "Reviewed: general guidance, no product placement.",
+  },
+];
 
 /**
  * Seeded reviews are the written subset of each agent's seeded ratingCount.

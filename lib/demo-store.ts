@@ -9,7 +9,7 @@
  * stop at zero, D-10), and every balance change writes a ledger row.
  */
 import { useSyncExternalStore } from "react";
-import { AGENTS, CHUNKS, CONVERSATIONS, IDENTITIES, INTERVIEW_ANSWER_COUNTS, INTERVIEW_TURNS, LEDGER, MARIA, MESSAGES, PROFILES, REVIEWS, SOURCES } from "@/lib/data/seed";
+import { AGENTS, CHUNKS, CONVERSATIONS, FLAGS, IDENTITIES, INTERVIEW_ANSWER_COUNTS, INTERVIEW_TURNS, LEDGER, MARIA, MESSAGES, PROFILES, REVIEWS, SOURCES } from "@/lib/data/seed";
 import { PACK_GRANT_CENTS, SUBSCRIPTION_GRANT_CENTS, type MeteredPurpose } from "@/lib/config/credits";
 import { disclaimerFor, type Category } from "@/lib/config/categories";
 import { clampRate } from "@/lib/config/publish";
@@ -17,7 +17,7 @@ import { costCentsFromUsage, estimateCents, splitUsageCharge, toChargeCents } fr
 import { isWeakRetrieval, searchKnowledge } from "@/features/knowledge/search";
 import { publishBlockers } from "@/features/marketplace/publish";
 import { cannedAnswer, nextInterviewQuestion, refusalReply } from "@/features/runtime/agent";
-import type { Agent, AgentStatus, Chunk, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile, Review } from "@/lib/types";
+import type { Agent, AgentStatus, Chunk, Conversation, Flag, Identity, InterviewTurn, LedgerEntry, Message, ModerationAction, Payout, PersonaForm, Profile, Review } from "@/lib/types";
 
 export const STORAGE_KEY = "bx-demo-v1";
 
@@ -37,7 +37,20 @@ export type DemoState = {
   knowledgeTouchedAt: Record<string, string>;
   /** Reviews written in this browser (Phase 4 MKT-05/MKT-V2-03). Optional so old saved state stays valid (D-03). */
   reviews?: Review[];
+  /** Flags written in this browser (Phase 4 MKT-06). Optional so old saved state stays valid (D-03). */
+  flags?: Flag[];
+  /** Admin edits (resolve/unresolve) overlaid onto seeded and new flags by id (ADMN-01). */
+  flagEdits?: Record<string, FlagEdit>;
+  /** Thumbs overlay by message id (CHAT-08); overrides the seeded/stored Message.feedback. */
+  messageFeedback?: Record<string, Message["feedback"]>;
+  /** Mock cash-out records (CRED-09). */
+  payouts?: Payout[];
+  /** Admin unpublish actions (ADMN-01). */
+  moderationActions?: ModerationAction[];
 };
+
+/** Admin-editable subset of a Flag, overlaid by id (Phase 4 seam, D-02). */
+export type FlagEdit = Partial<Pick<Flag, "status" | "resolvedAt" | "resolutionNote">>;
 
 const initialState = (): DemoState => ({
   v: 1,
@@ -53,6 +66,11 @@ const initialState = (): DemoState => ({
   answeredTurns: {},
   knowledgeTouchedAt: {},
   reviews: [],
+  flags: [],
+  flagEdits: {},
+  messageFeedback: {},
+  payouts: [],
+  moderationActions: [],
 });
 
 let state: DemoState | null = null;
@@ -70,7 +88,13 @@ export function normalizeDemoState(raw: unknown): DemoState | null {
   if (typeof raw !== "object" || raw === null) return null;
   if ((raw as { v?: unknown }).v !== 1) return null;
   const merged: DemoState = { ...initialState(), ...(raw as Partial<DemoState>) };
+  const isRecord = (v: unknown): boolean => typeof v === "object" && v !== null && !Array.isArray(v);
   if (!Array.isArray(merged.reviews)) merged.reviews = [];
+  if (!Array.isArray(merged.flags)) merged.flags = [];
+  if (!isRecord(merged.flagEdits)) merged.flagEdits = {};
+  if (!isRecord(merged.messageFeedback)) merged.messageFeedback = {};
+  if (!Array.isArray(merged.payouts)) merged.payouts = [];
+  if (!Array.isArray(merged.moderationActions)) merged.moderationActions = [];
   return merged;
 }
 
@@ -208,10 +232,22 @@ export function allConversations(s: DemoState): Conversation[] {
   return [...CONVERSATIONS, ...s.conversations].map((c) => ({ ...c, ...s.conversationEdits[c.id] }));
 }
 
+/** Applies the messageFeedback overlay (CHAT-08): an explicit overlay entry — including null — wins. */
+function withFeedbackOverlay(s: DemoState, m: Message): Message {
+  return Object.hasOwn(s.messageFeedback ?? {}, m.id) ? { ...m, feedback: (s.messageFeedback ?? {})[m.id] ?? null } : m;
+}
+
 export function messagesFor(s: DemoState, conversationId: string): Message[] {
   return [...MESSAGES, ...s.messages]
     .filter((m) => m.conversationId === conversationId)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((m) => withFeedbackOverlay(s, m));
+}
+
+/** Finds a seeded or new message by id and applies the same messageFeedback overlay as messagesFor. */
+export function messageById(s: DemoState, messageId: string): Message | undefined {
+  const found = [...MESSAGES, ...s.messages].find((m) => m.id === messageId);
+  return found ? withFeedbackOverlay(s, found) : undefined;
 }
 
 export function allReviews(s: DemoState): Review[] {
@@ -221,6 +257,30 @@ export function allReviews(s: DemoState): Review[] {
 export function reviewsFor(s: DemoState, agentId: string): Review[] {
   return allReviews(s)
     .filter((r) => r.agentId === agentId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function allFlags(s: DemoState): Flag[] {
+  return [...FLAGS, ...(s.flags ?? [])].map((f) => ({ ...f, ...s.flagEdits?.[f.id] }));
+}
+
+export function allPayouts(s: DemoState): Payout[] {
+  return s.payouts ?? [];
+}
+
+export function payoutsFor(s: DemoState, identityId: string): Payout[] {
+  return allPayouts(s)
+    .filter((p) => p.identityId === identityId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function allModerationActions(s: DemoState): ModerationAction[] {
+  return s.moderationActions ?? [];
+}
+
+export function moderationActionsFor(s: DemoState, agentId: string): ModerationAction[] {
+  return allModerationActions(s)
+    .filter((m) => m.agentId === agentId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
@@ -327,8 +387,8 @@ function debitRow(s: DemoState, identityId: string, amountCents: number, purpose
   return { id: uid("l"), identityId, kind: "debit", amountCents: -debit, balanceAfter: balance - debit, purpose, refType, refId, note, createdAt: nowIso() };
 }
 
-/** Canned model usage per call (placeholder until the real model runs in Phase 2). */
-const CANNED_USAGE: Record<MeteredPurpose, Parameters<typeof costCentsFromUsage>[0]> = {
+/** Canned model usage per call (placeholder until the real model runs in Phase 2). Exported so ledger reconciliation can compute expected raw charges (D-14). */
+export const CANNED_USAGE: Record<MeteredPurpose, Parameters<typeof costCentsFromUsage>[0]> = {
   interview_turn: { model: "claude-sonnet-5", tokensIn: 5000, tokensOut: 400 },
   embedding: { model: "voyage-4-lite", tokensIn: 400, tokensOut: 0 },
   sandbox_message: { model: "claude-sonnet-5", tokensIn: 6000, tokensOut: 250 },
