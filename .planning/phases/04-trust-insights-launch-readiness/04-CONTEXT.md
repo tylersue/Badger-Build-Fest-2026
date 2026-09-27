@@ -103,6 +103,7 @@ Phase 4 runs in parallel with Phases 2 and 3 on its own branch. Success criteria
 
 - Running the benchmark for real against the competitor agents (live harness, measured numbers)
 - Moderating individual review text from the admin queue
+- **CHAT-06** (fixed emergency/self-harm resource reply + auto-flag): moved into Phase 4 on `main` by Phase 3, deferred out of this plan set by the user on 2026-09-26 during plan-phase source audit. Adversarial fixture RS-03 stays marked blocked. Coordinator to confirm where it lands (e.g. Phase 4.1). Open inputs: resource list (988 / 911 / UW UHS proposed) and an exception to D-03/D-05 for a guard at the top of `sendChatMessage`.
 - Updating REQUIREMENTS.md (MKT-V2-03 → v1, BENCH-01, tool use / GitHub removed from Out of Scope): coordinator's call
 
 </deferred>
