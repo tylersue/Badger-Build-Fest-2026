@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { FLAGS, IDENTITIES, INTERVIEW_TURNS, MARIA, PROFILES, REVIEWS } from "@/lib/data/seed";
+import { FLAGS, IDENTITIES, INTERVIEW_TURNS, MARIA, PROFILES, REVIEWS } from "@/lib/data/active-seed";
 import type { Category } from "@/lib/config/categories";
 import type { Agent, Conversation, Flag, Identity, InterviewTurn, LedgerEntry, Message, ModerationAction, Payout, PersonaForm, Profile, Review } from "@/lib/types";
 import type { DemoSnapshot } from "@/lib/server/demo";

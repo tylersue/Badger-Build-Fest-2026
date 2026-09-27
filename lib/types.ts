@@ -92,6 +92,8 @@ export type Citation = {
   question: string | null;
   page: number | null;
   headingPath: string | null;
+  /** The expert's own published piece (essay, podcast, talk), opened inside the app. */
+  url?: string | null;
 };
 
 export type InterviewTurn = OriginBridge & {

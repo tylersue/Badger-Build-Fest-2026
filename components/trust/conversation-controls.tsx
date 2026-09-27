@@ -35,14 +35,17 @@ export function ConversationControls({ conversation, agent }: { conversation: Co
       <button
         type="button"
         className={buttonClass("secondary")}
+        aria-label={`Share transcript with ${expertFirst}`}
         data-testid="share-toggle"
         aria-pressed={conversation.shareTranscript}
         disabled={!isHirer || saving}
         title={isHirer ? undefined : `Only ${hirerName} can change this`}
         onClick={() => void toggleShare()}
       >
-        <Share2 />
-        Share transcript: {conversation.shareTranscript ? "on" : "off"}
+        {conversation.shareTranscript
+          ? <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-success" />
+          : <Share2 />}
+        {conversation.shareTranscript ? `Shared with ${expertFirst}` : "Share transcript"}
       </button>
       <FlagButton target={{ type: "conversation", agentId: agent.id, conversationId: conversation.id }} />
     </>

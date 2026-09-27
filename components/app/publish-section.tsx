@@ -62,7 +62,7 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
 
   return (
     <PageBody>
-      <PageHeader title="Publish" subtitle="Set your rate, accept the content terms, and put the agent in the marketplace. Publishing and unpublishing are instant." />
+      <PageHeader title="Publish" />
       <div className="grid max-w-[720px] gap-4">
         <Card className="p-4">
           <h3 className="mb-3 text-sm font-semibold">Ready to publish?</h3>

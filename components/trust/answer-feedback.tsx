@@ -26,19 +26,26 @@ export function AnswerFeedback({ message }: { message: Message }) {
     } finally { setSaving(false); }
   };
 
+  const thumbClass = (pressed: boolean, tone: "up" | "down") => cn(
+    "grid size-7 place-items-center rounded-md text-fg-muted transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+    allowed && "hover:bg-surface-2 hover:text-foreground",
+    "disabled:cursor-default",
+    pressed && (tone === "up" ? "bg-success-surface text-success hover:bg-success-surface hover:text-success" : "bg-danger-surface text-danger hover:bg-danger-surface hover:text-danger"),
+  );
+
   return (
-    <>
+    <span className="inline-flex items-center gap-0.5 border-l border-line-subtle pl-1.5" data-testid="answer-feedback">
       <button
         type="button"
         data-testid="feedback-up"
         aria-label="Helpful"
         aria-pressed={message.feedback === "up"}
         disabled={!allowed || saving}
-        title={allowed ? undefined : "Only the hirer can rate answers"}
+        title={allowed ? "Helpful" : "Only the hirer can rate answers"}
         onClick={() => void click("up")}
-        className="disabled:cursor-default"
+        className={thumbClass(message.feedback === "up", "up")}
       >
-        <ThumbsUp className={cn("size-3", message.feedback === "up" && "text-success")} />
+        <ThumbsUp className="size-3.5" />
       </button>
       <button
         type="button"
@@ -46,12 +53,12 @@ export function AnswerFeedback({ message }: { message: Message }) {
         aria-label="Not helpful"
         aria-pressed={message.feedback === "down"}
         disabled={!allowed || saving}
-        title={allowed ? undefined : "Only the hirer can rate answers"}
+        title={allowed ? "Not helpful" : "Only the hirer can rate answers"}
         onClick={() => void click("down")}
-        className="disabled:cursor-default"
+        className={thumbClass(message.feedback === "down", "down")}
       >
-        <ThumbsDown className={cn("size-3", message.feedback === "down" && "text-danger")} />
+        <ThumbsDown className="size-3.5" />
       </button>
-    </>
+    </span>
   );
 }

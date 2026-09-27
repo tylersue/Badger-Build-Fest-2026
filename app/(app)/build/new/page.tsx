@@ -29,7 +29,7 @@ export default function NewAgentPage() {
     <>
       <Breadcrumbs items={[{ label: "My agents", href: "/build" }, { label: "New agent" }]} />
       <PageBody>
-        <PageHeader title="New agent" subtitle="Name it and pick a category. The interview drafts the rest from your answers." />
+        <PageHeader title="New agent" />
         <Card className="grid max-w-[560px] gap-4 p-5">
           <Field label="Agent name">
             <TextInput name="agent-name" value={name} onChange={setName} />

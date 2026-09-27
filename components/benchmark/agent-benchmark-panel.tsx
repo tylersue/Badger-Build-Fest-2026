@@ -1,48 +1,72 @@
-import { BENCHMARK_SAMPLE_CAPTION, BENCHMARK_SUITES } from "@/lib/data/benchmarks";
+"use client";
+
+import Link from "next/link";
 import { categoryLabel } from "@/lib/config/categories";
 import type { Agent } from "@/lib/types";
-import { agentComparison, BENCHMARK_DIMENSIONS, dimensionScore } from "@/features/benchmark/score";
-import { Card } from "@/components/app/ui";
-import { SampleDataLabel, ScoreBar } from "@/components/benchmark/benchmark-ui";
+import { BENCHMARK_DIMENSIONS, dimensionScore, formatMetric, SUITE_SCENARIOS } from "@/features/benchmark/score";
+import { NotPublishedPill, SampleDataLabel, ScoreBar } from "@/components/benchmark/benchmark-ui";
+import { useAgentBenchmark } from "@/components/benchmark/use-benchmarks";
 
-function formatMetric(value: number, unit: string): string {
-  const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value);
-  return unit === "%" ? `${number}%` : `${number} ${unit}`;
-}
-
+/** Benchmark tab on the agent listing: overall score, placement, and each metric against the platform median. */
 export function AgentBenchmarkPanel({ agent }: { agent: Agent }) {
-  const rows = agentComparison(agent);
-  if (!rows.length) {
-    return <div className="rounded-xl border border-line-subtle bg-surface-1 p-5 text-sm text-fg-muted" data-testid="agent-benchmark-panel">Not benchmarked yet. Benchmarks cover the seeded published agents.</div>;
-  }
+  const view = useAgentBenchmark(agent);
+  const { result, overall, inCategory, publishedCount, categoryCount, median } = view;
+  const category = categoryLabel(agent.persona.category);
+
+  const placement = publishedCount === 0 ? "No published agents to compare against yet"
+    : result.live ? `Would place #${overall?.placement ?? 1} of ${publishedCount + 1} once published`
+    : `#${overall?.rank ?? 1} of ${publishedCount} published agents`;
+  const categoryPlacement = inCategory && categoryCount > 0
+    ? result.live ? `would place #${inCategory.placement} of ${categoryCount} in ${category}` : `#${inCategory.rank} of ${categoryCount} in ${category}`
+    : null;
+
   return (
-    <Card className="p-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <SampleDataLabel />
-        <span className="text-xs text-fg-muted">{BENCHMARK_SAMPLE_CAPTION}</span>
-      </div>
-      <h2 className="mt-4 text-base font-semibold">{agent.persona.name} vs Muse, Grok and Hermes · {categoryLabel(agent.persona.category)}</h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {rows.map((row) => (
-          <div key={row.id} className="rounded-lg border border-line-subtle bg-surface-1 p-3">
-            <div className="flex justify-between text-sm"><span className="truncate">{row.name}</span><strong className="tabular-nums">{row.score}</strong></div>
-            <div className="mt-2"><ScoreBar value={row.score} tone={row.kind === "expert" ? "ours" : "general"} /></div>
+    <div data-testid="agent-benchmark-panel">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold">Proxier benchmark</h2>
+            {result.live && <NotPublishedPill />}
           </div>
-        ))}
+          <p className="mt-0.5 text-xs text-fg-muted">The same {SUITE_SCENARIOS} founder scenarios every agent on Proxier runs.</p>
+        </div>
+        <SampleDataLabel />
       </div>
-      <div className="mt-5 overflow-x-auto">
-        <table className="min-w-[760px] w-full border-collapse text-xs">
-          <thead><tr><th className="h-9 pr-3 text-left text-fg-muted">Dimension</th>{rows.map((row) => <th key={row.id} className="min-w-32 px-2 text-left font-medium text-fg-muted">{row.name}</th>)}</tr></thead>
-          <tbody>{BENCHMARK_DIMENSIONS.map((dim) => <tr key={dim.id} className="border-t border-line-subtle">
-            <th className="py-2 pr-3 text-left font-medium">{dim.label}</th>
-            {rows.map((row) => {
-              const score = dimensionScore(dim, row.metrics[dim.id]);
-              return <td key={row.id} className="px-2 py-2"><div className="mb-1 whitespace-nowrap tabular-nums">{formatMetric(row.metrics[dim.id], dim.unit)}</div><ScoreBar value={score} tone={row.kind === "expert" ? "ours" : "general"} /></td>;
-            })}
-          </tr>)}</tbody>
-        </table>
+
+      <div className="mt-5 flex flex-wrap items-end gap-x-6 gap-y-2">
+        <div className="flex items-baseline gap-1" data-testid="agent-benchmark-score">
+          <span className="text-4xl leading-none font-semibold tabular-nums">{result.score}</span>
+          <span className="text-sm text-fg-muted">/ 100</span>
+        </div>
+        <div className="text-[13px]">
+          <div className="font-medium">{placement}</div>
+          {categoryPlacement && <div className="text-fg-muted">{categoryPlacement.charAt(0).toUpperCase() + categoryPlacement.slice(1)}</div>}
+        </div>
       </div>
-      <p className="mt-4 text-xs text-fg-muted">Suite formats: {BENCHMARK_SUITES.map((suite) => <span key={suite.name} className="mr-1">{suite.name} ({suite.measures});</span>)}</p>
-    </Card>
+      {result.live && view.knowledgeItems !== null && (
+        <p className="mt-2 text-xs text-fg-muted">Scored live from {view.knowledgeItems} knowledge {view.knowledgeItems === 1 ? "item" : "items"}. More interview answers and documents raise grounding and citation scores.</p>
+      )}
+
+      <dl className="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+        {BENCHMARK_DIMENSIONS.map((dim) => {
+          const value = result.metrics[dim.id];
+          const reference = median?.[dim.id];
+          return (
+            <div key={dim.id}>
+              <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                <dt title={dim.description}>{dim.label}</dt>
+                <dd className="font-medium tabular-nums">{formatMetric(dim, value)}</dd>
+              </div>
+              <div className="mt-1.5"><ScoreBar value={dimensionScore(dim, value)} strong marker={reference === undefined ? undefined : dimensionScore(dim, reference)} /></div>
+              <p className="mt-1 text-xs text-fg-muted">{reference === undefined ? dim.description : `Platform median ${formatMetric(dim, reference)}${dim.direction === "lower" ? " · lower is better" : ""}`}</p>
+            </div>
+          );
+        })}
+      </dl>
+
+      <p className="mt-5 text-xs text-fg-muted">
+        Overall is a weighted average of the five metrics. <Link href="/benchmarks" className="font-medium text-foreground underline-offset-2 hover:underline">See the full leaderboard</Link>
+      </p>
+    </div>
   );
 }

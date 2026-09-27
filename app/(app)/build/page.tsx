@@ -20,7 +20,7 @@ export default function MyAgentsPage() {
     <>
       <Breadcrumbs items={[{ label: "My agents" }]} />
       <PageBody>
-        <PageHeader title="My agents" subtitle="Everything you've built. Publish when the persona is done and the interview has enough answers." />
+        <PageHeader title="My agents" />
         <Toolbar>
           <Link href="/build/new" className={buttonClass("primary")}>
             <Plus />

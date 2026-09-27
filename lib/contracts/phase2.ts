@@ -73,7 +73,7 @@ export type RetrievedChunk = {
 type CitationBase = { readonly evidenceId: string; readonly ordinal: number; readonly excerpt: string; readonly sourceName: string };
 export type EvidenceCitation = Readonly<CitationBase & (
   | { sourceType: "interview" | "document"; sourceId: string; revisionId: string; chunkId: string;
-      question: string | null; page: number | null; headingPath: string | null; historical: boolean }
+      question: string | null; page: number | null; headingPath: string | null; historical: boolean; url?: string | null }
   | { sourceType: "web"; title: string; url: string; retrievedAt: string }
 )>;
 export type ToolStep = {

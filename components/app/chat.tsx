@@ -1,7 +1,10 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
-import { ArrowUp, ChevronDown, ChevronRight, Database, FileText, Paperclip, Plus, Search, X, type LucideIcon } from "lucide-react";
+import Link from "next/link";
+import { useId, useRef, useState, type ReactNode } from "react";
+import {
+  ArrowUp, ArrowUpRight, ChevronDown, ExternalLink, FileText, Globe2, MessageSquareQuote, Newspaper, Paperclip, Plus, Search, X, Database, type LucideIcon,
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddCreditsButton } from "@/components/app/add-credits";
 import { AnswerFeedback } from "@/components/trust/answer-feedback";
@@ -11,58 +14,247 @@ import type { Citation, Message } from "@/lib/types";
 import type { EvidenceCitation, RetrievedChunk } from "@/lib/contracts/phase2";
 import { formatCreditUnits } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { evidenceGroups, retainDraftOnResult, type StreamCost } from "./chat-state";
+import { retainDraftOnResult, type StreamCost } from "./chat-state";
 
 export function safeExternalUrl(value: string): string | null {
   try { const url = new URL(value); return ["https:", "http:"].includes(url.protocol) ? url.href : null; }
   catch { return null; }
 }
 
+/* The hirer's turn: a raised bubble on the right, so it never reads as part of the agent's answer. */
 export function UserMessage({ content }: { content: string }) {
   return (
-    <div className="mb-5 flex justify-end">
-      <span className="max-w-[70%] rounded-xl bg-surface-2 px-4 py-3 text-base leading-[1.6] whitespace-pre-line">{content}</span>
+    <div className="mb-8 flex justify-end" data-testid="user-message">
+      <div className="max-w-[80%] rounded-xl rounded-br-sm border border-line-subtle bg-surface-3 px-4 py-2.5 text-[15px] leading-[1.6] break-words whitespace-pre-line text-foreground sm:max-w-[70%]">
+        {content}
+      </div>
     </div>
   );
 }
+
+type AnyCitation = Citation | EvidenceCitation;
+type SourceKind = "interview" | "document" | "published" | "web";
+type SourceEntry = {
+  key: string; number: number; kind: SourceKind; name: string; detail: string | null;
+  excerpt: string | null; url: string | null; historical: boolean;
+};
+
+const CITATION_MARKER = /(\[(?:\d+|(?:expert|web):[^\]\s]+)\])/g;
+
+const citationKey = (c: AnyCitation) => ("evidenceId" in c ? c.evidenceId : `n-${c.n}`);
+const citationNumber = (c: AnyCitation) => ("ordinal" in c ? c.ordinal : c.n);
+const locate = (c: { page: number | null; headingPath: string | null; question: string | null }) =>
+  c.page ? `Page ${c.page}${c.headingPath ? ` · ${c.headingPath}` : ""}` : c.question ? `Q: ${c.question}` : null;
+const hostOf = (url: string | null) => { try { return url ? new URL(url).hostname.replace(/^www\./, "") : null; } catch { return null; } };
+
+function sourceEntry(c: AnyCitation): SourceEntry {
+  if ("evidenceId" in c) {
+    if (c.sourceType === "web") {
+      const url = safeExternalUrl(c.url);
+      return { key: c.evidenceId, number: c.ordinal, kind: "web", name: c.title || c.sourceName,
+        detail: [c.sourceName, hostOf(url)].filter(Boolean).join(" · ") || null, excerpt: c.excerpt || null, url, historical: false };
+    }
+    // The expert's own essay, podcast or talk: an in-app page, shown by title.
+    if (c.url?.startsWith("/sources/")) return { key: c.evidenceId, number: c.ordinal, kind: "published", name: c.headingPath ?? c.sourceName,
+      detail: c.sourceName, excerpt: c.excerpt || null, url: c.url, historical: false };
+    return { key: c.evidenceId, number: c.ordinal, kind: c.sourceType, name: c.sourceName, detail: locate(c),
+      excerpt: c.excerpt || null, url: null, historical: c.historical };
+  }
+  if (c.url?.startsWith("/sources/")) return { key: `n-${c.n}`, number: c.n, kind: "published", name: c.headingPath ?? c.sourceName,
+    detail: c.sourceName, excerpt: null, url: c.url, historical: false };
+  return { key: `n-${c.n}`, number: c.n, kind: c.sourceType, name: c.sourceName, detail: locate(c), excerpt: null, url: null, historical: false };
+}
+
+/* Answer text as blocks: blank lines split paragraphs, and "1." / "-" lines become real lists. */
+type Block = { kind: "p"; text: string } | { kind: "ol"; start: number; items: string[] } | { kind: "ul"; items: string[] };
+function toBlocks(content: string): Block[] {
+  const blocks: Block[] = [];
+  for (const paragraph of content.split(/\n{2,}/)) {
+    let current: Block | null = null;
+    for (const line of paragraph.split("\n")) {
+      const ordered = /^\s*(\d+)[.)]\s+/.exec(line);
+      const bullet = ordered ? null : /^\s*[-*•]\s+/.exec(line);
+      if (ordered) {
+        const text = line.slice(ordered[0].length);
+        if (current?.kind === "ol") current.items.push(text);
+        else { current = { kind: "ol", start: Number(ordered[1]) || 1, items: [text] }; blocks.push(current); }
+      } else if (bullet) {
+        const text = line.slice(bullet[0].length);
+        if (current?.kind === "ul") current.items.push(text);
+        else { current = { kind: "ul", items: [text] }; blocks.push(current); }
+      } else if (current?.kind === "p") {
+        current.text += `\n${line}`;
+      } else {
+        current = { kind: "p", text: line };
+        blocks.push(current);
+      }
+    }
+  }
+  return blocks.filter(block => block.kind !== "p" || block.text.trim() !== "");
+}
+
+/** The numbered chip in citation blue (DESIGN.md citation chip), shared by inline markers and the sources footer. */
+function CitationNumber({ number, className }: { number: number; className?: string }) {
+  return (
+    <span className={cn("inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-sm bg-citation-surface px-1 text-[11px] leading-none font-semibold tabular-nums text-citation", className)}>
+      {number}
+    </span>
+  );
+}
+
+const KIND_ICON: Record<SourceKind, LucideIcon> = { interview: MessageSquareQuote, document: FileText, published: Newspaper, web: Globe2 };
 
 /* Arriving words ease in while citation chips retain their stable evidence IDs. */
 export function AssistantMessage({
   content, citations = [], caption, flow = false, gap,
 }: { content: string; citations?: Citation[] | EvidenceCitation[]; caption?: ReactNode; flow?: boolean; gap?: string | null }) {
   const [flowing] = useState(flow);
-  const parts = content.split(/(\[(?:\d+|(?:expert|web):[^\]\s]+)\])/g);
+  const [openSource, setOpenSource] = useState<string | null>(null);
+  const uid = useId();
   const modern = citations.filter((item): item is EvidenceCitation => "evidenceId" in item);
   const legacy = citations.filter((item): item is Citation => "n" in item);
+  const find = (marker: string): AnyCitation | undefined =>
+    modern.find(item => item.evidenceId === marker) ?? modern.find(item => String(item.ordinal) === marker) ?? legacy.find(item => String(item.n) === marker);
+
+  const entries = [...modern, ...legacy].map(sourceEntry)
+    .filter((entry, index, all) => all.findIndex(other => other.key === entry.key) === index)
+    .sort((a, b) => a.number - b.number);
+  const expert = entries.filter(entry => entry.kind !== "web");
+  const online = entries.filter(entry => entry.kind === "web");
+  // While a reply is still typing out with no caption yet, the footer waits so the text settles first.
+  const showSources = entries.length > 0 && (!flow || caption !== undefined);
+  const sourceId = (key: string) => `${uid}-source-${key}`;
+
+  const select = (c: AnyCitation) => {
+    const key = citationKey(c);
+    setOpenSource(key);
+    requestAnimationFrame(() => document.getElementById(sourceId(key))?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+  };
+
+  const inline = (text: string, prefix: string) => text.split(CITATION_MARKER).map((part, i) => {
+    const m = part.match(/^\[([^\]]+)\]$/);
+    const c = m ? find(m[1]) : undefined;
+    if (!c) return <FlowWords key={`${prefix}-${i}`} text={part} flowing={flowing} />;
+    const number = citationNumber(c);
+    const isWeb = "evidenceId" in c && c.sourceType === "web";
+    const url = isWeb ? safeExternalUrl(c.url) : null;
+    return (
+      <Tooltip key={`${prefix}-${i}`}>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            data-testid="citation"
+            aria-label={`Source ${number}: ${c.sourceName}`}
+            onClick={() => select(c)}
+            className={cn(
+              "mx-0.5 inline-flex h-[18px] min-w-[18px] -translate-y-px cursor-pointer items-center justify-center rounded-sm bg-citation-surface px-1 align-middle text-xs leading-none font-semibold tabular-nums text-citation transition-shadow hover:ring-1 hover:ring-citation/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+              flowing && "flow-word",
+            )}
+          >
+            {number}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          <div className="font-medium">{isWeb ? "Online source" : c.url ? "Published by the expert" : c.sourceType === "document" ? "Expert document" : "Expert interview"} · {!isWeb && c.url ? c.headingPath ?? c.sourceName : c.sourceName}</div>
+          {!isWeb && !c.url && <div className="opacity-80">{c.page ? `Page ${c.page}${c.headingPath ? ` · ${c.headingPath}` : ""}` : c.question ? `Q: ${c.question}` : "Interview answer"}</div>}
+          {"evidenceId" in c && <div className="mt-1 opacity-80">{c.excerpt}</div>}
+          {url && <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 block underline">Open source</a>}
+        </TooltipContent>
+      </Tooltip>
+    );
+  });
+
+  const blocks = toBlocks(content);
   return (
-    <div className="mb-5" data-testid="assistant-message">
-      <div className="text-base leading-[1.6] whitespace-pre-line">
-        {parts.map((part, i) => {
-          const m = part.match(/^\[([^\]]+)\]$/);
-          if (!m) return <FlowWords key={i} text={part} flowing={flowing} />;
-          const c = modern.find(item => item.evidenceId === m[1]) ?? legacy.find(item => String(item.n) === m[1]);
-          if (!c) return <FlowWords key={i} text={part} flowing={flowing} />;
-          const number = "ordinal" in c ? c.ordinal : c.n;
-          const online = "evidenceId" in c && c.sourceType === "web";
-          const url = online ? safeExternalUrl(c.url) : null;
-          return (
-            <Tooltip key={i}>
-              <TooltipTrigger asChild>
-                <sup data-testid="citation" className={cn("mx-0.5 cursor-help rounded bg-citation-surface px-[5px] text-xs font-semibold text-citation", flowing && "flow-word")}>{number}</sup>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <div className="font-medium">{online ? "Online source" : c.sourceType === "document" ? "Expert document" : "Expert interview"} · {c.sourceName}</div>
-                {!online && <div className="opacity-80">{c.page ? `Page ${c.page}${c.headingPath ? ` · ${c.headingPath}` : ""}` : c.question ? `Q: ${c.question}` : "Interview answer"}</div>}
-                {"evidenceId" in c && <div className="mt-1 opacity-80">{c.excerpt}</div>}
-                {url && <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 block underline">Open source</a>}
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </div>
-      {gap && <p className="mt-3 rounded-lg border border-warning/40 bg-warning-surface/20 p-3 text-sm">Knowledge gap: {gap} Online sources are separate from the expert&apos;s views.</p>}
-      {modern.length > 0 && <div className="mt-3 text-xs text-fg-muted">{([['Expert sources', evidenceGroups(modern).expert], ['Online sources', evidenceGroups(modern).online]] as const).map(([label, group]) => group.length > 0 && <span key={label} className="mr-3">{label}: {group.map(item => item.sourceName).join(", ")}</span>)}</div>}
-      {caption && <div className="mt-1.5 flex items-center gap-2 text-xs text-fg-muted">{caption}</div>}
+    <div className="mb-6 last:mb-0" data-testid="assistant-message">
+      {gap && (
+        <div role="note" data-testid="knowledge-gap" className="mb-4 flex gap-3 rounded-lg border border-warning/25 bg-warning-surface px-3.5 py-3">
+          <Globe2 className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
+          <div className="min-w-0 text-[13px] leading-5">
+            <p className="font-semibold text-warning">Knowledge gap</p>
+            <p className="mt-0.5 text-fg-secondary">{gap} Online sources are separate from the expert&apos;s views.</p>
+          </div>
+        </div>
+      )}
+      {blocks.length > 0 && (
+        <div className="max-w-[68ch] space-y-3.5 text-[15px] leading-[1.7] break-words text-fg-secondary">
+          {blocks.map((block, b) =>
+            block.kind === "p" ? (
+              <p key={b} className="whitespace-pre-line">{inline(block.text, `${b}`)}</p>
+            ) : block.kind === "ol" ? (
+              <ol key={b} start={block.start} className="list-decimal space-y-1.5 pl-6 marker:text-fg-muted">
+                {block.items.map((item, i) => <li key={i} className="pl-1">{inline(item, `${b}-${i}`)}</li>)}
+              </ol>
+            ) : (
+              <ul key={b} className="list-disc space-y-1.5 pl-6 marker:text-fg-muted">
+                {block.items.map((item, i) => <li key={i} className="pl-1">{inline(item, `${b}-${i}`)}</li>)}
+              </ul>
+            ),
+          )}
+        </div>
+      )}
+      {showSources && (
+        <div data-testid="answer-sources" className="mt-4 max-w-[68ch] overflow-hidden rounded-lg border border-line-subtle bg-surface-1">
+          {([["Expert sources", expert, null], ["Online sources", online, "not the expert's views"]] as const).map(([label, group, hint], g) =>
+            group.length > 0 && (
+              <section key={label} className={cn(g > 0 && expert.length > 0 && "border-t border-line-subtle")}>
+                <h4 className="flex items-center gap-1.5 px-3 pt-2.5 pb-1 text-xs font-medium text-fg-tertiary">
+                  {label}
+                  <span className="tabular-nums text-fg-muted">{group.length}</span>
+                  {hint && <span className="font-normal text-fg-muted">· {hint}</span>}
+                </h4>
+                <ul className="pb-1.5">
+                  {group.map(entry => {
+                    const open = openSource === entry.key;
+                    const Icon = KIND_ICON[entry.kind];
+                    return (
+                      <li key={entry.key} id={sourceId(entry.key)}>
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          onClick={() => setOpenSource(open ? null : entry.key)}
+                          className={cn("flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring", open && "bg-surface-2")}
+                        >
+                          <CitationNumber number={entry.number} />
+                          <Icon className="size-3.5 shrink-0 text-fg-muted" aria-hidden />
+                          <span className="max-w-[55%] shrink-0 truncate text-fg-secondary">{entry.name}</span>
+                          <span className="min-w-0 flex-1 truncate text-fg-muted">{entry.detail}</span>
+                          {entry.historical && <span className="shrink-0 rounded-sm bg-surface-3 px-1.5 text-[11px] text-fg-muted">Removed</span>}
+                          <ChevronDown className={cn("size-3.5 shrink-0 text-fg-muted transition-transform duration-150", open && "rotate-180")} aria-hidden />
+                        </button>
+                        {open && (
+                          <div className="px-3 pt-1 pb-2.5 sm:pl-[64px]">
+                            {entry.detail && <p className="mb-1.5 text-xs text-fg-muted">{entry.detail}</p>}
+                            {entry.excerpt ? (
+                              <blockquote className="rounded-md bg-citation-surface px-3 py-2 text-[13px] leading-relaxed text-fg-secondary">
+                                &ldquo;{entry.excerpt}&rdquo;
+                              </blockquote>
+                            ) : (
+                              <p className="text-xs text-fg-muted">{entry.kind === "published" ? "Published by the expert." : entry.kind === "document" ? "From the expert's uploaded document." : "From the expert's interview answers."}</p>
+                            )}
+                            {entry.url && entry.kind === "published" && (
+                              <Link href={entry.url} className="mt-2 inline-flex items-center gap-1 text-xs text-fg-tertiary underline decoration-line-outline underline-offset-2 hover:text-foreground">
+                                Read the full {entry.detail?.split(" · ")[0].toLowerCase() ?? "piece"} <ArrowUpRight className="size-3" aria-hidden />
+                              </Link>
+                            )}
+                            {entry.url && entry.kind !== "published" && (
+                              <a href={entry.url} target="_blank" rel="noopener noreferrer"
+                                className="mt-2 inline-flex items-center gap-1 text-xs text-fg-tertiary underline decoration-line-outline underline-offset-2 hover:text-foreground">
+                                Open source <ExternalLink className="size-3" aria-hidden />
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ),
+          )}
+        </div>
+      )}
+      {caption && <div data-testid="answer-meta" className="mt-3 flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-muted">{caption}</div>}
     </div>
   );
 }
@@ -76,26 +268,36 @@ export function ToolChip({ icon: Icon, label }: { icon: LucideIcon; label: strin
   );
 }
 
+/** The quiet process chip above an answer (retrieval, online steps). */
+export const processChipClass =
+  "inline-flex h-7 items-center gap-1.5 rounded-full border border-line-subtle bg-surface-1 px-2.5 text-xs text-fg-tertiary transition-colors hover:border-line-default hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:pointer-events-none";
+
 /* Fleet-style collapsible tool chip listing retrieved chunks and scores (SBOX-02). */
 export function RetrievedSources({ items }: { items: NonNullable<Message["retrieved"]> | RetrievedChunk[] }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mb-2">
-      <button onClick={() => setOpen(!open)} className="inline-flex items-center gap-1.5 rounded bg-surface-2 px-2 py-0.5 text-xs text-fg-muted hover:text-foreground">
-        <Search className="size-3" />
-        Retrieved {items.length} {items.length === 1 ? "source" : "sources"}
-        {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+    <div className="mb-3">
+      <button type="button" aria-expanded={open} disabled={items.length === 0} onClick={() => setOpen(!open)} className={processChipClass}>
+        <Search className="size-3.5" aria-hidden />
+        {items.length === 0 ? "No expert sources retrieved" : `Retrieved ${items.length} ${items.length === 1 ? "source" : "sources"}`}
+        {items.length > 0 && <ChevronDown className={cn("size-3.5 transition-transform duration-150", open && "rotate-180")} aria-hidden />}
       </button>
-      {open && (
-        <div className="mt-2 flex flex-col gap-1 rounded-lg border border-line-muted bg-surface-1 p-2 text-xs">
+      {open && items.length > 0 && (
+        <ol className="mt-2 max-w-[68ch] divide-y divide-line-subtle overflow-hidden rounded-lg border border-line-subtle bg-surface-1 text-xs">
           {items.map((r, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="font-semibold text-citation">[{i + 1}]</span>
-              <span className="truncate">{r.sourceName}{r.page ? ` · page ${r.page}` : ""}{r.question ? ` · ${r.question}` : ""}{"content" in r ? ` · ${r.content.slice(0, 100)}` : ""}</span>
-              <span className="ml-auto tabular-nums text-fg-muted">score {r.score.toFixed(2)}</span>
-            </div>
+            <li key={i} className="flex items-start gap-2.5 px-3 py-2">
+              <span className="w-4 shrink-0 text-right font-semibold tabular-nums text-fg-muted">{i + 1}</span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-fg-secondary">
+                  {r.sourceName}
+                  <span className="text-fg-muted">{r.page ? ` · page ${r.page}` : ""}{r.question ? ` · ${r.question}` : ""}</span>
+                </div>
+                {"content" in r && <p className="mt-0.5 line-clamp-2 text-fg-muted">{r.content}</p>}
+              </div>
+              <span className="shrink-0 tabular-nums text-fg-muted">score {r.score.toFixed(2)}</span>
+            </li>
           ))}
-        </div>
+        </ol>
       )}
     </div>
   );
@@ -104,16 +306,16 @@ export function RetrievedSources({ items }: { items: NonNullable<Message["retrie
 export function CostCaption({ message }: { message: Message }) {
   return (
     <>
-      <span data-testid="message-cost">{message.costCents === null ? "Charge pending" : `Charged ${formatCredits(message.costCents)}`}</span>
+      <span data-testid="message-cost" className="tabular-nums">{message.costCents === null ? "Charge pending" : `Charged ${formatCredits(message.costCents)}`}</span>
       <AnswerFeedback message={message} />
     </>
   );
 }
 
 export function StreamCostCaption({ cost, estimateUnits }: { cost?: StreamCost | null; estimateUnits?: string | null }) {
-  if (cost?.status === "settled" && cost.chargedUnits !== null) return <span>Charged {formatCreditUnits(cost.chargedUnits)}</span>;
-  if (cost?.status === "pending") return <span>Charge pending · Estimated {formatCreditUnits(cost.estimateUnits)}</span>;
-  return estimateUnits ? <span>Estimated {formatCreditUnits(estimateUnits)}</span> : <span>Charge pending</span>;
+  if (cost?.status === "settled" && cost.chargedUnits !== null) return <span className="tabular-nums">Charged {formatCreditUnits(cost.chargedUnits)}</span>;
+  if (cost?.status === "pending") return <span className="tabular-nums">Charge pending · Estimated {formatCreditUnits(cost.estimateUnits)}</span>;
+  return estimateUnits ? <span className="tabular-nums">Estimated {formatCreditUnits(estimateUnits)}</span> : <span>Charge pending</span>;
 }
 
 export function SavedChip({ credits }: { credits: number }) {
@@ -170,8 +372,8 @@ export function Composer({
     }
   };
   return (
-    <div className="flex shrink-0 justify-center px-4 pt-3 pb-4">
-      <div className="flex min-h-24 w-full max-w-[752px] flex-col gap-3 rounded-xl border border-line-subtle bg-surface-2 p-4">
+    <div className="flex shrink-0 justify-center px-4 pt-2 pb-4">
+      <div className="flex min-h-24 w-full max-w-[752px] flex-col gap-2.5 rounded-xl border border-line-default bg-surface-2 px-4 pt-3 pb-3 transition-colors focus-within:border-line-outline">
         {sendError && <p role="alert" className="text-sm text-danger">{sendError}</p>}
         <textarea
           data-testid="composer-input"
@@ -188,17 +390,18 @@ export function Composer({
           disabled={disabled}
           rows={2}
           placeholder={busy ? "Send a message to queue it up…" : placeholder}
-          className="resize-none bg-transparent text-[15px] outline-none placeholder:text-fg-muted disabled:opacity-60"
+          className="resize-none bg-transparent text-[15px] leading-6 text-foreground outline-none placeholder:text-fg-muted disabled:opacity-60"
         />
-        <div className="mt-auto flex flex-wrap items-center gap-2.5 text-fg-muted">
+        <div className="mt-auto flex flex-wrap items-center gap-2 text-fg-muted">
           {onAttach ? (
             attachment ? (
-              <span data-testid="attachment-chip" className="inline-flex items-center gap-1.5 rounded bg-surface-3 px-2 py-0.5 text-xs text-fg-secondary">
-                <FileText className="size-3" />
-                <span className="max-w-[240px] truncate">{attachment.name}</span>
-                <span className="text-fg-muted">· {formatNumber(attachment.chars)} chars · untrusted</span>
+              <span data-testid="attachment-chip" className="inline-flex h-8 max-w-full items-center gap-1.5 rounded-md border border-line-subtle bg-surface-3 px-2.5 text-xs text-fg-secondary">
+                <FileText className="size-3.5 shrink-0 text-fg-tertiary" />
+                <span className="max-w-[240px] truncate font-medium">{attachment.name}</span>
+                <span className="hidden text-fg-muted sm:inline">· {formatNumber(attachment.chars)} chars · untrusted</span>
                 {onRemoveAttachment && (
-                  <button type="button" aria-label="Remove file" onClick={onRemoveAttachment} className="ml-0.5 hover:text-foreground">
+                  <button type="button" aria-label="Remove file" onClick={onRemoveAttachment}
+                    className="-mr-1 ml-0.5 grid size-5 place-items-center rounded-sm text-fg-muted hover:bg-surface-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring">
                     <X className="size-3" />
                   </button>
                 )}
@@ -222,11 +425,12 @@ export function Composer({
                   data-testid="attach-file"
                   disabled={disabled || attaching}
                   onClick={() => fileRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 text-xs hover:text-foreground disabled:opacity-60"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line-outline bg-surface-1 px-2.5 text-xs font-medium text-fg-secondary transition-colors hover:bg-surface-3 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60"
                 >
-                  <Paperclip className="size-4" />
-                  {attaching ? "Reading file…" : "Attach one file (PDF, DOCX, TXT, MD)"}
+                  <Paperclip className="size-3.5" />
+                  {attaching ? "Reading file…" : "Attach a file"}
                 </button>
+                {!attaching && <span className="hidden text-xs text-fg-muted sm:inline">PDF, DOCX, TXT or MD · one per chat</span>}
               </>
             )
           ) : (
@@ -238,10 +442,10 @@ export function Composer({
             data-testid="composer-send"
             onClick={() => void submit()}
             disabled={disabled || busy || !text.trim()}
-            className="ml-auto grid size-6 place-items-center rounded-full bg-brand text-primary-foreground disabled:opacity-40"
-          aria-label={sendLabel}
+            className="ml-auto grid size-8 place-items-center rounded-full bg-brand text-primary-foreground transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-40"
+            aria-label={sendLabel}
           >
-            <ArrowUp className="size-3.5" />
+            <ArrowUp className="size-4" />
           </button>
         </div>
       </div>
@@ -252,9 +456,9 @@ export function Composer({
 /* Pre-call reservation refused (D-10). */
 export function NotEnoughCredits({ needed, available, onDismiss }: { needed: number; available: number; onDismiss: () => void }) {
   return (
-    <div data-testid="not-enough-credits" className="mb-5 rounded-xl border border-warning/40 bg-warning-surface/40 p-4">
-      <div className="text-sm font-semibold">Not enough credits</div>
-      <p className="mt-1 text-[13px] text-fg-tertiary">
+    <div data-testid="not-enough-credits" className="mb-8 rounded-lg border border-warning/25 bg-warning-surface p-4">
+      <div className="text-sm font-semibold text-warning">Not enough credits</div>
+      <p className="mt-1 text-[13px] text-fg-secondary">
         This needs about {formatCredits(needed)}; you have {formatCredits(available)}. Add credits to continue.
       </p>
       <div className="mt-3 flex gap-2">
@@ -270,7 +474,7 @@ export function NotEnoughCredits({ needed, available, onDismiss }: { needed: num
 export function ChatColumn({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-0 flex-1 justify-center overflow-y-auto">
-      <div className="w-full max-w-[752px] px-4 pt-4">{children}</div>
+      <div className="w-full max-w-[752px] px-4 pt-6 pb-4">{children}</div>
     </div>
   );
 }

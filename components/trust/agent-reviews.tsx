@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { buttonClass } from "@/components/app/ui";
 import { currentIdentity, displayName, reviewsFor, useDemo } from "@/lib/demo-store";
+import { IdentityLogo } from "@/components/app/identity-logo";
 import { formatRelative } from "@/lib/format";
 import type { Agent, ReviewStars } from "@/lib/types";
 import { REVIEW_COMMENT_MAX, reviewEligibility, submitReview } from "@/features/trust/reviews";
@@ -71,7 +72,7 @@ export function AgentReviews({ agent }: { agent: Agent }) {
         {reviews.length === 0 ? <p className="text-sm text-fg-muted">No written reviews yet.</p> : (
           <ul className="divide-y divide-line-subtle">
             {reviews.map((review) => <li key={review.id} data-testid="review-item" className="py-4 first:pt-0">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"><strong className="text-warning">{"★".repeat(review.stars)}{"☆".repeat(5 - review.stars)}</strong><span className="font-medium">{displayName(state, review.reviewerId)}</span><time className="text-xs text-fg-muted">{formatRelative(review.createdAt)}</time></div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"><strong className="text-warning">{"★".repeat(review.stars)}{"☆".repeat(5 - review.stars)}</strong><span className="inline-flex items-center gap-2 font-medium"><IdentityLogo identityId={review.reviewerId} size={22} />{displayName(state, review.reviewerId)}</span><time className="text-xs text-fg-muted">{formatRelative(review.createdAt)}</time></div>
               {review.comment && <p className="mt-2 whitespace-pre-line text-sm text-fg-tertiary">{review.comment}</p>}
             </li>)}
           </ul>

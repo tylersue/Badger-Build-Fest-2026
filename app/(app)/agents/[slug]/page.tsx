@@ -5,8 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CircleCheck, EyeOff, SearchX } from "lucide-react";
 import { toast } from "sonner";
-import { Breadcrumbs, Card, EmptyState, IdentityAvatar, PageBody, Pill, buttonClass } from "@/components/app/ui";
-import { agentById, currentIdentity, displayName, identityById, knowledgeStats, profileFor, sendChatMessage, startConversation, useDemo } from "@/lib/demo-store";
+import { Breadcrumbs, Card, EmptyState, PageBody, Pill, buttonClass } from "@/components/app/ui";
+import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
+import { agentById, currentIdentity, displayName, knowledgeStats, profileFor, sendChatMessage, startConversation, useDemo } from "@/lib/demo-store";
 import { categoryLabel, disclaimerFor } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
 import { formatRelative } from "@/lib/format";
@@ -51,8 +52,8 @@ export default function ListingPage() {
     );
   }
 
-  const owner = identityById(agent.ownerId);
   const profile = profileFor(s, agent.ownerId);
+  const company = companyFor(agent.ownerId);
   const disclaimer = disclaimerFor(agent.persona.category);
   const knowledge = knowledgeStats(s, agent.id);
   const docs = publicStats?.documents ?? (s.snapshot?.sources ?? []).filter((x) => x.agentId === agent.id && x.kind !== "interview").length;
@@ -98,10 +99,12 @@ export default function ListingPage() {
               <h1 data-testid="page-title" className="mb-3 text-[28px] leading-[1.2] font-medium">{agent.persona.name}</h1>
               <p className="mb-5 leading-normal text-fg-tertiary">{agent.persona.description || agent.persona.headline}</p>
               <div className="flex items-center gap-3">
-                <IdentityAvatar initial={owner.avatarInitial} photoUrl={profile.photoUrl} />
+                <IdentityLogo identityId={agent.ownerId} size={40} />
                 <div>
                   <div className="flex items-center gap-2 font-semibold">
-                    {displayName(s, agent.ownerId)} <Pill>Self-reported</Pill>
+                    {displayName(s, agent.ownerId)}
+                    {company && <span className="font-normal text-fg-muted">· {company}</span>}
+                    <Pill>Self-reported</Pill>
                   </div>
                   <div className="text-xs text-fg-muted">
                     {[profile.credentials, profile.yearsExperience ? `${profile.yearsExperience} years` : null, profile.location].filter(Boolean).join(" · ")}
@@ -118,7 +121,10 @@ export default function ListingPage() {
             </div>
             <div className="m-4 grid min-h-[260px] place-items-center rounded-xl bg-surface-2">
               <div className="w-[70%] rounded-lg border border-line-subtle bg-surface-1 p-3 text-[11px] text-fg-muted">
-                <b className="mb-1.5 block text-xs text-foreground">{displayName(s, agent.ownerId)}</b>
+                <span className="mb-1.5 flex items-center gap-1.5">
+                  <IdentityLogo identityId={agent.ownerId} size={20} />
+                  <b className="text-xs text-foreground">{displayName(s, agent.ownerId)}</b>
+                </span>
                 Persona · {publicStats?.answers ?? knowledge.answers} interview answers · {docs} {docs === 1 ? "document" : "documents"}
                 <br />
                 <br />

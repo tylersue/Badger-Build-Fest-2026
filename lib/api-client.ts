@@ -3,6 +3,11 @@ import type { DemoSnapshot } from "./server/demo";
 import type { IndexResult, SourceEstimate, ServiceError, ServiceResult } from "./contracts/phase2";
 import type { ChatStreamEvent } from "@/features/runtime/events";
 import type { InterviewView } from "@/features/builder/interview";
+import { DEMO_MODE } from "./config/demo";
+import { installDemoBackend } from "./demo-backend";
+
+// Hackathon demo: answer /api/* in the browser from hardcoded data (no database or provider keys).
+if (DEMO_MODE && typeof window !== "undefined") installDemoBackend();
 
 export class ApiClientError extends Error {
   constructor(readonly detail: ServiceError, readonly status: number) {

@@ -47,7 +47,7 @@ export function BuilderSectionView() {
 function PublishSection({ agent }: { agent: Agent }) {
   return <BuilderSplit agent={agent} thread="· Publish" composer={null}>
     <PageBody>
-      <PageHeader title="Publish" subtitle="Review your agent before sharing it in the marketplace." />
+      <PageHeader title="Publish" />
       <div className="grid max-w-[720px] gap-4 rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm">
         <div>Rate multiplier: {agent.rateMultiplier}×</div>
         <div>Content consent: {agent.consentAcceptedAt ? "Accepted" : "Not accepted yet"}</div>

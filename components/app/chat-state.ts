@@ -45,7 +45,7 @@ export function evidenceGroups(citations: EvidenceCitation[]) {
 /** A snapshot stays immutable; current active IDs only affect the historical UI label. */
 export function markDeletedSources(citations: EvidenceCitation[], activeDocuments: ReadonlySet<string>, activeAnswers: ReadonlySet<string>): EvidenceCitation[] {
   return citations.map(citation => {
-    if (citation.sourceType === "web" || citation.historical) return citation;
+    if (citation.sourceType === "web" || citation.historical || citation.url) return citation;
     const active = citation.sourceType === "document" ? activeDocuments : activeAnswers;
     return active.has(citation.sourceId) ? citation : { ...citation, historical: true };
   });
