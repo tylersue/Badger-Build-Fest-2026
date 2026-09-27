@@ -9,7 +9,7 @@
  * stop at zero, D-10), and every balance change writes a ledger row.
  */
 import { useSyncExternalStore } from "react";
-import { AGENTS, CHUNKS, CONVERSATIONS, IDENTITIES, INTERVIEW_ANSWER_COUNTS, INTERVIEW_TURNS, LEDGER, MARIA, MESSAGES, PROFILES, SOURCES } from "@/lib/data/seed";
+import { AGENTS, CHUNKS, CONVERSATIONS, IDENTITIES, INTERVIEW_ANSWER_COUNTS, INTERVIEW_TURNS, LEDGER, MARIA, MESSAGES, PROFILES, REVIEWS, SOURCES } from "@/lib/data/seed";
 import { PACK_GRANT_CENTS, SUBSCRIPTION_GRANT_CENTS, type MeteredPurpose } from "@/lib/config/credits";
 import { disclaimerFor, type Category } from "@/lib/config/categories";
 import { clampRate } from "@/lib/config/publish";
@@ -17,9 +17,9 @@ import { costCentsFromUsage, estimateCents, splitUsageCharge, toChargeCents } fr
 import { isWeakRetrieval, searchKnowledge } from "@/features/knowledge/search";
 import { publishBlockers } from "@/features/marketplace/publish";
 import { cannedAnswer, nextInterviewQuestion, refusalReply } from "@/features/runtime/agent";
-import type { Agent, AgentStatus, Chunk, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile } from "@/lib/types";
+import type { Agent, AgentStatus, Chunk, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile, Review } from "@/lib/types";
 
-const STORAGE_KEY = "bx-demo-v1";
+export const STORAGE_KEY = "bx-demo-v1";
 
 export type DemoState = {
   v: 1;
@@ -35,6 +35,8 @@ export type DemoState = {
   answeredTurns: Record<string, string>;
   /** Last time an agent's knowledge changed in this browser (answers), for "knowledge updated". */
   knowledgeTouchedAt: Record<string, string>;
+  /** Reviews written in this browser (Phase 4 MKT-05/MKT-V2-03). Optional so old saved state stays valid (D-03). */
+  reviews?: Review[];
 };
 
 const initialState = (): DemoState => ({
@@ -50,19 +52,38 @@ const initialState = (): DemoState => ({
   interviewTurns: [],
   answeredTurns: {},
   knowledgeTouchedAt: {},
+  reviews: [],
 });
 
 let state: DemoState | null = null;
 const listeners = new Set<() => void>();
 
+/**
+ * Repairs a saved payload into a valid DemoState, or returns null when it
+ * isn't one at all (wrong/missing `v`). Old saved browser state (pre-Phase-4)
+ * has no Phase 4 keys; those are optional so it still loads unchanged
+ * (D-03). Only Phase 4 keys are shape-checked and repaired here — a corrupt
+ * Phase 4 collection resets to its default instead of throwing or wiping the
+ * rest of the saved state (T-04-01).
+ */
+export function normalizeDemoState(raw: unknown): DemoState | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  if ((raw as { v?: unknown }).v !== 1) return null;
+  const merged: DemoState = { ...initialState(), ...(raw as Partial<DemoState>) };
+  if (!Array.isArray(merged.reviews)) merged.reviews = [];
+  return merged;
+}
+
+/** Returns a fresh, unsaved DemoState — the seeded starting point before any browser writes. */
+export function createInitialDemoState(): DemoState {
+  return initialState();
+}
+
 function load(): DemoState {
   if (typeof window === "undefined") return initialState();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as DemoState;
-      if (parsed?.v === 1) return { ...initialState(), ...parsed };
-    }
+    if (raw) return normalizeDemoState(JSON.parse(raw)) ?? initialState();
   } catch {
     // Private window or blocked storage: fall back to the seeded state.
   }
@@ -105,6 +126,23 @@ export function useDemoSnapshot(): DemoState | null {
 export function useDemo(): DemoState {
   const s = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   return s;
+}
+
+/** Reads the current committed state outside a React render (Phase 4 seam, D-02). */
+export function readDemo(): DemoState {
+  return getSnapshot();
+}
+
+/**
+ * The Phase 4 commit seam (D-02): features/ modules compute with pure
+ * functions and commit once through here, instead of calling setState
+ * directly. `update` must be pure and must re-validate against the state it
+ * receives (it may run against a state that changed since it was read).
+ * Porting to the Phase 2 backend replaces this one call per action.
+ */
+export function commitDemo(update: (s: DemoState) => DemoState): DemoState {
+  setState(update);
+  return getSnapshot();
 }
 
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
@@ -174,6 +212,16 @@ export function messagesFor(s: DemoState, conversationId: string): Message[] {
   return [...MESSAGES, ...s.messages]
     .filter((m) => m.conversationId === conversationId)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export function allReviews(s: DemoState): Review[] {
+  return [...REVIEWS, ...(s.reviews ?? [])];
+}
+
+export function reviewsFor(s: DemoState, agentId: string): Review[] {
+  return allReviews(s)
+    .filter((r) => r.agentId === agentId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export function conversationStats(s: DemoState, conversationId: string) {

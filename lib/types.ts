@@ -150,3 +150,14 @@ export type Flag = {
   status: "open" | "resolved";
   createdAt: string;
 };
+
+export type ReviewStars = 1 | 2 | 3 | 4 | 5;
+
+export type Review = {
+  id: string;
+  agentId: string;
+  reviewerId: string;
+  stars: ReviewStars;
+  comment: string | null;
+  createdAt: string;
+};
