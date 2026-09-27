@@ -2,7 +2,7 @@
 
 Working document. Add to it freely; nothing here is a decision until it lands in [PROJECT.md](../.planning/PROJECT.md). It builds on [CUSTOMER-RESEARCH.md](CUSTOMER-RESEARCH.md) (the verified numbers) and [CUSTOMER-BRIEF.md](CUSTOMER-BRIEF.md) (the short version). Where a number below has no source next to it, it comes from those two documents and carries their verification status. Raw research behind the new material is in [.planning/research/customer-fit/](../.planning/research/customer-fit/). Date: 2026-09-26.
 
-**The question this document answers:** who do we say we are for, at which zoom level, to which audience, and which one person do we put on screen for sixty seconds.
+**The question this document answers:** who do we say we are for, at which zoom level, to which audience, and which one person do we put on screen for sixty seconds. The two-page version is [CUSTOMER-FIT-BRIEF.md](CUSTOMER-FIT-BRIEF.md).
 
 ## Contents
 
