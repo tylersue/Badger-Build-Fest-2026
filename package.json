@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:phase2-env": "node --experimental-strip-types scripts/check-phase2-env.ts",
+    "test:phase2-live": "RUN_LIVE_TESTS=1 vitest run tests/integration/billing.live.test.ts tests/integration/intake.live.test.ts tests/integration/retrieval.live.test.ts --no-file-parallelism && node --experimental-strip-types scripts/phase2-live.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.65",
