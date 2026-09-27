@@ -9,7 +9,7 @@ import { Breadcrumbs, Card, EmptyState, PageBody, Pill, buttonClass } from "@/co
 import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
 import { agentById, currentIdentity, displayName, knowledgeStats, profileFor, purchasesFor, sendChatMessage, startConversation, useDemo } from "@/lib/demo-store";
 import { CheckoutDialog } from "@/components/app/checkout-dialog";
-import { agentPriceCredits } from "@/lib/config/purchase";
+import { agentPriceCredits, buyerCount, compactNumber, ratingTotal } from "@/lib/config/purchase";
 import { categoryLabel, disclaimerFor } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
 import { formatCredits, formatRelative } from "@/lib/format";
@@ -121,7 +121,7 @@ export default function ListingPage() {
               </div>
               <div className="mt-5 flex flex-wrap items-center gap-3 text-[13px] text-fg-muted">
                 <Pill>{categoryLabel(agent.persona.category)}</Pill>
-                <span>{agent.ratingCount ? `★ ${agent.ratingAvg.toFixed(1)} (${agent.ratingCount})` : "No ratings yet"}</span>
+                <span>{agent.ratingCount ? `★ ${agent.ratingAvg.toFixed(1)} (${compactNumber(ratingTotal(agent))}) · ${compactNumber(buyerCount(agent, !!bought))} bought` : "No ratings yet"}</span>
                 <span data-testid="listing-cost">About {typicalMessageCents(agent.rateMultiplier)} credits per message</span>
                 <span data-testid="knowledge-updated">Knowledge updated {formatRelative(publicStats?.lastUpdatedAt ?? knowledge.lastUpdatedAt)}</span>
               </div>

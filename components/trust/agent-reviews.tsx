@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { buttonClass } from "@/components/app/ui";
 import { currentIdentity, displayName, reviewsFor, useDemo } from "@/lib/demo-store";
 import { IdentityLogo } from "@/components/app/identity-logo";
+import { ratingTotal } from "@/lib/config/purchase";
 import { formatRelative } from "@/lib/format";
 import type { Agent, ReviewStars } from "@/lib/types";
 import { REVIEW_COMMENT_MAX, reviewEligibility, submitReview } from "@/features/trust/reviews";
@@ -45,7 +46,7 @@ export function AgentReviews({ agent }: { agent: Agent }) {
     <section aria-label="Ratings and reviews">
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <strong className="text-xl tabular-nums">{agent.ratingCount ? `★ ${agent.ratingAvg.toFixed(1)}` : "No ratings yet"}</strong>
-        <span className="text-sm text-fg-muted">{agent.ratingCount} ratings</span>
+        <span className="text-sm text-fg-muted">{ratingTotal(agent).toLocaleString()} ratings</span>
         <span className="text-sm text-fg-muted">{writtenReviews} written reviews</span>
       </div>
 

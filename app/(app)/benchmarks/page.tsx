@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Breadcrumbs, Card, DataTable, Num, PageBody, PageHeader, Pill } from "@/components/app/ui";
 import { IdentityLogo } from "@/components/app/identity-logo";
+import { buyerCount, compactNumber, ratingTotal } from "@/lib/config/purchase";
 import { BENCHMARK_SUITE_CAPTION, NotPublishedPill, SampleDataLabel, ScoreBar } from "@/components/benchmark/benchmark-ui";
 import { useBenchmarkBoard } from "@/components/benchmark/use-benchmarks";
 import { displayName, useDemo, type DemoState } from "@/lib/demo-store";
@@ -166,7 +167,7 @@ function YourAgentCard({ row, publishedCount, knowledgeItems }: { row: RankedBen
       <p className="mt-auto pt-4 text-xs text-fg-muted">
         {row.live
           ? <>Scored live from {knowledgeItems ?? 0} knowledge {knowledgeItems === 1 ? "item" : "items"}. <Link href={`/build/${row.agent.id}`} className="font-medium text-foreground hover:underline underline-offset-2">Keep building</Link> to raise it.</>
-          : <><Link href={`/agents/${row.agent.slug}`} className="font-medium text-foreground hover:underline underline-offset-2">View listing</Link> · {row.agent.ratingCount} {row.agent.ratingCount === 1 ? "rating" : "ratings"}, {row.agent.usageCount} {row.agent.usageCount === 1 ? "use" : "uses"}</>}
+          : <><Link href={`/agents/${row.agent.slug}`} className="font-medium text-foreground hover:underline underline-offset-2">View listing</Link> · {compactNumber(ratingTotal(row.agent))} ratings, {compactNumber(buyerCount(row.agent, false))} bought</>}
       </p>
     </Card>
   );

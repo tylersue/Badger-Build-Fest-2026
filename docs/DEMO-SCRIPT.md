@@ -97,7 +97,7 @@ hmm, I don't love that it just quotes me word for word. talk like me, keep it sh
 
 1. Click the **Publish** tab at the top.
 2. Drag **Rate multiplier** to **3×**, tick the **Content consent** box, and click **Publish agent**.
-3. Click **Benchmarks** in the sidebar. **Your agents** shows the new agent scored next to Cynthia's established one (4.9 stars from 31 founders).
+3. Click **Benchmarks** in the sidebar. **Your agents** shows the new agent scored next to Cynthia's established one (4.9 stars from 12.8K ratings, 480K bought).
 
 **Say:**
 > Set your price, publish, and founders start hiring you. That's Proxier.

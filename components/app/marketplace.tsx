@@ -6,7 +6,7 @@ import { ArrowDownUp, Plus, Search, ShoppingBag, Star, Store, X } from "lucide-r
 import { Breadcrumbs, EmptyState, PageBody, PageHeader, Pill, buttonClass } from "@/components/app/ui";
 import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
 import { allAgents, currentIdentity, displayName, profileFor, purchasesFor, useDemo } from "@/lib/demo-store";
-import { buyerCount } from "@/lib/config/purchase";
+import { buyerCount, compactNumber, ratingTotal } from "@/lib/config/purchase";
 import { CATEGORIES, categoryLabel, type Category } from "@/lib/config/categories";
 import { BenchmarkScoreBadge } from "@/components/benchmark/benchmark-ui";
 import { typicalMessageCents } from "@/features/billing/pricing";
@@ -138,26 +138,28 @@ function AgentCard({ agent: a }: { agent: Agent }) {
       data-testid="agent-card"
       className="group flex min-w-0 w-full flex-col rounded-xl border border-line-subtle bg-surface-1 p-4 transition-colors hover:border-line-outline focus-visible:border-brand-border focus-visible:outline-none"
     >
-      {/* The agent leads; the expert behind it sits underneath. */}
-      <h2 className="truncate text-[16px] leading-tight font-semibold">{title}</h2>
-      <div className="mt-2 flex items-center gap-2">
-        <IdentityLogo identityId={a.ownerId} size={22} />
-        <p className="min-w-0 truncate text-[13px]">
-          <span className="font-medium text-fg-secondary">{displayName(s, a.ownerId)}</span>
-          {company && <span className="text-fg-muted"> · {company}</span>}
-        </p>
+      {/* The agent name leads beside the company logo; the expert and what they do sit underneath in smaller text. */}
+      <div className="flex items-center gap-3">
+        <IdentityLogo identityId={a.ownerId} size={44} />
+        <div className="min-w-0">
+          <h2 className="truncate text-[16px] leading-tight font-semibold">{title}</h2>
+          <p className="mt-1 truncate text-[13px] leading-tight">
+            <span className="text-fg-secondary">{displayName(s, a.ownerId)}</span>
+            {company && <span className="text-fg-muted"> · {company}</span>}
+          </p>
+          <p className="mt-0.5 truncate text-xs text-fg-muted">{[profile.field, profile.credentials].filter(Boolean).join(" · ")}</p>
+        </div>
       </div>
-      <p className="mt-1 truncate text-xs text-fg-muted">{[profile.field, profile.credentials].filter(Boolean).join(" · ")}</p>
       <p className="mt-3 text-sm leading-snug font-medium">{a.persona.headline || a.persona.name}</p>
       <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-fg-muted">{a.persona.description}</p>
       <div className="mt-auto flex items-center gap-3 pt-4 text-xs text-fg-muted tabular-nums">
         <BenchmarkScoreBadge agent={a} />
-        <span className="inline-flex items-center gap-1" title={`${a.ratingAvg.toFixed(1)} stars from ${a.ratingCount} reviews`}>
+        <span className="inline-flex items-center gap-1" title={`${a.ratingAvg.toFixed(1)} stars from ${ratingTotal(a).toLocaleString()} ratings`}>
           <Star className="size-3.5 fill-warning text-warning" aria-hidden />
           <span className="font-medium text-fg-secondary">{a.ratingCount ? a.ratingAvg.toFixed(1) : "New"}</span>
-          {a.ratingCount > 0 && <span>({a.ratingCount})</span>}
+          {a.ratingCount > 0 && <span>({compactNumber(ratingTotal(a))})</span>}
         </span>
-        <span className="inline-flex items-center gap-1"><ShoppingBag className="size-3.5" aria-hidden />{buyerCount(a, bought).toLocaleString()} bought</span>
+        <span className="inline-flex items-center gap-1" title={`${buyerCount(a, bought).toLocaleString()} founders bought this agent`}><ShoppingBag className="size-3.5" aria-hidden />{compactNumber(buyerCount(a, bought))} bought</span>
       </div>
       <div className="mt-3 flex items-center gap-2 border-t border-line-subtle pt-3">
         <Pill>{categoryLabel(a.persona.category)}</Pill>
