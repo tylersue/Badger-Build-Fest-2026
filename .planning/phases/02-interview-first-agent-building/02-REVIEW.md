@@ -1,6 +1,10 @@
 ---
 phase: 02-interview-first-agent-building
 reviewed: 2026-09-27T04:01:42Z
+re_reviewed: 2026-09-27T04:28:00Z
+re_review_range: 6e14e32..c71e88b
+re_review_scope: CR-01..CR-03 fixes
+cr04_code_fix: d0d8ee4
 depth: standard
 files_reviewed: 119
 files_reviewed_list:
@@ -124,11 +128,12 @@ files_reviewed_list:
   - tests/integration/live-support.ts
   - tests/integration/retrieval.live.test.ts
 findings:
-  critical: 3
+  critical: 0
   warning: 0
   info: 0
-  total: 3
-status: issues_found
+  total: 0
+resolved_findings: 4
+status: code_review_passed_live_gate_pending
 ---
 
 # Phase 2: Code Review Report
@@ -136,15 +141,22 @@ status: issues_found
 **Reviewed:** 2026-09-27T04:01:42Z
 **Depth:** standard
 **Files Reviewed:** 119
-**Status:** issues_found
+**Status:** Code findings addressed by inspection; live database and provider gate pending.
 
 ## Narrative Findings (AI reviewer)
 
-The scoped Phase 2 source, migrations, routes, UI, and tests were screened; the review traced intake SQL privileges, sandbox persistence and billing display, and answer replay across their callers. The findings below are concrete failures in those paths. The live credential-dependent acceptance gate remains pending separately and is not counted as a code finding.
+The original scoped review found three blockers. Fix re-review resolves CR-01 through CR-03 by code inspection. Commit `d0d8ee4` addresses CR-04 by code inspection. The latest reported offline run had 152 passing tests and five skipped live tests; lint, typecheck, and build also passed. SQL migrations and concurrent recovery have not been executed against PostgreSQL in this re-review.
+
+## Fix Re-review
+
+- **CR-01 — resolved by code inspection.** Both privilege statements now match the 17-argument declaration. Fresh database migration application remains unverified.
+- **CR-02 — resolved by code inspection.** The transcript API and UI parse safe numeric money and exact decimal strings; unsafe values fail.
+- **CR-03 — resolved by code inspection for the original stranded replay path.** Incomplete logs are recovered after an inactivity grace period by a serialized SQL transaction. Paid attempt transitions are fenced, and ambiguous holds remain pending. SQL execution and concurrent recovery remain unverified.
+- **CR-04 — resolved by code inspection; live gate pending.** `settle_operation` now stores zero `actual_units` when a zero-attempt operation settles. Recovery and normal finalization read that known zero charge. The new live test asserts direct zero-attempt settlement and replay, but PostgreSQL execution and an end-to-end zero-attempt recovery case remain unverified.
 
 ## Critical Issues
 
-### CR-01 [BLOCKER]: Intake migration aborts at its function privilege statements
+### CR-01 [BLOCKER — RESOLVED]: Intake migration aborts at its function privilege statements
 
 **File:** `supabase/migrations/20260927000500_phase2_intake.sql:242` (also line 247; declaration lines 59–65)
 
@@ -152,7 +164,7 @@ The scoped Phase 2 source, migrations, routes, UI, and tests were screened; the 
 
 **Fix:** Remove the extra `text` before `bigint` in both privilege statements, then apply the migrations to a fresh database as a gate. The intended signature is `public.reserve_source_quota(text,text,text,text,text,text,text,text,text,text,text,text,bigint,text,integer,bigint,text)`.
 
-### CR-02 [BLOCKER]: Settled sandbox charges display as pending after reload
+### CR-02 [BLOCKER — RESOLVED]: Settled sandbox charges display as pending after reload
 
 **File:** `components/app/sandbox-view.tsx:32` (display at line 183; persisted column at `supabase/migrations/20260927000100_phase2_core.sql:144`)
 
@@ -160,7 +172,7 @@ The scoped Phase 2 source, migrations, routes, UI, and tests were screened; the 
 
 **Fix:** Parse both decimal strings and safe nonnegative integers into a decimal string, rejecting unsafe numeric values. Use the same money parser at the transcript API boundary so large amounts cannot silently lose precision.
 
-### CR-03 [BLOCKER]: Partial answer replay permanently strands interrupted operations
+### CR-03 [BLOCKER — RESOLVED]: Partial answer replay permanently strands interrupted operations
 
 **File:** `features/runtime/agent.ts:134` (terminal persistence at lines 181–191; caller at `app/api/agents/[agentId]/sandbox/route.ts:53`)
 
@@ -168,9 +180,16 @@ The scoped Phase 2 source, migrations, routes, UI, and tests were screened; the 
 
 **Fix:** Distinguish complete event logs from in-progress or abandoned ones. Replay a completed log only when `done` is durable; for an unfinished operation, expose its persisted pending/unknown status and a safe recovery path that finalizes known usage and message state without redispatching an ambiguous provider call. Persist a terminal failure event for unrecoverable work and release only holds proven unused.
 
+### CR-04 [BLOCKER — RESOLVED BY CODE INSPECTION]: Zero-attempt settlements report pending usage
+
+**File:** `supabase/migrations/20260927000300_phase2_billing.sql:270` (recovery at `supabase/migrations/20260927000650_phase2_answer_recovery.sql:79`; normal answer finalization at `features/runtime/agent.ts:199`)
+
+**Issue:** An operation abandoned or failed after reservation but before any paid attempt has known zero usage. `settle_operation` releases its unallocated hold and sets `state='settled'`, but leaves `actual_units` SQL `NULL` because the attempt loop never ran. Recovery reads that null as `v_cost`, emits an `unknown_usage` error and a `pending` cost event, and stores a null charge although no hold remains. The normal answer finalizer likewise reports a pending charge for a settled zero-attempt failure. Reproduce with an operation containing an assistant message and `operation-start` event but no provider attempts, wait beyond the recovery grace, then invoke `recover_answer_operation`.
+
+**Fix:** When `settle_operation` transitions to `settled`, set `actual_units=coalesce(actual_units,0)` in the same transaction. Make recovered and normal cost events report a settled zero charge; reserve `pending` for unresolved usage. Assert this with a database-backed zero-attempt recovery test at the live gate.
+
 ---
 
 _Reviewed: 2026-09-27T04:01:42Z_
 _Reviewer: gsd-code-reviewer_
 _Depth: standard_
-
