@@ -64,7 +64,6 @@ function AgentSourceIntake({ agentId, open, onOpenChange, onComplete }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsCredits, setNeedsCredits] = useState(false);
-  const [completed, setCompleted] = useState(false);
 
   const change = (patch: Partial<Pick<IntakeDraft, "mode" | "file" | "name" | "text">>) => {
     const next = editIntake(draft, patch);
@@ -96,12 +95,11 @@ function AgentSourceIntake({ agentId, open, onOpenChange, onComplete }: {
     setBusy(true); setError(null);
     try {
       await api.sourceConfirm(agentId, payload.fileOrText, payload.name, draft.estimate!.estimateToken, draft.requestKey!);
-      setCompleted(true);
       clearDraft("source", agentId);
       setDraft(emptyIntakeDraft());
-      await refreshDemo();
       onComplete?.();
       onOpenChange(false);
+      if (!onComplete) await refreshDemo();
     } catch (cause) {
       setError(messageFor(cause));
       setNeedsCredits(cause instanceof ApiClientError && cause.detail.code === "insufficient_credits");
@@ -117,16 +115,16 @@ function AgentSourceIntake({ agentId, open, onOpenChange, onComplete }: {
       <SheetHeader><SheetTitle>Add document</SheetTitle><SheetDescription>Upload a file or paste text, then review the limits and approximate cost before processing.</SheetDescription></SheetHeader>
       <div className="flex flex-col gap-4 px-4 pb-6 text-sm">
         <div className="flex gap-2" role="group" aria-label="Source type">
-          <button type="button" aria-pressed={draft.mode === "file"} className={buttonClass(draft.mode === "file" ? "primary" : "secondary", "lg")} onClick={() => change({ mode: "file" })}>Upload file</button>
-          <button type="button" aria-pressed={draft.mode === "text"} className={buttonClass(draft.mode === "text" ? "primary" : "secondary", "lg")} onClick={() => change({ mode: "text" })}>Paste text</button>
+          <button type="button" disabled={busy} aria-pressed={draft.mode === "file"} className={buttonClass(draft.mode === "file" ? "primary" : "secondary", "lg")} onClick={() => change({ mode: "file" })}>Upload file</button>
+          <button type="button" disabled={busy} aria-pressed={draft.mode === "text"} className={buttonClass(draft.mode === "text" ? "primary" : "secondary", "lg")} onClick={() => change({ mode: "text" })}>Paste text</button>
         </div>
         {draft.mode === "file" ? <div className="space-y-2"><label htmlFor="source-file" className="font-semibold">PDF, DOCX, TXT, or MD file</label>
-          <input id="source-file" type="file" accept=".pdf,.docx,.txt,.md,application/pdf,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="block w-full max-w-full text-sm" onChange={event => change({ file: event.target.files?.[0] ?? null })} />
+          <input id="source-file" type="file" disabled={busy} accept=".pdf,.docx,.txt,.md,application/pdf,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="block w-full max-w-full text-sm" onChange={event => change({ file: event.target.files?.[0] ?? null })} />
           {draft.file && <p className="break-words text-fg-muted">{draft.file.name} · {size(draft.file.size)}</p>}
         </div> : <><div className="space-y-2"><label htmlFor="source-name" className="font-semibold">Source name</label>
-          <input id="source-name" maxLength={200} value={draft.name} onChange={event => change({ name: event.target.value })} className="min-h-11 w-full rounded border border-line-muted bg-surface-2 px-3" /></div>
+          <input id="source-name" maxLength={200} disabled={busy} value={draft.name} onChange={event => change({ name: event.target.value })} className="min-h-11 w-full rounded border border-line-muted bg-surface-2 px-3" /></div>
           <div className="space-y-2"><label htmlFor="source-text" className="font-semibold">Text</label>
-            <textarea id="source-text" maxLength={100000} value={draft.text} onChange={event => change({ text: event.target.value })} rows={8} className="w-full rounded border border-line-muted bg-surface-2 p-3" /></div></>}
+            <textarea id="source-text" maxLength={100000} disabled={busy} value={draft.text} onChange={event => change({ text: event.target.value })} rows={8} className="w-full rounded border border-line-muted bg-surface-2 p-3" /></div></>}
         {e && draft.stage === "confirm" && <div className="space-y-3 rounded-xl border border-line-muted bg-surface-2 p-4" aria-label="Source estimate">
           <h3 className="font-semibold break-words">Process {e.name}?</h3>
           <p>About {formatCreditUnits(e.estimateUnits)}. Final cost depends on actual processing.</p>
@@ -144,7 +142,7 @@ function AgentSourceIntake({ agentId, open, onOpenChange, onComplete }: {
           </dl>
           <p className="text-xs text-fg-muted">Estimate expires {new Date(e.expiresAt).toLocaleTimeString()}.</p>
         </div>}
-        {error && <p role="alert" className="break-words text-danger">{error} {completed && "Processing was acknowledged; refresh the page to see its status."}</p>}
+        {error && <p role="alert" className="break-words text-danger">{error}</p>}
         {needsCredits && <div><AddCreditsButton size="sm" /><p className="mt-2 text-xs text-fg-muted">After adding credits, get a new estimate and confirm it.</p></div>}
         <div aria-live="polite" className="text-xs text-fg-muted">{busy ? "Working…" : "Your source stays here until processing is acknowledged."}</div>
         {draft.stage === "confirm" ? <div className="flex flex-wrap gap-2">
