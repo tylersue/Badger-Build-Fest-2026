@@ -79,7 +79,7 @@ describe("persona ownership", () => {
     expect(saved.ok).toBe(true);
     expect(snapshot.agent.category).toBe("tax_finance");
     expect(snapshot.fields.category).toMatchObject({ value: "tax_finance", origin: "expert", version: 1 });
-    expect(personaView((await service.read("a"))!).model).toBe("gpt-4.1-mini");
+    expect(personaView((await service.read("a"))!).model).toBe("gpt-6-luna");
   });
 
   it("clears interview copy after source deletion and flags unsupported expert copy for review", async () => {

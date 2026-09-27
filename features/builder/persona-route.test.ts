@@ -38,7 +38,7 @@ describe("persona route", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ok: true, data: { form: { name: "", category: "career_admissions" },
       state: { promptMode: "generated", fields: { description: { origin: "blank", version: 0 } } },
-      model: "gpt-4.1-mini", reviewFieldIds: [] } });
+      model: "gpt-6-luna", reviewFieldIds: [] } });
   });
 
   it("rejects wrong owner, forged model, unknown safety, and cross-origin requests", async () => {

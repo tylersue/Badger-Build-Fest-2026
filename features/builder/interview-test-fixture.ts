@@ -6,7 +6,7 @@ import { createInterviewService, type InterviewDependencies, type InterviewStore
 
 const operation: Operation = { id: "op_00000000-0000-4000-8000-000000000001", agentId: "agent-a", identityId: "maria",
   purpose: "interview", requestKey: "key", payloadHash: "a".repeat(64), state: "reserved", estimateUnits: "20000000",
-  heldUnits: "60000000", actualUnits: null, priceVersion: "2026-09-26-standard-v1", createdAt: new Date().toISOString() };
+  heldUnits: "60000000", actualUnits: null, priceVersion: "2026-09-27-luna-v1", createdAt: new Date().toISOString() };
 type Job = { id: string; agent_id: string; answer_id: string; revision_id: string; operation_id: string;
   state: "queued" | "processing" | "ready" | "failed"; lease_owner: string | null; completed_batches: number;
   total_batches: number; indexed_chunks: number; batch_size: number; retry_generation: number;

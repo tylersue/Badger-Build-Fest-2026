@@ -9,7 +9,7 @@ import { agentById, currentIdentity, displayName, knowledgeStats, useDemo, type 
 import { categoryLabel } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
 import { cn } from "@/lib/utils";
-import type { Agent } from "@/lib/types";
+import type { Agent, Source } from "@/lib/types";
 
 export function useBuilderAgent(): { s: DemoState; agent: Agent | undefined; isOwner: boolean } {
   const { agentId } = useParams<{ agentId: string }>();
@@ -25,6 +25,19 @@ export function sourcesFor(s: DemoState, agentId: string) {
 /** Answers captured in the selected identity's server snapshot. */
 export function answerCount(s: DemoState, agentId: string) {
   return knowledgeStats(s, agentId).answers;
+}
+
+function sourceSubtitle(source: Source): string {
+  switch (source.status) {
+    case "ready":
+      return `Ready · ${source.chunkCount} chunks${source.pageCount ? ` · ${source.pageCount} pages` : ""}`;
+    case "queued":
+      return "Queued";
+    case "processing":
+      return "Processing…";
+    case "failed":
+      return "Failed";
+  }
 }
 
 /* Fleet builder split: chat column + Configure drawer (D-05), 480px by default and resizable from its left edge. */
@@ -93,7 +106,7 @@ function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void
           {sources
             .filter((x) => x.kind !== "interview")
             .map((x) => (
-              <DrawerRow key={x.id} href={`${base}/knowledge`} icon={FileText} title={x.name} sub={x.status === "ready" ? `Ready · ${x.chunkCount} chunks${x.pageCount ? ` · ${x.pageCount} pages` : ""}` : "Processing…"} menu />
+              <DrawerRow key={x.id} href={`${base}/knowledge`} icon={FileText} title={x.name} sub={sourceSubtitle(x)} menu />
             ))}
           <Link href={`${base}/knowledge`} className="mx-3 mt-2 mb-3 flex h-9 items-center justify-center gap-1.5 rounded-lg border border-dashed border-line-default text-[13px] text-selected-fg">
             <Plus className="size-3.5" />

@@ -111,7 +111,7 @@ export function MarketplaceView() {
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {agents.map((a) => (
-              <li key={a.id} className="flex">
+              <li key={a.id} className="flex min-w-0">
                 <AgentCard agent={a} />
               </li>
             ))}
@@ -131,7 +131,7 @@ function AgentCard({ agent: a }: { agent: Agent }) {
     <Link
       href={`/agents/${a.slug}`}
       data-testid="agent-card"
-      className="group flex w-full flex-col rounded-xl border border-line-subtle bg-surface-1 p-4 transition-colors hover:border-line-outline focus-visible:border-brand-border focus-visible:outline-none"
+      className="group flex min-w-0 w-full flex-col rounded-xl border border-line-subtle bg-surface-1 p-4 transition-colors hover:border-line-outline focus-visible:border-brand-border focus-visible:outline-none"
     >
       <div className="flex items-center gap-3">
         <IdentityAvatar initial={owner.avatarInitial} photoUrl={profile.photoUrl} />

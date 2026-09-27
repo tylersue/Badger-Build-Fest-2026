@@ -5,11 +5,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 /* Breadcrumb bar: 40px, muted parents, primary current item, actions right (UI-SPEC). */
 export function Breadcrumbs({ items, actions }: { items: { label: string; href?: string }[]; actions?: ReactNode }) {
   return (
-    <div className="flex h-10 shrink-0 items-center gap-2 px-6 text-[13px]">
+    <div className="flex h-10 shrink-0 items-center gap-2 px-4 text-[13px] sm:px-6">
+      <SidebarTrigger className="-ml-2 mr-1 md:hidden" />
       {items.map((item, i) => (
         <span key={i} className="flex min-w-0 items-center gap-2">
           {i > 0 && <ChevronRight className="size-3.5 text-fg-muted" />}

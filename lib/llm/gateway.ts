@@ -113,8 +113,12 @@ function bound(input: MeteredStreamInput, web: boolean): bigint | null {
     instructions.length + prompt.length > limits.maxInputChars ||
     Buffer.byteLength(instructions + prompt, "utf8") > limits.maxContextTokens) return null;
   const rate = PRICING_UNITS_PER_MTOK[model as keyof typeof PRICING_UNITS_PER_MTOK];
-  const inputRate = rate.input > rate.cacheWrite ? rate.input : rate.cacheWrite;
-  const numerator = BigInt(limits.maxContextTokens) * inputRate + BigInt(limits.maxOutputTokens) * rate.output;
+  // Reserve at Luna's long-context tier even for short requests: an upper bound
+  // must remain safe if provider tokenization crosses the 272K threshold.
+  const longContextFactor = model === "gpt-6-luna" ? BigInt(2) : BigInt(1);
+  const inputRate = (rate.input > rate.cacheWrite ? rate.input : rate.cacheWrite) * longContextFactor;
+  const outputRate = model === "gpt-6-luna" ? rate.output * BigInt(3) / BigInt(2) : rate.output;
+  const numerator = BigInt(limits.maxContextTokens) * inputRate + BigInt(limits.maxOutputTokens) * outputRate;
   const searchContent = web && model.startsWith("gpt-") ? BigInt(8000) * inputRate : BigInt(0);
   return (numerator + searchContent + BigInt(999999)) / BigInt(1000000) + (web ? SEARCH_FEE_UNITS : BigInt(0));
 }

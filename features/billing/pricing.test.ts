@@ -9,6 +9,14 @@ describe("billing math", () => {
     expect(costUnitsFromUsage({ model: "claude-haiku-4-5", tokensIn: 1 })).toBe(BigInt("1000"));
     expect(costUnitsFromUsage({ model: "gpt-4.1-mini", tokensIn: 1000, tokensOut: 100, successfulSearchCount: 1 }))
       .toBe(BigInt("10560000"));
+    expect(costUnitsFromUsage({ model: "gpt-6-luna", tokensIn: 1000, tokensOut: 100, successfulSearchCount: 1 }))
+      .toBe(BigInt("10150000"));
+    expect(costUnitsFromUsage({ model: "gpt-6-luna", cacheReadTokens: 1_000_000, cacheWriteTokens: 1_000_000 }))
+      .toBe(BigInt("270000000"));
+    expect(costUnitsFromUsage({ model: "gpt-6-luna", tokensIn: 272_000, tokensOut: 100 }))
+      .toBe(BigInt("27250000"));
+    expect(costUnitsFromUsage({ model: "gpt-6-luna", tokensIn: 272_001, tokensOut: 100 }))
+      .toBe(BigInt("54475200"));
     expect(costUnitsFromUsage({ model: "text-embedding-3-small", embeddingTokens: 1000 })).toBe(BigInt("20000"));
     expect(priceUsage({ model: "claude-haiku-4-5", tokensIn: 1 })).toMatchObject({ policy: "standard", grossUnits: BigInt("1000"), effectiveUnits: BigInt("1000") });
     expect(() => costUnitsFromUsage({ model: "claude-sonnet-5", tokensIn: -1 })).toThrow(RangeError);

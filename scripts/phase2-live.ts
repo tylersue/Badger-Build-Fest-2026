@@ -18,7 +18,7 @@ for (const target of [app, supabase]) {
     throw new Error("LIVE_TARGET_INVALID: paid acceptance requires loopback app and disposable local Supabase");
 }
 if (env.LLM_PRICE_POLICY && env.LLM_PRICE_POLICY !== "standard") throw new Error("PRICE_POLICY_INVALID: LLM_PRICE_POLICY");
-if (env.LLM_PRICE_VERSION && env.LLM_PRICE_VERSION !== "2026-09-26-standard-v1") throw new Error("PRICE_POLICY_INVALID: LLM_PRICE_VERSION");
+if (env.LLM_PRICE_VERSION && env.LLM_PRICE_VERSION !== "2026-09-27-luna-v1") throw new Error("PRICE_POLICY_INVALID: LLM_PRICE_VERSION");
 if (!env.LLM_DAILY_SPEND_CAP_USD || !/^(0|[1-9]\d?)(\.\d{1,9})?$/.test(env.LLM_DAILY_SPEND_CAP_USD) ||
   Number(env.LLM_DAILY_SPEND_CAP_USD) <= 0 || Number(env.LLM_DAILY_SPEND_CAP_USD) > 2)
   throw new Error("SPEND_BOUND_INVALID: explicitly set LLM_DAILY_SPEND_CAP_USD above 0 and at or below 2");

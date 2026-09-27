@@ -18,7 +18,7 @@ const voyageSchema = z.strictObject({ VOYAGE_API_KEY: secret });
 const openaiSchema = z.strictObject({ OPENAI_API_KEY: secret });
 const policySchema = z.strictObject({
   LLM_DAILY_SPEND_CAP_USD: z.string().regex(/^(0|[1-9]\d{0,8})(\.\d{1,9})?$/).default("20"),
-  LLM_PRICE_VERSION: z.string().min(1).max(100).default("2026-09-26-standard-v1"),
+  LLM_PRICE_VERSION: z.string().min(1).max(100).default("2026-09-27-luna-v1"),
   LLM_PRICE_POLICY: z.enum(["standard"]).default("standard"),
   DEFAULT_AGENT_CATEGORY: z.enum(["health_pt", "tax_finance", "career_admissions"]).default("career_admissions"),
   SOURCE_MAX_COUNT: integer(10, 100), SOURCE_MAX_FILE_BYTES: integer(5 * 1024 * 1024, 5 * 1024 * 1024),

@@ -3,11 +3,12 @@ vi.mock("server-only", () => ({}));
 import type { Operation, RetrievedChunk } from "@/lib/contracts/phase2";
 import type { ChatStreamEvent } from "./events";
 import { EMPTY_PERSONA } from "@/features/builder/prompt-template";
+import { PRICE_VERSION } from "@/features/billing/pricing";
 import { AnswerFailure, runAnswer, UNKNOWN_ANSWER, type AnswerDependencies, type AnswerStore } from "./agent";
 
 const operation = { id: `op_${"2".repeat(8)}-${"2".repeat(4)}-${"2".repeat(4)}-${"2".repeat(4)}-${"2".repeat(12)}`,
   agentId: "agent-a", identityId: "maria", requestKey: "req", purpose: "sandbox", state: "reserved",
-  estimateUnits: "20000000", heldUnits: "20000000", actualUnits: null, priceVersion: "2026-09-26-standard-v1" } as Operation;
+  estimateUnits: "20000000", heldUnits: "20000000", actualUnits: null, priceVersion: PRICE_VERSION } as Operation;
 const input = { agentId: "agent-a", actorId: "maria", conversationId: "sandbox:agent-a",
   requestKey: "req", text: "How should I budget? What about taxes?", mode: "sandbox" as const };
 const chunk = { id: "chunk-a", agentId: "agent-a", revisionId: "rev-a", sourceId: "src-a",
@@ -16,7 +17,7 @@ const chunk = { id: "chunk-a", agentId: "agent-a", revisionId: "rev-a", sourceId
 const webCitation = { evidenceId: "web:observed", ordinal: 1, excerpt: "Tax facts", sourceName: "Public guide",
   sourceType: "web" as const, title: "Public guide", url: "https://example.org/tax", retrievedAt: "2026-09-27T00:00:00Z" };
 function fixture(options: { chunks?: RetrievedChunk[]; supportedIds?: string[]; missingParts?: string[];
-  web?: boolean; citationIds?: string[]; unknown?: boolean } = {}) {
+  web?: boolean; citationIds?: string[]; unknown?: boolean; groundingSupported?: boolean } = {}) {
   const events: ChatStreamEvent[] = [];
   let finish: unknown;
   const store: AnswerStore = {
@@ -49,6 +50,8 @@ function fixture(options: { chunks?: RetrievedChunk[]; supportedIds?: string[]; 
     assess: vi.fn(async () => ({ ok: true, data: { supportedIds: options.supportedIds ?? ["chunk-a"],
       missingParts: options.missingParts ?? [], sufficient: !(options.missingParts?.length) } })) as never,
     web: web as never, synthesize: synthesize as never,
+    review: vi.fn(async () => ({ ok: true as const, data: { supported: options.groundingSupported !== false,
+      unsupportedClaims: options.groundingSupported === false ? ["Unsupported expert advice"] : [] } })) as never,
   };
   return { deps, events, web, synthesize, get finished() { return finish; } };
 }
@@ -99,6 +102,17 @@ describe("durable grounded answer runtime", () => {
     expect(seen.find(e => e.type === "text-delta")).toMatchObject({ delta: UNKNOWN_ANSWER });
     expect(seen.find(e => e.type === "cost")).toMatchObject({ status: "pending", chargedUnits: null, heldUnits: "20000000" });
     expect(fx.finished).toMatchObject({ chargedUnits: null, citations: [] });
+  });
+
+  it("rejects an existing but semantically irrelevant citation after independent review", async () => {
+    const fx = fixture({ groundingSupported: false });
+    const seen = await collect(fx.deps);
+    expect(fx.deps.review).toHaveBeenCalledWith(expect.objectContaining({
+      answer: "Claim [expert:chunk-a]", citations: expect.arrayContaining([expect.objectContaining({ evidenceId: "expert:chunk-a" })]),
+    }));
+    expect(seen.find(e => e.type === "text-delta")).toMatchObject({ delta: UNKNOWN_ANSWER });
+    expect(seen.some(e => e.type === "citations")).toBe(false);
+    expect(fx.finished).toMatchObject({ citations: [], text: UNKNOWN_ANSWER });
   });
 
   it("continues durable work after consumer disconnect and replays stored events", async () => {
