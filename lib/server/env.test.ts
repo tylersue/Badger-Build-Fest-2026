@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 // Next enforces this marker at bundle time; tests explicitly replace only the marker.
 vi.mock("server-only", () => ({}));
-import { getDatabaseEnv, getPolicyEnv, getServerEnv, getVoyageEnv, sourceLimitsFromEnv } from "./env";
+import { getDatabaseEnv, getOpenAIEnv, getPolicyEnv, getServerEnv, getVoyageEnv, sourceLimitsFromEnv } from "./env";
 
 describe("lazy server configuration", () => {
   it("imports with no keys and returns typed service failures", () => {
     expect(getServerEnv({})).toMatchObject({ ok: false, error: { code: "configuration", retryable: false } });
     expect(getVoyageEnv({})).toMatchObject({ ok: false, error: { message: "Configure server environment: VOYAGE_API_KEY." } });
+    expect(getOpenAIEnv({})).toMatchObject({ ok: false, error: { message: "Configure server environment: OPENAI_API_KEY." } });
   });
   it("exposes invalid names without echoing sensitive values", () => {
     const result = getDatabaseEnv({ SUPABASE_URL: "secret-private-url", SUPABASE_SERVICE_ROLE_KEY: "secret-key" });
@@ -16,7 +17,7 @@ describe("lazy server configuration", () => {
     expect(JSON.stringify(result)).not.toContain("secret-key");
   });
   it("accepts server configuration without consuming public key aliases", () => {
-    const values = { SUPABASE_URL: "https://test.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "test-only-key", ANTHROPIC_API_KEY: "test-only", VOYAGE_API_KEY: "test-only" };
+    const values = { SUPABASE_URL: "https://test.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "test-only-key", OPENAI_API_KEY: "test-only" };
     expect(getServerEnv(values).ok).toBe(true);
     expect(getDatabaseEnv({ NEXT_PUBLIC_SUPABASE_URL: values.SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY: values.SUPABASE_SERVICE_ROLE_KEY }).ok).toBe(false);
   });

@@ -2,9 +2,9 @@ import type { Category } from "./categories";
 
 /** The platform sets the model per category (PERS-03); experts never pick one. */
 export const MODELS = {
-  default: "claude-sonnet-5",
-  quality: "claude-opus-5-5",
-  utility: "claude-haiku-4-5",
+  default: "gpt-4.1-mini",
+  quality: "gpt-4.1",
+  utility: "gpt-4.1-mini",
 } as const;
 
 export type ModelId = (typeof MODELS)[keyof typeof MODELS];
@@ -15,7 +15,7 @@ export const MODEL_BY_CATEGORY: Record<Category, ModelId> = {
   career_admissions: MODELS.default,
 };
 
-export const EMBEDDING_MODEL = "voyage-4-lite";
+export const EMBEDDING_MODEL = "text-embedding-3-small";
 export const EMBEDDING_DIMENSIONS = 1024;
 
 export function modelForCategory(category: Category): ModelId {

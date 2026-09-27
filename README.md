@@ -16,7 +16,7 @@ pnpm dev          # http://localhost:3000 opens straight into the marketplace
 pnpm test         # offline unit and integration checks
 ```
 
-The active builder, marketplace, chat, wallet and usage flows use Supabase and the Anthropic/Voyage provider gateway. Copy `.env.example` to `.env.local` and configure the server-only values before running the live loop. Use the "Viewing as" card to switch between Maria (expert) and Sam (hirer). Browser storage keeps unsent drafts and the selected demo identity; the database owns published status, conversations and money.
+The active builder, marketplace, chat, wallet and usage flows use Supabase and OpenAI for answers, web search, and embeddings. Copy `.env.example` to `.env.local` and configure the server-only values before running the live loop. Use the "Viewing as" card to switch between Maria (expert) and Sam (hirer). Browser storage keeps unsent drafts and the selected demo identity; the database owns published status, conversations and money.
 
 See [Phase 2 service setup](docs/PHASE2-SETUP.md) for migrations, local Supabase, and paid acceptance. [Phase 3 integration](docs/PHASE3-INTEGRATION.md) records the additional SQL, route, wallet and browser gates. The PR remains a draft until those live gates pass.
 
@@ -44,7 +44,7 @@ Current product scope and execution phases live in [`.planning/PROJECT.md`](.pla
 
 ## Stack (short version)
 
-Current app: Next.js 16 · Tailwind v4 + shadcn/ui · Supabase · Vercel AI SDK + Anthropic Claude · Voyage embeddings. The hackathon presentation runs locally; mock credits do not use Stripe.
+Current app: Next.js 16 · Tailwind v4 + shadcn/ui · Supabase · Vercel AI SDK + OpenAI · OpenAI embeddings. The hackathon presentation runs locally; mock credits do not use Stripe.
 
 ## Team
 

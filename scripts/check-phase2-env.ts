@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ANTHROPIC_API_KEY", "VOYAGE_API_KEY"] as const;
+const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "OPENAI_API_KEY"] as const;
 const optional = ["SUPABASE_ANON_KEY", "PHASE2_APP_URL", "LLM_DAILY_SPEND_CAP_USD", "LLM_PRICE_VERSION",
   "LLM_PRICE_POLICY", "WEB_ALLOWED_DOMAINS", "WEB_BLOCKED_DOMAINS"] as const;
 

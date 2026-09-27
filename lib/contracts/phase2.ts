@@ -25,7 +25,7 @@ export type Operation = {
 export type AttemptState = "prepared" | "dispatched" | "completed" | "failed" | "unknown" | "settled";
 export type ProviderAttempt = {
   id: string; operationId: string; stageKey: string; attempt: number;
-  provider: "anthropic" | "voyage"; model: string; state: AttemptState; providerRequestId: string | null;
+  provider: "anthropic" | "voyage" | "openai"; model: string; state: AttemptState; providerRequestId: string | null;
   dispatchDay: string | null; inputTokens: number | null; outputTokens: number | null;
   cacheReadTokens: number | null; cacheWriteTokens: number | null; embeddingTokens: number | null;
   successfulSearchCount: number | null; grossCostUnits: MoneyAmount | null; effectiveCostUnits: MoneyAmount | null;

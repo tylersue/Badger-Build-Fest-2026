@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type { EvidenceCitation, RetrievedChunk, SearchKnowledgeInput, ServiceResult } from "@/lib/contracts/phase2";
 import { getServiceDb } from "@/lib/server/db";
-import { embedTexts } from "@/lib/llm/voyage";
+import { embedTexts } from "@/lib/llm/openai-embedding";
 
 type RpcResult = { data: unknown; error: { message: string } | null };
 export type SearchDependencies = {
