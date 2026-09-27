@@ -16,6 +16,19 @@ import { formatCreditUnits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { retainDraftOnResult, type StreamCost } from "./chat-state";
 
+/* A line copied from a terminal or PDF arrives hard-wrapped and indented. Rejoin wrapped lines into one;
+   keep blank-line paragraph breaks. */
+export function pasteAsOneLine(event: React.ClipboardEvent<HTMLTextAreaElement>, apply: (next: string) => void) {
+  const pasted = event.clipboardData.getData("text/plain");
+  if (!/[\r\n]/.test(pasted)) return;
+  event.preventDefault();
+  const clean = pasted.replace(/\r/g, "").split(/\n\s*\n/).map(part => part.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean).join("\n\n");
+  const field = event.currentTarget;
+  const start = field.selectionStart, end = field.selectionEnd;
+  apply(field.value.slice(0, start) + clean + field.value.slice(end));
+  requestAnimationFrame(() => field.setSelectionRange(start + clean.length, start + clean.length));
+}
+
 export function safeExternalUrl(value: string): string | null {
   try { const url = new URL(value); return ["https:", "http:"].includes(url.protocol) ? url.href : null; }
   catch { return null; }
@@ -267,6 +280,7 @@ export function Composer({
           data-testid="composer-input"
           value={text}
           onChange={(e) => { textRef.current = e.target.value; setText(e.target.value); setSendError(null); }}
+          onPaste={(e) => pasteAsOneLine(e, (next) => { textRef.current = next; setText(next); setSendError(null); })}
           onFocus={() => onFocusChange?.(true)}
           onBlur={() => onFocusChange?.(false)}
           onKeyDown={(e) => {

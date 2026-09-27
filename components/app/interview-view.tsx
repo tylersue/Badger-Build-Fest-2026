@@ -15,6 +15,7 @@ import { FlowWords } from "@/components/app/flow";
 import { Orb, type OrbMood } from "@/components/app/orb";
 import { useOrbDesign, useVoice, type VoiceStatus } from "@/components/app/voice";
 import { answerInterview, controlInterview, getDraft, readDemoState, readInterview, saveDraft, useDemo } from "@/lib/demo-store";
+import { pasteAsOneLine } from "@/components/app/chat";
 import type { Agent } from "@/lib/types";
 import type { InterviewView as InterviewSnapshot } from "@/features/builder/interview";
 
@@ -155,6 +156,7 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
           <div className="flex items-end gap-3 border-b border-line-subtle pb-2 focus-within:border-brand-border">
             <textarea ref={field} data-testid="composer-input" aria-label="Your answer" rows={1}
               value={draft} onChange={event => { setDraft(event.target.value); saveDraft("interview", agent.id, event.target.value); }}
+              onPaste={event => pasteAsOneLine(event, next => { setDraft(next); saveDraft("interview", agent.id, next); })}
               onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
               onKeyDown={event => {
                 if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submit(); }
