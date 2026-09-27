@@ -370,11 +370,11 @@ Recommended threat controls: tampering via custom prompts → immutable platform
 
 No unsupported factual claim is promoted into a locked decision. Numeric limits/readiness/budget configuration above are explicit recommendations within approved planner discretion, not empirically verified performance claims. Provider entitlement, parser compatibility in this build, and live settlement remain execution checks. [VERIFIED: 02-CONTEXT.md Planner's discretion; environment audit]
 
-## Open Questions
+## Open Questions — Design Resolved; Live Validation Required
 
-1. **Provider account pricing:** Voyage documents a free token allowance; standard-rate computed usage and actual cash invoice can differ. Keep gross usage and effective billed cost separate; document configured allowance/discount policy before claiming invoice-exact settlement. No account entitlement was available to inspect. [CITED: https://docs.voyageai.com/docs/pricing]
-2. **Ambiguous provider completion:** process loss after dispatch can leave unknown billable usage. Implement persisted reconciliation state and operator tooling; do not claim exactly-once remote execution. [VERIFIED: proposed operation protocol; absence of live access]
-3. **Web budget envelope:** fetch content limits are approximate and exclude binary PDF bounds. Validate worst-case reservation/configuration with real responses; insufficient budget must fail closed before further calls. [CITED: https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool]
+1. **RESOLVED — Provider account pricing:** Charge computed usage at published standard rates by default; preserve separate gross/effective cost and price-policy snapshots. Apply an allowance/discount only when explicitly configured from verified account policy; never claim invoice-exact settlement without evidence. Plans 03/05 implement this policy; plan 18 verifies entitlement and actual usage responses. Voyage's free allowance can make its cash invoice differ. [CITED: https://docs.voyageai.com/docs/pricing]
+2. **RESOLVED — Ambiguous provider completion:** Persist unknown usage and retain its reconciliation hold; no automatic refund or paid redispatch. Plans 03/05 require operator evidence to reconcile and release proven-undispatched holds only. Exactly-once financial effects do not imply exactly-once remote execution. Plan 18 verifies real recovery behavior. [VERIFIED: 02-CONTRACTS.md; 02-03/05/18-PLAN.md]
+3. **RESOLVED — Web budget envelope:** Reserve a conservative bounded maximum provider-context/output/tool envelope before each web stage, including possible PDF/binary input; one search and at most two reads. The nominal fetch-content target is not a hard cost bound. Refuse before dispatch if the envelope cannot fit wallet/cap; plans 05/11 implement this and plan 18 validates real responses/entitlement. [CITED: https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool] [VERIFIED: 02-CONTRACTS.md]
 
 ## Sources
 
