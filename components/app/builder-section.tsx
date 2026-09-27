@@ -10,7 +10,7 @@ import { PersonaView } from "@/components/app/persona-view";
 import { KnowledgeView } from "@/components/app/knowledge-view";
 import { SandboxView } from "@/components/app/sandbox-view";
 import { Breadcrumbs, EmptyState, PageBody, PageHeader, PlaceholderNote, StatusPill, buttonClass } from "@/components/app/ui";
-import { displayName } from "@/lib/demo-store";
+import { displayName, refreshDemo } from "@/lib/demo-store";
 import type { Agent } from "@/lib/types";
 
 const SECTIONS = ["interview", "persona", "knowledge", "test", "publish"] as const;
@@ -22,9 +22,9 @@ const LABELS: Record<Section, string> = {
 export function BuilderSectionView() {
   const { section } = useParams<{ agentId: string; section: string }>();
   const { s, agent, isOwner } = useBuilderAgent();
+  if (s.status === "error") return <PageBody><div role="alert" className="grid gap-3 text-sm text-danger"><p>{s.error ?? "Builder unavailable."}</p><button type="button" className={buttonClass("secondary", "lg") + " w-fit"} onClick={() => void refreshDemo(true).catch(() => undefined)}>Retry loading</button></div></PageBody>;
   if (s.status === "loading" || !s.snapshot || s.snapshot.identityId !== s.identityId)
     return <PageBody><p role="status" className="text-sm text-fg-muted">Loading selected identity…</p></PageBody>;
-  if (s.status === "error") return <PageBody><p role="alert" className="text-sm text-danger">{s.error ?? "Builder unavailable."}</p></PageBody>;
   if (!agent) return <PageBody><EmptyState icon={BookOpen} heading="Agent not found" body="Choose an agent from the list." action={{ label: "My agents", href: "/build" }} /></PageBody>;
   if (!SECTIONS.includes(section as Section)) return <PageBody><EmptyState icon={BookOpen} heading="Section not found" body="Open the agent's interview to continue." action={{ label: "Interview", href: `/build/${agent.id}/interview` }} /></PageBody>;
 

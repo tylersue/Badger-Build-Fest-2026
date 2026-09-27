@@ -6,7 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { BookOpen, ChevronDown, ChevronRight, Eye, FileText, Plus, Rocket, Settings2, UserRound, X } from "lucide-react";
 import { AgentTile, StatusPill, buttonClass } from "@/components/app/ui";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { agentById, currentIdentity, displayName, useDemo, type DemoState } from "@/lib/demo-store";
+import { agentById, currentIdentity, displayName, readInterview, useDemo, type DemoState } from "@/lib/demo-store";
 import { categoryLabel } from "@/lib/config/categories";
 import { cn } from "@/lib/utils";
 import type { Agent } from "@/lib/types";
@@ -24,13 +24,18 @@ export function sourcesFor(s: DemoState, agentId: string) {
 
 export function answerCount(s: DemoState, agentId: string) {
   if (!s.snapshot || s.snapshot.identityId !== s.identityId) return 0;
-  return s.snapshot.interviewTurns.filter(t => t.agentId === agentId && t.answer && t.origin === "live").length;
+  return s.interviews[agentId]?.answers.length ?? 0;
 }
 
 /* Fleet builder split: chat column + 480px Configure drawer (D-05). */
 export function BuilderSplit({ agent, thread, children, composer }: { agent: Agent; thread: string; children: ReactNode; composer: ReactNode }) {
   const [desktopOpen, setDesktopOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const s = useDemo();
+  useEffect(() => {
+    if (s.status !== "ready" || agent.ownerId !== s.identityId) return;
+    void readInterview(agent.id).catch(() => undefined);
+  }, [agent.id, agent.ownerId, s.identityId, s.status]);
   useEffect(() => {
     const desktop = window.matchMedia("(min-width: 1024px)");
     const closeOnDesktop = () => { if (desktop.matches) setMobileOpen(false); };

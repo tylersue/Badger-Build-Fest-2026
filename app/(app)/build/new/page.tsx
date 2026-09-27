@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Field, TextInput } from "@/components/app/form";
 import { Breadcrumbs, PageBody, PageHeader, buttonClass } from "@/components/app/ui";
 import { CATEGORIES, type Category } from "@/lib/config/categories";
@@ -14,14 +14,19 @@ export default function NewAgentPage() {
   const me = currentIdentity(s);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<Category>("career_admissions");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (me.kind !== "expert" || !name.trim()) return;
+    if (me.kind !== "expert" || !name.trim() || inFlight.current || s.status !== "ready") return;
+    inFlight.current = true; setSaving(true); setError(null);
     try {
       const id = await createAgent({ name: name.trim(), category });
       router.push(`/build/${id}/interview`);
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Could not create agent."); }
+    } catch (cause) { const message = cause instanceof Error ? cause.message : "Could not create agent."; setError(message); toast.error(message); }
+    finally { inFlight.current = false; setSaving(false); }
   }
 
   return (
@@ -39,7 +44,8 @@ export default function NewAgentPage() {
                 {CATEGORIES.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
               </select>
             </Field>
-            <button type="submit" disabled={!name.trim()} className={buttonClass("primary", "lg") + " w-fit"}>Create agent</button>
+            {error && <p role="alert" className="text-sm text-danger">{error} Your name and category are still here.</p>}
+            <button type="submit" disabled={!name.trim() || saving || s.status !== "ready"} className={buttonClass("primary", "lg") + " w-fit"}>{saving ? "Creating agent…" : "Create agent"}</button>
           </form>
         )}
       </PageBody>
