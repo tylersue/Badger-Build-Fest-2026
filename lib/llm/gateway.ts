@@ -55,7 +55,12 @@ export async function runMeteredStage<T>(input: StageInput, dispatch: () => Prom
   };
   let prepared = await recordAttempt(base, billing);
   if (!prepared.ok && prepared.error.code === "insufficient_credits") {
-    const expanded = await expandReservation(operation.id, holdUnits, billing);
+    const available = prepared.error.availableUnits;
+    const needed = prepared.error.neededUnits;
+    if (!available || !needed || !/^\d+$/.test(available) || !/^\d+$/.test(needed)) return prepared;
+    const additional = BigInt(needed) - BigInt(available);
+    if (additional <= BigInt(0)) return prepared;
+    const expanded = await expandReservation(operation.id, additional, billing);
     if (!expanded.ok) return expanded;
     prepared = await recordAttempt(base, billing);
   }

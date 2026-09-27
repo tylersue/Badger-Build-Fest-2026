@@ -152,7 +152,9 @@ begin
     v_hold := coalesce((p_attempt->>'heldUnits')::bigint,
       v_op.held_units-(select coalesce(sum(held_units),0) from public.provider_attempts where operation_id=v_op_id and state<>'settled'));
     select coalesce(sum(held_units),0) into v_allocated from public.provider_attempts where operation_id=v_op_id and state<>'settled';
-    if v_hold is null or v_hold <= 0 or v_allocated+v_hold>v_op.held_units then raise exception 'INSUFFICIENT_CREDITS'; end if;
+    if v_hold is null or v_hold <= 0 then raise exception 'INVALID_INPUT'; end if;
+    if v_allocated+v_hold>v_op.held_units then raise exception 'INSUFFICIENT_CREDITS'
+      using detail=format('available=%s needed=%s', greatest(v_op.held_units-v_allocated,0), v_hold); end if;
     insert into public.provider_attempts(id,operation_id,stage_key,attempt,provider,model,state,held_units,request_metadata,price_version,price_policy)
     values(v_id,v_op_id,p_attempt->>'stageKey',(p_attempt->>'attempt')::integer,p_attempt->>'provider',
       p_attempt->>'model','prepared',v_hold,v_metadata,v_op.price_version,'standard') returning * into v_new;

@@ -73,6 +73,29 @@ describe("metered provider gateway", () => {
     expect(unknown).toMatchObject({ ok: false, error: { code: "unknown_usage" } });
     expect(log).toEqual(["record_provider_attempt", "record_provider_attempt", "record_provider_attempt", "settle_operation"]);
   });
+  it("expands only the missing stage allocation before dispatch", async () => {
+    const log: string[] = [];
+    const normal = billing(log);
+    let first = true;
+    let expandedBy: unknown;
+    const rpc: BillingRpc = async (name, args) => {
+      if (name === "record_provider_attempt" && (args.p_attempt as { state: string }).state === "prepared" && first) {
+        first = false;
+        log.push(name);
+        return { data: null, error: { message: "INSUFFICIENT_CREDITS", details: "available=300 needed=700" } };
+      }
+      if (name === "expand_reservation") expandedBy = args.p_additional_units;
+      return normal(name, args);
+    };
+    const network = vi.fn(async () => ({ value: "ok", usage, providerRequestId: "req-expand" }));
+    const result = await runMeteredStage({ operation: op, stageKey: "second", provider: "anthropic",
+      model: "claude-sonnet-5", inputChars: 20, maxOutputTokens: 100, holdUnits: BigInt(700), settle: false },
+      network, { billing: rpc });
+    expect(result.ok).toBe(true);
+    expect(log.slice(0, 4)).toEqual(["record_provider_attempt", "expand_reservation", "record_provider_attempt", "record_provider_attempt"]);
+    expect(expandedBy).toBe("400");
+    expect(network).toHaveBeenCalledTimes(1);
+  });
   it("charges a malformed structured response before returning a typed failure", async () => {
     const log: string[] = [];
     const adapter: AnthropicAdapter = { structured: async () => ({ value: { answer: 42 }, steps: [{ inputTokens: 10,
