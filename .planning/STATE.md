@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 complete for the local demo against the Phase 1 stubs (PR open into main). Next - Phase 2 (real interview, embeddings, retrieval) so the Phase 3 acceptance gate can pass with real knowledge.
+stopped_at: Phase 3 complete for the local demo against the Phase 1 stubs (merged to main in #38 on 2026-09-27). Next - Phase 2 (real interview, embeddings, retrieval) so the Phase 3 acceptance gate can pass with real knowledge.
 last_updated: "2026-09-27T00:30:00.000Z"
 last_activity: 2026-09-26 — Phase 3 built directly: publish gate and controls, listing from the store, word-by-word canned chat, zero-cost weak-retrieval refusal, hirer file upload via /api/extract, windowed history; lint, typecheck, 19 unit tests and a production build pass.
 progress:
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 Phase: 2 of 4 (Interview-First Agent Building); Phase 3 complete for the local demo
 Plan: not yet written — Phases 1 and 3 were built directly without PLAN.md files
 Status: Phases 1 and 3 complete for the local demo; Phase 2 ready for team discussion and planning
-Last activity: 2026-09-26 — Phase 3 landed on branch `marketplace/phase-3-publish-discover-use` (PR into main); lint, typecheck, 19 unit tests, and production build pass.
+Last activity: 2026-09-27 — Phase 3 merged to main (#38, squash) after a review round; lint, typecheck, 20 unit tests, and production build pass.
 
 Progress: [█████░░░░░] 50%
 
@@ -89,5 +89,5 @@ Applied AI & Automation is confirmed. Badgers Building for Badgers and Art of th
 ## Session Continuity
 
 Last session: 2026-09-27T00:30:00.000Z
-Stopped at: Phase 3 complete for the local demo (PR from marketplace/phase-3-publish-discover-use into main). Next: discuss and plan Phase 2 (backend returns in Phase 2; see drafts/unused-supabase).
+Stopped at: Phase 3 merged to main (#38). A teammate added an online-fallback idea to the Phase 3 criteria on main; it is not built. Next: discuss and plan Phase 2 (backend returns in Phase 2; see drafts/unused-supabase).
 Resume file: README.md ("Run the MVP" section), .planning/phases/03-publish-discover-use/03-CONTEXT.md and .planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md
