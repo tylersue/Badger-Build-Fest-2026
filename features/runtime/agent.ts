@@ -4,7 +4,7 @@
  */
 import { disclaimerFor } from "@/lib/config/categories";
 import { personaToSystemPrompt } from "@/features/builder/prompt-template";
-import { toCitations, type RetrievedChunk } from "@/features/knowledge/search";
+import { toCitations, type RetrievedChunk } from "@/features/knowledge/legacy-search";
 import type { Agent, Citation } from "@/lib/types";
 
 export function buildPrompt(agent: Agent, chunks: RetrievedChunk[], opts: { isFirstTurn: boolean; hirerFileText?: string | null }): string {
