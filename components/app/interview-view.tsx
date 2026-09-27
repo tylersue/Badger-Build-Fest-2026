@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { AddCreditsButton } from "@/components/app/add-credits";
 import { ApiClientError } from "@/lib/api-client";
 import { formatCredits } from "@/lib/format";
@@ -34,15 +34,39 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
   const [creditRefusal, setCreditRefusal] = useState<{ needed: number; available: number } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [focused, setFocused] = useState(false);
+  /** Which saved answer is on screen while looking back (index into the answers); null is the current question. */
+  const [review, setReview] = useState<number | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
   const speakingQuestion = loadedFor === `${state.identityId}:${agent.id}` ? view?.pendingQuestion : null;
   const voice = useVoice(speakingQuestion ? { id: speakingQuestion.id, text: speakingQuestion.text, speak: true, leadMs: 500 } : null,
     { busy, focused });
   const design = useOrbDesign();
+  // Previous / Next step through saved answers (each opens in the answer editor); the orb holds still while you look back.
+  const reviewAnswers = loadedFor === `${state.identityId}:${agent.id}` ? view?.answers ?? [] : [];
+  const reviewing = review !== null && review < reviewAnswers.length ? reviewAnswers[review] : null;
+  const position = reviewing && review !== null ? review : reviewAnswers.length;
+  const back = () => setReview(Math.max(0, position - 1));
+  const forward = () => setReview(position + 1 >= reviewAnswers.length ? null : position + 1);
 
   useEffect(() => {
-    if (voice.done && speakingQuestion?.id) field.current?.focus();
-  }, [voice.done, speakingQuestion?.id]);
+    if (voice.done && speakingQuestion?.id && !reviewing) field.current?.focus();
+  }, [voice.done, speakingQuestion?.id, reviewing]);
+
+  // While looking back: arrow keys step between questions and Escape returns to the current one.
+  useEffect(() => {
+    if (!reviewing) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (e.key === "ArrowLeft" && position > 0) setReview(position - 1);
+      else if (e.key === "ArrowRight") setReview(position + 1 >= reviewAnswers.length ? null : position + 1);
+      else if (e.key === "Escape") setReview(null);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [reviewing, position, reviewAnswers.length]);
 
   useEffect(() => {
     let active = true;
@@ -114,32 +138,49 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
         <button type="button" onClick={voice.skip} disabled={!voice.speaking}
           aria-label={voice.speaking ? "Show the whole question now" : undefined}
           className="rounded-full disabled:cursor-default">
-          <Orb state={design} mood={ORB[voice.status].mood} size={220}
-            label={`${agent.persona.name}: ${ORB[voice.status].label}`} />
+          <Orb state={design} mood={reviewing ? "still" : ORB[voice.status].mood} size={220}
+            label={`${agent.persona.name}: ${reviewing ? "Looking back" : ORB[voice.status].label}`} />
         </button>
-        <p className="sr-only" aria-live="polite">{visibleView.pendingQuestion.text}</p>
-        <h2 aria-hidden data-testid="interview-question"
+        <p className="sr-only" aria-live="polite">{reviewing ? `Question ${position + 1}: ${reviewing.question}` : visibleView.pendingQuestion.text}</p>
+        {reviewing ? <div data-testid="interview-review" className="mt-8 w-full max-w-[640px] text-left">
+          <AnswerEditor key={reviewing.id} agentId={agent.id} answer={reviewing} isOwner={isOwner} onChange={refresh} />
+        </div> : <h2 aria-hidden data-testid="interview-question"
           className="mt-8 min-h-[2lh] max-w-[640px] text-[22px] leading-[1.45] font-medium text-balance">
           <FlowWords key={visibleView.pendingQuestion.id} text={visibleView.pendingQuestion.text}
             flowing upTo={voice.spoken.length} />
-        </h2>
-        {canSend && <div className="mt-6 w-full max-w-[640px]">
+        </h2>}
+        {canSend && !reviewing && <div className="mt-6 w-full max-w-[640px]">
           <div className="flex items-end gap-3 border-b border-line-subtle pb-2 focus-within:border-brand-border">
             <textarea ref={field} data-testid="composer-input" aria-label="Your answer" rows={1}
               value={draft} onChange={event => { setDraft(event.target.value); saveDraft("interview", agent.id, event.target.value); }}
               onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-              onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submit(); } }}
+              onKeyDown={event => {
+                if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submit(); }
+                else if (event.key === "ArrowUp" && !draft && reviewAnswers.length > 0) { event.preventDefault(); back(); }
+              }}
               placeholder="Type your answer…" disabled={busy}
               className="max-h-48 min-h-9 flex-1 resize-none bg-transparent py-1 text-center text-[17px] leading-[1.6] outline-none [field-sizing:content] placeholder:text-fg-muted disabled:opacity-60" />
             <button type="button" data-testid="composer-send" aria-label="Send answer" onClick={() => void submit()}
               disabled={busy || !draft.trim()}
-              className="mb-1 grid size-7 shrink-0 place-items-center rounded-full bg-brand text-white transition-opacity disabled:opacity-0">
+              className="mb-1 grid size-7 shrink-0 place-items-center rounded-full bg-brand text-primary-foreground transition-opacity disabled:opacity-0">
               <ArrowUp className="size-4" />
             </button>
           </div>
-          <p className="mt-3 text-xs text-fg-muted">Enter to send · Shift+Enter for a new line</p>
         </div>}
-        {isOwner && visibleView.state === "active" && <div className="mt-5 flex gap-2">
+        {isOwner && (canSend || reviewAnswers.length > 0) && <div className="mt-3 flex w-full max-w-[640px] items-center justify-between gap-3 text-xs text-fg-muted">
+          <button type="button" data-testid="interview-prev" onClick={back} disabled={position === 0} className={buttonClass("ghost")}>
+            <ChevronLeft />
+            Previous
+          </button>
+          <span data-testid="interview-position" className="tabular-nums">
+            {reviewing ? `Question ${position + 1} of ${reviewAnswers.length + 1}` : canSend ? "Enter to send · Shift+Enter for a new line" : ""}
+          </span>
+          <button type="button" data-testid="interview-next" onClick={forward} disabled={!reviewing} className={buttonClass("ghost")}>
+            Next
+            <ChevronRight />
+          </button>
+        </div>}
+        {isOwner && visibleView.state === "active" && !reviewing && <div className="mt-5 flex gap-2">
           <button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("skip")}>Skip question</button>
           <button type="button" className={buttonClass()} disabled={busy} onClick={() => void control("pause")}>Pause interview</button>
         </div>}
