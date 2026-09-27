@@ -43,7 +43,7 @@ describe("agentInsights", () => {
 
   it("caps displayed questions at 120 characters and returns at most five questions", () => {
     const s = createInitialDemoState();
-    s.messages = Array.from({ length: 7 }, (_, i) => message(`m-top-${i}`, "c-knee-swelling", "user", `Question ${i} ${"x".repeat(140)}`, `2030-01-0${i + 1}T00:00:00.000Z`));
+    s.messages = Array.from({ length: 7 }, (_, i) => message(`m-top-${i}`, "c-knee-swelling", "user", `Question ${i} ${"x".repeat(140)}`, i === 0 ? "2030-01-07T00:00:00.000Z" : `2030-01-0${i + 1}T00:00:00.000Z`));
     const long = agentInsights(s, AGENT).topQuestions.find((question) => question.text.startsWith("Question 0"))!.text;
     expect(long).toHaveLength(120);
     expect(long.endsWith("…")).toBe(true);
