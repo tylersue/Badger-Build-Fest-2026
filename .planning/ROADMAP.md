@@ -70,8 +70,8 @@ Before parallel implementation, record the four owners in the project board and 
 - [x] 02-01-PLAN.md — Freeze shared contracts and install audited dependencies.
 
 **Wave 2 (after Wave 1)**
-- [ ] 02-02-PLAN.md — Create durable schema and server authorization boundary.
-- [ ] 02-06-PLAN.md — Parse and chunk optional sources within resource limits.
+- [x] 02-02-PLAN.md — Create durable schema and server authorization boundary.
+- [x] 02-06-PLAN.md — Parse and chunk optional sources within resource limits.
 
 **Wave 3 (after Wave 2)**
 - [ ] 02-03-PLAN.md — Implement transactional wallet, reservations and recovery.
@@ -147,6 +147,6 @@ Before parallel implementation, record the four owners in the project board and 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Complete for local demo | 2026-09-26 |
-| 2. Interview-First Agent Building | 1/18 | In Progress|  |
+| 2. Interview-First Agent Building | 3/18 | In Progress|  |
 | 3. Publish, Discover & Use | 0/TBD | Not started | - |
 | 4. Trust, Insights & Launch Readiness | 0/TBD | Not started | - |
