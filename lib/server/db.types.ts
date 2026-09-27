@@ -21,7 +21,7 @@ export type Database = {
       sources: Table<Scoped & Mutable & Origin & { kind: string; name: string; state: string; current_revision_id: string | null; active_revision_id: string | null; content_hash: string; storage_path: string | null; byte_count: Money; page_count: number | null; chunk_count: number; deleted_at: string | null; error: Json | null }>;
       source_revisions: Table<Scoped & { source_id: string; revision_number: number; content_hash: string; storage_path: string | null; byte_count: Money; page_count: number | null; deleted_at: string | null; created_at: string }>;
       chunks: Table<Scoped & { revision_id: string; source_id: string | null; answer_id: string | null; ordinal: number; content: string; question: string | null; page: number | null; heading_path: string | null; embedding: string; created_at: string }>;
-      index_jobs: Table<Scoped & Mutable & { answer_id: string | null; source_id: string | null; revision_id: string; state: string; lease_owner: string | null; lease_expires_at: string | null; completed_batches: number; total_batches: number; indexed_chunks: number; error: Json | null }>;
+      index_jobs: Table<Scoped & Mutable & { answer_id: string | null; source_id: string | null; revision_id: string; operation_id: string | null; state: string; lease_owner: string | null; lease_expires_at: string | null; completed_batches: number; total_batches: number; indexed_chunks: number; error: Json | null }>;
       quota_holds: Table<Scoped & Mutable & { source_id: string | null; request_key: string; state: string; bytes: Money; chunks: number; expires_at: string }>;
       intake_estimates: Table<Scoped & { token_hash: string; name: string; kind: string; content_hash: string; byte_count: Money; estimate_units: Money; max_units: Money; price_version: string; estimate_version: number; expires_at: string; consumed_at: string | null; created_at: string }>;
       conversations: Table<Scoped & Mutable & Origin & { hirer_id: string; mode: string; title: string; share_transcript: boolean }>;
@@ -36,6 +36,11 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      interview_action: { Args: { p_agent_id: string; p_action: string; p_request_key: string; p_payload_hash: string;
+        p_expected_version: number | null; p_question_id: string | null; p_answer_id: string | null;
+        p_parent_answer_id: string | null; p_text: string | null }; Returns: Json };
+      interview_advance: { Args: { p_agent_id: string; p_expected_version: number; p_question: string;
+        p_topic_state: Json; p_readiness: Json }; Returns: Json };
       persona_cas_field: {
         Args: { p_agent_id: string; p_field: string; p_expected_version: number; p_value: Json;
           p_origin: "blank" | "interview" | "expert"; p_evidence_revision_ids: string[];
