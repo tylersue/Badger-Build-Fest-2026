@@ -63,7 +63,8 @@ export async function researchWeb(input: { operation: Operation; missingParts: s
   const observed = async (part: AnthropicEvent) => {
     const event = part as Part;
     const kind = toolName(event.toolName);
-    const callId = typeof event.toolCallId === "string" ? event.toolCallId : null;
+    const callId = typeof event.toolCallId === "string" ? event.toolCallId :
+      event.type === "tool-input-start" && typeof event.id === "string" ? event.id : null;
     if (!kind || !callId) return;
     const key = `${kind}:${callId}`;
     const wasStarted = steps.has(key);

@@ -36,7 +36,7 @@ describe("sufficiency and isolated web fallback", () => {
   it("emits actual search/page steps before completion and retains a usable page after another read fails", async () => {
     const emitted: string[] = [];
     const stream = vi.fn(async (_input, options) => {
-      await options.onEvent({ type: "tool-input-start", toolCallId: "s", toolName: "web_search" });
+      await options.onEvent({ type: "tool-input-start", id: "s", toolName: "web_search" });
       await options.onEvent({ type: "tool-call", toolCallId: "s", toolName: "web_search", input: { query: "budgeting guidance" } });
       await options.onEvent({ type: "tool-result", toolCallId: "s", toolName: "web_search", output: [{ title: "Guide", url: "https://example.org/guide" }] });
       await options.onEvent({ type: "tool-call", toolCallId: "p", toolName: "web_fetch", input: { url: "https://example.org/guide" } });
