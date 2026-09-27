@@ -21,16 +21,8 @@ export function buildPrompt(agent: Agent, chunks: RetrievedChunk[], opts: { isFi
   return parts.join("\n\n");
 }
 
-/** The event contract the real /api/chat stream will emit (NDJSON, one event per line). */
-export type ChatStreamEvent =
-  | { type: "sources"; chunks: RetrievedChunk[] }
-  | { type: "text-delta"; delta: string }
-  | { type: "citations"; citations: Citation[] }
-  | { type: "cost"; creditsCharged: number; balanceCents: number }
-  | { type: "refusal"; reason: "insufficient_credits"; neededCents: number; availableCents: number }
-  | { type: "safety"; reply: string }
-  | { type: "error"; message: string }
-  | { type: "done"; messageId: string };
+/** Compatibility export: all new streams use the persisted, sequenced contract. */
+export type { ChatStreamEvent } from "@/features/runtime/events";
 
 /** Canned grounded answer built from the retrieved chunks. */
 export function cannedAnswer(agent: Agent, expertName: string, chunks: RetrievedChunk[], isFirstTurn: boolean): { content: string; citations: Citation[] } {
