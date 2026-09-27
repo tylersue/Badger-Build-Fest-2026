@@ -148,6 +148,8 @@ begin
   end loop;
   insert into public.interview_sessions(id,agent_id,state)
     values ('session:' || p_agent_id,p_agent_id,'paused');
+  insert into public.conversations(id,agent_id,hirer_id,mode,title,origin)
+    values ('sandbox:' || p_agent_id,p_agent_id,p_identity_id,'sandbox','Sandbox','live');
   return p_agent_id;
 end $$;
 revoke execute on function public.create_demo_agent(text,text,text,text) from public, anon, authenticated;
