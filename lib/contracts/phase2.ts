@@ -100,6 +100,12 @@ export type ReserveOperationInput = {
   identityId: string; agentId: string; purpose: OperationPurpose; requestKey: string; payloadHash: string;
   estimateUnits: bigint; maxUnits: bigint; priceVersion: string;
 };
+/** Operator-provided evidence is required to resolve ambiguous dispatched usage. */
+export type ReconciliationEvidence = {
+  attemptId: string; action: "prove_undispatched" | "record_usage"; note: string; recordedBy: string;
+  usage?: { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number;
+    embeddingTokens: number; successfulSearchCount: number };
+};
 export type SubmitInterviewAnswerInput = {
   agentId: string; questionId: string; text: string; requestKey: string; expectedVersion: number; parentAnswerId?: string;
 };
@@ -116,7 +122,7 @@ export type ReserveOperation = (input: ReserveOperationInput) => Promise<Service
 export type ExpandReservation = (operationId: string, additionalUnits: bigint) => Promise<ServiceResult<Operation>>;
 export type RecordAttempt = (attempt: ProviderAttempt) => Promise<ServiceResult<ProviderAttempt>>;
 export type SettleOperation = (operationId: string) => Promise<ServiceResult<Operation>>;
-export type ReconcileOperation = (operationId: string, evidence: ProviderAttempt[]) => Promise<ServiceResult<Operation>>;
+export type ReconcileOperation = (operationId: string, evidence: ReconciliationEvidence[]) => Promise<ServiceResult<Operation>>;
 export type MeteredStructured = <T>(input: MeteredStructuredInput<T>) => Promise<ServiceResult<T>>;
 export type EmbedTexts = (input: EmbedTextsInput) => Promise<ServiceResult<number[][]>>;
 export type SearchKnowledge = (input: SearchKnowledgeInput) => Promise<ServiceResult<RetrievedChunk[]>>;

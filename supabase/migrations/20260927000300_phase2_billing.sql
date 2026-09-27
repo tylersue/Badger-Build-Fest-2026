@@ -1,6 +1,9 @@
 -- All money is BIGINT nanodollars. RPC calls are individual PostgreSQL transactions.
 -- Lock order is UTC day (oldest first), wallet, operation. Provider calls never run here.
 begin;
+alter table public.provider_attempts
+  add column price_version text not null default '2026-09-26-standard-v1',
+  add column price_policy text not null default 'standard' check (price_policy = 'standard');
 
 create or replace function public.price_attempt_units(p_model text, p_input integer, p_output integer,
   p_cache_read integer, p_cache_write integer, p_embedding integer, p_searches integer)
@@ -81,16 +84,18 @@ end $$;
 create or replace function public.expand_reservation(p_operation_id text, p_additional_units bigint, p_cap_units bigint)
 returns jsonb language plpgsql set search_path = pg_catalog, public as $$
 declare v_op public.operations%rowtype; v_day public.daily_budgets%rowtype; v_wallet public.wallets%rowtype;
-  v_unallocated bigint; v_migrate bigint; v_today date := (now() at time zone 'UTC')::date;
+  v_unallocated bigint; v_migrate bigint; v_today date := (now() at time zone 'UTC')::date; v_initial_day date;
 begin
   if p_additional_units is null or p_additional_units <= 0 then raise exception 'INVALID_INPUT'; end if;
   select * into v_op from public.operations where id=p_operation_id;
   if not found then raise exception 'INVALID_INPUT'; end if;
+  v_initial_day:=v_op.reservation_day;
   insert into public.daily_budgets(day,cap_units) values(v_today,p_cap_units) on conflict(day) do nothing;
   perform 1 from public.daily_budgets where day in (v_today,v_op.reservation_day) order by day for update;
   select * into v_day from public.daily_budgets where day=v_today;
   select * into v_wallet from public.wallets where identity_id=v_op.identity_id for update;
   select * into v_op from public.operations where id=p_operation_id for update;
+  if v_op.reservation_day<>v_initial_day then raise exception 'STALE_ESTIMATE'; end if;
   if v_op.state in ('settled','cancelled') then raise exception 'CONFLICT'; end if;
   if exists(select 1 from public.provider_attempts where operation_id=p_operation_id and state='prepared')
     then raise exception 'STALE_ESTIMATE'; end if;
@@ -116,7 +121,7 @@ returns jsonb language plpgsql set search_path = pg_catalog, public as $$
 declare v_op public.operations%rowtype; v_old public.provider_attempts%rowtype; v_new public.provider_attempts%rowtype;
   v_day date := (now() at time zone 'UTC')::date; v_hold bigint; v_allocated bigint; v_cost bigint;
   v_state text := p_attempt->>'state'; v_id text := p_attempt->>'id'; v_op_id text := p_attempt->>'operationId';
-  v_metadata jsonb := coalesce(p_attempt->'requestMetadata','{}'::jsonb); v_dispatch_day date;
+  v_metadata jsonb := coalesce(p_attempt->'requestMetadata','{}'::jsonb); v_dispatch_day date; v_initial_day date;
 begin
   if v_id is null or v_id !~ '^att_[0-9a-f-]{36}$' or v_op_id is null or
      v_state is null or v_state not in ('prepared','dispatched','completed','failed','unknown') or
@@ -124,13 +129,16 @@ begin
      octet_length(v_metadata::text)>4096 then raise exception 'INVALID_INPUT'; end if;
   select * into v_op from public.operations where id=v_op_id;
   if not found then raise exception 'INVALID_INPUT'; end if;
+  v_initial_day:=v_op.reservation_day;
   select dispatch_day into v_dispatch_day from public.provider_attempts where id=v_id;
   insert into public.daily_budgets(day,cap_units) values(v_day,p_cap_units) on conflict(day) do nothing;
   -- A transition can touch reservation and dispatch days; sorted lock order avoids deadlocks.
   perform 1 from public.daily_budgets where day in (v_day,v_op.reservation_day,v_dispatch_day) order by day for update;
   perform 1 from public.wallets where identity_id=v_op.identity_id for update;
   select * into v_op from public.operations where id=v_op_id for update;
+  if v_op.reservation_day<>v_initial_day then raise exception 'STALE_ESTIMATE'; end if;
   select * into v_old from public.provider_attempts where id=v_id for update;
+  if found and v_old.dispatch_day is distinct from v_dispatch_day then raise exception 'STALE_ESTIMATE'; end if;
   if v_state='prepared' then
     if found then
       if v_old.operation_id<>v_op_id or v_old.stage_key<>p_attempt->>'stageKey' or v_old.attempt<>(p_attempt->>'attempt')::integer
@@ -145,9 +153,9 @@ begin
       v_op.held_units-(select coalesce(sum(held_units),0) from public.provider_attempts where operation_id=v_op_id and state<>'settled'));
     select coalesce(sum(held_units),0) into v_allocated from public.provider_attempts where operation_id=v_op_id and state<>'settled';
     if v_hold is null or v_hold <= 0 or v_allocated+v_hold>v_op.held_units then raise exception 'INSUFFICIENT_CREDITS'; end if;
-    insert into public.provider_attempts(id,operation_id,stage_key,attempt,provider,model,state,held_units,request_metadata)
+    insert into public.provider_attempts(id,operation_id,stage_key,attempt,provider,model,state,held_units,request_metadata,price_version,price_policy)
     values(v_id,v_op_id,p_attempt->>'stageKey',(p_attempt->>'attempt')::integer,p_attempt->>'provider',
-      p_attempt->>'model','prepared',v_hold,v_metadata) returning * into v_new;
+      p_attempt->>'model','prepared',v_hold,v_metadata,v_op.price_version,'standard') returning * into v_new;
     return public.billing_attempt_json(v_new);
   end if;
   if not found or v_old.operation_id<>v_op_id then raise exception 'CONFLICT'; end if;
@@ -183,6 +191,10 @@ begin
       where id=v_id returning * into v_new;
     update public.operations set state='unknown' where id=v_op_id;
   elsif v_state='completed' then
+    if p_attempt->>'inputTokens' is null or p_attempt->>'outputTokens' is null or
+       p_attempt->>'cacheReadTokens' is null or p_attempt->>'cacheWriteTokens' is null or
+       p_attempt->>'embeddingTokens' is null or p_attempt->>'successfulSearchCount' is null
+      then raise exception 'UNKNOWN_USAGE'; end if;
     v_cost := public.price_attempt_units(v_old.model,coalesce((p_attempt->>'inputTokens')::integer,0),
       coalesce((p_attempt->>'outputTokens')::integer,0),coalesce((p_attempt->>'cacheReadTokens')::integer,0),
       coalesce((p_attempt->>'cacheWriteTokens')::integer,0),coalesce((p_attempt->>'embeddingTokens')::integer,0),
@@ -207,16 +219,18 @@ end $$;
 create or replace function public.settle_operation(p_operation_id text)
 returns jsonb language plpgsql set search_path = pg_catalog, public as $$
 declare v_op public.operations%rowtype; v_wallet public.wallets%rowtype; v_attempt public.provider_attempts%rowtype;
-  v_day date; v_total bigint := 0; v_unallocated bigint; v_unknown boolean;
+  v_day date; v_total bigint := 0; v_unallocated bigint; v_unknown boolean; v_initial_day date;
 begin
   select * into v_op from public.operations where id=p_operation_id;
   if not found then raise exception 'INVALID_INPUT'; end if;
+  v_initial_day:=v_op.reservation_day;
   perform 1 from public.daily_budgets where day in
     (select reservation_day from public.operations where id=p_operation_id union
      select dispatch_day from public.provider_attempts where operation_id=p_operation_id and dispatch_day is not null)
     order by day for update;
   select * into v_wallet from public.wallets where identity_id=v_op.identity_id for update;
   select * into v_op from public.operations where id=p_operation_id for update;
+  if v_op.reservation_day<>v_initial_day then raise exception 'STALE_ESTIMATE'; end if;
   if v_op.state='cancelled' then raise exception 'CONFLICT'; end if;
   for v_attempt in select * from public.provider_attempts where operation_id=p_operation_id
     and state in ('completed','failed') order by id for update loop
@@ -270,17 +284,19 @@ create table public.reconciliation_evidence (
 create or replace function public.reconcile_operation(p_operation_id text, p_evidence jsonb)
 returns jsonb language plpgsql set search_path = pg_catalog, public as $$
 declare v_op public.operations%rowtype; v_attempt public.provider_attempts%rowtype; v_item jsonb; v_action text;
-  v_cost bigint; v_day date; v_wallet public.wallets%rowtype;
+  v_cost bigint; v_day date; v_wallet public.wallets%rowtype; v_unallocated bigint; v_initial_day date;
 begin
   if jsonb_typeof(p_evidence)<>'array' or jsonb_array_length(p_evidence)=0 then raise exception 'INVALID_EVIDENCE'; end if;
   select * into v_op from public.operations where id=p_operation_id;
   if not found then raise exception 'INVALID_INPUT'; end if;
+  v_initial_day:=v_op.reservation_day;
   perform 1 from public.daily_budgets where day in
     (select reservation_day from public.operations where id=p_operation_id union
      select dispatch_day from public.provider_attempts where operation_id=p_operation_id and dispatch_day is not null)
     order by day for update;
   select * into v_wallet from public.wallets where identity_id=v_op.identity_id for update;
   select * into v_op from public.operations where id=p_operation_id for update;
+  if v_op.reservation_day<>v_initial_day then raise exception 'STALE_ESTIMATE'; end if;
   for v_item in select value from jsonb_array_elements(p_evidence) loop
     v_action := v_item->>'action';
     if v_action not in ('prove_undispatched','record_usage') or length(v_item->>'note')<12 or
@@ -293,6 +309,10 @@ begin
       v_cost:=0;
     else
       if v_attempt.state not in ('dispatched','unknown') or jsonb_typeof(v_item->'usage')<>'object'
+        then raise exception 'INVALID_EVIDENCE'; end if;
+      if v_item->'usage'->>'inputTokens' is null or v_item->'usage'->>'outputTokens' is null or
+         v_item->'usage'->>'cacheReadTokens' is null or v_item->'usage'->>'cacheWriteTokens' is null or
+         v_item->'usage'->>'embeddingTokens' is null or v_item->'usage'->>'successfulSearchCount' is null
         then raise exception 'INVALID_EVIDENCE'; end if;
       v_cost:=public.price_attempt_units(v_attempt.model,coalesce((v_item->'usage'->>'inputTokens')::integer,0),
         coalesce((v_item->'usage'->>'outputTokens')::integer,0),
@@ -312,10 +332,27 @@ begin
       values('led_'||gen_random_uuid()::text,v_op.identity_id,p_operation_id,v_attempt.id,
         'usage:'||v_attempt.id,'debit',-v_cost,v_wallet.balance_units,v_op.purpose,'operator reconciled');
     end if;
-    update public.provider_attempts set state='settled',held_units=0,gross_cost_units=v_cost,effective_cost_units=v_cost where id=v_attempt.id;
+    update public.provider_attempts set state='settled',held_units=0,gross_cost_units=v_cost,effective_cost_units=v_cost,
+      input_tokens=case when v_action='record_usage' then coalesce((v_item->'usage'->>'inputTokens')::integer,0) else null end,
+      output_tokens=case when v_action='record_usage' then coalesce((v_item->'usage'->>'outputTokens')::integer,0) else null end,
+      cache_read_tokens=case when v_action='record_usage' then coalesce((v_item->'usage'->>'cacheReadTokens')::integer,0) else null end,
+      cache_write_tokens=case when v_action='record_usage' then coalesce((v_item->'usage'->>'cacheWriteTokens')::integer,0) else null end,
+      embedding_tokens=case when v_action='record_usage' then coalesce((v_item->'usage'->>'embeddingTokens')::integer,0) else null end,
+      successful_search_count=case when v_action='record_usage' then coalesce((v_item->'usage'->>'successfulSearchCount')::integer,0) else null end
+      where id=v_attempt.id;
     update public.operations set held_units=held_units-v_attempt.held_units,actual_units=coalesce(actual_units,0)+v_cost where id=p_operation_id;
   end loop;
   select * into v_op from public.operations where id=p_operation_id for update;
+  if not exists(select 1 from public.provider_attempts where operation_id=p_operation_id and state='prepared') then
+    select v_op.held_units-coalesce(sum(held_units),0) into v_unallocated
+      from public.provider_attempts where operation_id=p_operation_id and state in ('dispatched','unknown');
+    if v_unallocated<0 then raise exception 'CONFLICT'; end if;
+    if v_unallocated>0 then
+      update public.wallets set held_units=held_units-v_unallocated where identity_id=v_op.identity_id;
+      update public.daily_budgets set held_units=held_units-v_unallocated where day=v_op.reservation_day;
+      update public.operations set held_units=held_units-v_unallocated where id=p_operation_id returning * into v_op;
+    end if;
+  end if;
   if not exists(select 1 from public.provider_attempts where operation_id=p_operation_id and state in ('dispatched','unknown'))
     and v_op.held_units=0 then update public.operations set state='settled' where id=p_operation_id returning * into v_op; end if;
   return public.billing_operation_json(v_op);
@@ -327,6 +364,7 @@ create or replace function public.grant_mock_credits(p_identity_id text, p_kind 
 returns jsonb language plpgsql set search_path = pg_catalog, public as $$
 declare v_wallet public.wallets%rowtype; v_grant bigint; v_existing public.ledger%rowtype;
 begin
+  if p_identity_id not in ('maria','sam') then raise exception 'NOT_OWNER'; end if;
   if p_kind='subscription' then v_grant:=20000000000;
   elsif p_kind='pack' then v_grant:=10000000000;
   else raise exception 'INVALID_INPUT'; end if;
@@ -336,12 +374,12 @@ begin
   select * into v_existing from public.ledger where identity_id=p_identity_id and request_key='grant:'||p_request_key;
   if found then
     if v_existing.kind<>p_kind then raise exception 'CONFLICT'; end if;
-    return jsonb_build_object('balance_units',v_wallet.balance_units,'grant_units',v_existing.amount_units,'replayed',true);
+    return jsonb_build_object('balance_units',v_wallet.balance_units::text,'grant_units',v_existing.amount_units::text,'replayed',true);
   end if;
   update public.wallets set balance_units=balance_units+v_grant where identity_id=p_identity_id returning * into v_wallet;
   insert into public.ledger(id,identity_id,request_key,kind,amount_units,balance_after_units)
   values('led_'||gen_random_uuid()::text,p_identity_id,'grant:'||p_request_key,p_kind,v_grant,v_wallet.balance_units);
-  return jsonb_build_object('balance_units',v_wallet.balance_units,'grant_units',v_grant,'replayed',false);
+  return jsonb_build_object('balance_units',v_wallet.balance_units::text,'grant_units',v_grant::text,'replayed',false);
 end $$;
 
 revoke all on public.reconciliation_evidence from public, anon, authenticated;
