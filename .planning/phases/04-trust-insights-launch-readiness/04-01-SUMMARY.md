@@ -186,6 +186,14 @@ None - no external service configuration required.
 - `allPayouts`/`allModerationActions` are wired but empty until a later plan writes to them via `commitDemo` (mock cash-out, admin unpublish).
 - `/admin` still shows no table for the seeded flags (expected — Plan 04-02 replaces the placeholder page).
 
+## Self-Check: PASSED
+
+- `lib/testing/demo-store-harness.ts` — FOUND
+- `lib/demo-store.test.ts` — FOUND
+- `.planning/phases/04-trust-insights-launch-readiness/04-01-SUMMARY.md` — FOUND
+- Commits `7dcd7ff`, `a127929`, `ca8e1cc`, `f9e5f0b` — all FOUND in `git log --oneline --all`
+- All 7 task/plan `<acceptance_criteria>` and `<verification>` commands re-run and passing: `pnpm test` (52/52), `pnpm typecheck`, `pnpm lint`, frozen D-04 contract diff check, `git merge-base --is-ancestor origin/main HEAD`
+
 ---
 *Phase: 04-trust-insights-launch-readiness*
 *Completed: 2026-09-27*
