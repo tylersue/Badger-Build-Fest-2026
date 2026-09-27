@@ -177,7 +177,7 @@ export default function EarningsPage() {
                 <InlineEmpty
                   icon={History}
                   heading="No activity yet"
-                  body="Credits appear here when you build, chat, or add credits."
+                  body="Activity appears here when you build, chat, or top up."
                   action={<Link href="/wallet" className={buttonClass("secondary")}>Open wallet</Link>}
                 />
               </div>

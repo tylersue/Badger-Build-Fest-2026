@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { AddCreditsButton } from "@/components/app/add-credits";
 import { AnswerFeedback } from "@/components/trust/answer-feedback";
 import { FlowWords } from "@/components/app/flow";
-import { formatCredits, formatNumber } from "@/lib/format";
+import { UNIT_LABEL, formatCredits, formatNumber } from "@/lib/format";
 import type { Citation, Message } from "@/lib/types";
 import type { EvidenceCitation, RetrievedChunk } from "@/lib/contracts/phase2";
 import { formatCreditUnits } from "@/lib/format";
@@ -458,7 +458,7 @@ export function Composer({
 export function NotEnoughCredits({ needed, available, onDismiss }: { needed: number; available: number; onDismiss: () => void }) {
   return (
     <div data-testid="not-enough-credits" className="mb-8 rounded-lg border border-warning/25 bg-warning-surface p-4">
-      <div className="text-sm font-semibold text-warning">Not enough credits</div>
+      <div className="text-sm font-semibold text-warning">Not enough {UNIT_LABEL}</div>
       <p className="mt-1 text-[13px] text-fg-secondary">
         This needs about {formatCredits(needed)}; you have {formatCredits(available)}. Add credits to continue.
       </p>

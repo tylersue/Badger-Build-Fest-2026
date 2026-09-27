@@ -96,7 +96,7 @@ export default function WalletPage() {
             />
             {rows.length === 0 ? (
               <div className="rounded-xl border border-line-subtle bg-surface-1">
-                <InlineEmpty icon={Wallet} heading="No activity yet" body="Credits appear here when you build, chat, or add credits." />
+                <InlineEmpty icon={Wallet} heading="No activity yet" body="Activity appears here when you build, chat, or top up." />
               </div>
             ) : visible.length === 0 ? (
               <div className="rounded-xl border border-line-subtle bg-surface-1">

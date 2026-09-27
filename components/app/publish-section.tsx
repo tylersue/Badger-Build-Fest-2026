@@ -88,7 +88,7 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h3 className="text-sm font-semibold">Rate multiplier</h3>
             <span data-testid="rate-value" className="text-sm tabular-nums">
-              {rate}× · about {typicalMessageCents(rate)} credits per message
+              {rate}× · about {formatCredits(typicalMessageCents(rate))} per message
             </span>
           </div>
           <input

@@ -1,5 +1,7 @@
 "use client";
 
+import { DEMO_MODE } from "@/lib/config/demo";
+import { formatAmount, unitFor } from "@/lib/format";
 import type { ReactNode } from "react";
 import {
   ArrowUpRight, Banknote, Coins, CreditCard, FileText, FlaskConical, Gift, MessageSquare, Mic, Plus, TrendingUp,
@@ -19,6 +21,7 @@ const smallAmount = new Intl.NumberFormat("en-US", { maximumSignificantDigits: 2
 
 /** Display rounding for credits: whole numbers stay whole, fractions show up to 2 decimals, sub-credit amounts 2 significant digits. */
 export function displayCredits(n: number): string {
+  if (DEMO_MODE) return formatAmount(n);
   const abs = Math.abs(n);
   const body = abs > 0 && abs < 1 ? smallAmount.format(abs) : twoDecimals.format(abs);
   return n < 0 ? `−${body}` : body;
@@ -31,7 +34,7 @@ export function signedCredits(n: number): string {
   return "0";
 }
 
-export const creditUnit = (n: number) => (Math.abs(n) === 1 ? "credit" : "credits");
+export const creditUnit = (n: number) => unitFor(n);
 
 /* Section heading: 14px/600 title, 13px muted description, 16px below. */
 export function SectionHeader({ title, description, count, actions }: { title: string; description?: string; count?: number; actions?: ReactNode }) {

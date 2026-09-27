@@ -12,6 +12,7 @@ import { BenchmarkScoreBadge } from "@/components/benchmark/benchmark-ui";
 import { typicalMessageCents } from "@/features/billing/pricing";
 import { cn } from "@/lib/utils";
 import type { Agent } from "@/lib/types";
+import { UNIT_LABEL, formatAmount } from "@/lib/format";
 
 type Sort = "rating" | "newest" | "used";
 const SORT_LABELS: Record<Sort, string> = { rating: "Highest rated", newest: "Newest", used: "Most bought" };
@@ -164,7 +165,7 @@ function AgentCard({ agent: a }: { agent: Agent }) {
       <div className="mt-3 flex items-center gap-2 border-t border-line-subtle pt-3">
         <Pill>{categoryLabel(a.persona.category)}</Pill>
         {bought && <span className="text-xs text-success">In My agents</span>}
-        <span className="ml-auto text-xs text-fg-muted tabular-nums">{typicalMessageCents(a.rateMultiplier)} credits / msg</span>
+        <span className="ml-auto text-xs text-fg-muted tabular-nums">{formatAmount(typicalMessageCents(a.rateMultiplier))} {UNIT_LABEL} / msg</span>
       </div>
     </Link>
   );

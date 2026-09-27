@@ -10,6 +10,7 @@ import { categoryLabel } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
 import { cn } from "@/lib/utils";
 import type { Agent, Source } from "@/lib/types";
+import { formatCredits } from "@/lib/format";
 
 export function useBuilderAgent(): { s: DemoState; agent: Agent | undefined; isOwner: boolean } {
   const { agentId } = useParams<{ agentId: string }>();
@@ -115,7 +116,7 @@ function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void
         </DrawerSection>
 
         <DrawerSection icon={Rocket} title="Publishing">
-          <DrawerRow href={`${base}/publish`} title="Rate multiplier" sub={`${agent.rateMultiplier}× · about ${typicalMessageCents(agent.rateMultiplier)} credits per message`} />
+          <DrawerRow href={`${base}/publish`} title="Rate multiplier" sub={`${agent.rateMultiplier}× · about ${formatCredits(typicalMessageCents(agent.rateMultiplier))} per message`} />
           <DrawerRow href={`${base}/publish`} title="Content consent" sub={agent.consentAcceptedAt ? `Accepted ${agent.consentAcceptedAt.slice(0, 10)}` : "Not accepted yet"} />
           <div className="flex flex-col gap-2 px-3 pt-2 pb-3">
             <StatusPill status={agent.status} />

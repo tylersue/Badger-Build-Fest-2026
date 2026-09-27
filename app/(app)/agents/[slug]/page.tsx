@@ -12,7 +12,7 @@ import { CheckoutDialog } from "@/components/app/checkout-dialog";
 import { agentPriceCredits, buyerCount, compactNumber, ratingTotal } from "@/lib/config/purchase";
 import { categoryLabel, disclaimerFor } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
-import { formatCredits, formatRelative } from "@/lib/format";
+import { UNIT_LABEL, formatCredits, formatRelative } from "@/lib/format";
 import { AgentListingExtras } from "@/components/trust/listing-extras";
 import { api } from "@/lib/api-client";
 
@@ -73,7 +73,7 @@ export default function ListingPage() {
       const id = await startConversation(agent.id, question ?? "New conversation");
       if (question) {
         const r = await sendChatMessage(id, question);
-        if (!r.ok) toast("Not enough credits. Add credits to continue.");
+        if (!r.ok) toast(`Not enough ${UNIT_LABEL}. Add ${UNIT_LABEL} to continue.`);
       }
       router.push(`/chat/${id}`);
     } catch (error) {
@@ -122,7 +122,7 @@ export default function ListingPage() {
               <div className="mt-5 flex flex-wrap items-center gap-3 text-[13px] text-fg-muted">
                 <Pill>{categoryLabel(agent.persona.category)}</Pill>
                 <span>{agent.ratingCount ? `★ ${agent.ratingAvg.toFixed(1)} (${compactNumber(ratingTotal(agent))}) · ${compactNumber(buyerCount(agent, !!bought))} bought` : "No ratings yet"}</span>
-                <span data-testid="listing-cost">About {typicalMessageCents(agent.rateMultiplier)} credits per message</span>
+                <span data-testid="listing-cost">About {formatCredits(typicalMessageCents(agent.rateMultiplier))} per message</span>
                 <span data-testid="knowledge-updated">Knowledge updated {formatRelative(publicStats?.lastUpdatedAt ?? knowledge.lastUpdatedAt)}</span>
               </div>
               {disclaimer && <p data-testid="listing-disclaimer" className="mt-5 text-[13px] text-fg-muted">{disclaimer}</p>}

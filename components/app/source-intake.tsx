@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { api, ApiClientError, newRequestKey } from "@/lib/api-client";
 import type { SourceEstimate } from "@/lib/contracts/phase2";
 import { clearDraft, getDraft, refreshDemo, saveDraft } from "@/lib/demo-store";
-import { formatCreditUnits, formatNumber } from "@/lib/format";
+import { UNIT_LABEL, formatCreditUnits, formatNumber } from "@/lib/format";
 
 type Mode = "file" | "text";
 export type IntakeDraft = { mode: Mode; file: File | null; name: string; text: string;
@@ -143,7 +143,7 @@ function AgentSourceIntake({ agentId, open, onOpenChange, onComplete }: {
           <p className="text-xs text-fg-muted">Estimate expires {new Date(e.expiresAt).toLocaleTimeString()}.</p>
         </div>}
         {error && <p role="alert" className="break-words text-danger">{error}</p>}
-        {needsCredits && <div><AddCreditsButton size="sm" /><p className="mt-2 text-xs text-fg-muted">After adding credits, get a new estimate and confirm it.</p></div>}
+        {needsCredits && <div><AddCreditsButton size="sm" /><p className="mt-2 text-xs text-fg-muted">After adding {UNIT_LABEL}, get a new estimate and confirm it.</p></div>}
         <div aria-live="polite" className="text-xs text-fg-muted">{busy ? "Working…" : "Your source stays here until processing is acknowledged."}</div>
         {draft.stage === "confirm" ? <div className="flex flex-wrap gap-2">
           <button type="button" disabled={busy} className={buttonClass("secondary", "lg")} onClick={() => setDraft(current => ({ ...current, stage: "edit" }))}>Keep editing</button>

@@ -20,7 +20,7 @@ import { IdentityLogo, companyFor } from "@/components/app/identity-logo";
 import { APP_NAME } from "@/lib/config/app";
 import { agentById, allAgents, balanceOf, currentIdentity, displayName, purchasesFor, switchableIdentities, switchIdentity, useDemo, useDemoSnapshot } from "@/lib/demo-store";
 import { allConversations } from "@/lib/demo-store";
-import { formatCredits } from "@/lib/format";
+import { UNIT_LABEL, formatCredits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { IdentityKind } from "@/lib/types";
 
@@ -159,7 +159,7 @@ function AppSidebar() {
           </SidebarMenuItem>
         </Group>
 
-        <Group label="Credits">
+        <Group label={UNIT_LABEL === "tokens" ? "Tokens" : "Credits"}>
           {row(NAV.wallet)}
           {row(NAV.earnings)}
           {row(NAV.insights)}
