@@ -8,6 +8,7 @@ import { formatCredits } from "@/lib/format";
 import { AnswerEditor } from "@/components/app/answer-editor";
 import { BuilderSplit } from "@/components/app/builder";
 import { PageHeader, buttonClass } from "@/components/app/ui";
+import { VoiceStage, useVoice } from "@/components/app/voice";
 import { answerInterview, controlInterview, getDraft, readDemoState, readInterview, saveDraft, useDemo } from "@/lib/demo-store";
 import type { Agent } from "@/lib/types";
 import type { InterviewView as InterviewSnapshot } from "@/features/builder/interview";
@@ -22,6 +23,10 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
   const [error, setError] = useState("");
   const [creditRefusal, setCreditRefusal] = useState<{ needed: number; available: number } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const speakingQuestion = loadedFor === `${state.identityId}:${agent.id}` ? view?.pendingQuestion : null;
+  const voice = useVoice(speakingQuestion ? { id: speakingQuestion.id, text: speakingQuestion.text, speak: true, leadMs: 500 } : null,
+    { busy, focused });
 
   useEffect(() => {
     let active = true;
@@ -88,7 +93,8 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
       <label htmlFor={`interview-answer-${agent.id}`} className="sr-only">Your answer</label>
       <textarea id={`interview-answer-${agent.id}`} aria-label="Your answer" rows={3} value={draft} onChange={event => {
         setDraft(event.target.value); saveDraft("interview", agent.id, event.target.value);
-      }} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submit(); } }}
+      }} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+      onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submit(); } }}
       placeholder="Write your answer…" disabled={!canSend || busy} className="min-h-24 w-full resize-y bg-transparent text-sm outline-none placeholder:text-fg-muted disabled:opacity-60" />
       <div className="flex items-center justify-between gap-3 text-xs text-fg-muted"><span>Enter to send · Shift+Enter for a new line</span>
         <button type="button" aria-label="Send answer" className={buttonClass("primary", "lg")} disabled={!canSend || busy || !draft.trim()} onClick={() => void submit()}>{busy && status === "Saving answer" ? "Saving answer" : "Send answer"}</button>
@@ -97,6 +103,9 @@ export function InterviewView({ agent, isOwner }: { agent: Agent; isOwner: boole
   </div>}>
     <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6"><div className="mx-auto max-w-[752px] space-y-5">
       <PageHeader title="Interview" subtitle="Answer one question at a time. You can skip a question or add detail later." />
+      {speakingQuestion && <VoiceStage status={voice.status} caption={voice.caption} name={agent.persona.name}
+        icon={agent.icon} onSkip={voice.skip}
+        labels={{ idle: "Your turn. Type your answer below", thinking: "Thinking about your answer…", speaking: "Asking…" }} />}
       {state.status !== "ready" && <p role="alert" className="rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm">{state.error ?? "Loading interview…"}</p>}
       {!isOwner && <p className="rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm text-fg-muted">Interview answers are available to the agent owner.</p>}
       {state.status === "ready" && !visibleView && !error && isOwner && <p className="text-sm text-fg-muted">Loading interview…</p>}

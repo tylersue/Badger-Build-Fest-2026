@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
-import { BookOpen, ChevronDown, ChevronRight, Eye, FileText, Plus, Rocket, Settings2, UserRound, X } from "lucide-react";
-import { AgentTile, StatusPill, buttonClass } from "@/components/app/ui";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { agentById, currentIdentity, displayName, readInterview, useDemo, type DemoState } from "@/lib/demo-store";
+import { useState, type ReactNode } from "react";
+import { BookOpen, ChevronDown, ChevronRight, Ellipsis, Eye, FileText, Menu, Mic, Plus, Rocket, Settings2, UserRound, X } from "lucide-react";
+import { AgentTile, PlaceholderNote, StatusPill, buttonClass } from "@/components/app/ui";
+import { agentById, currentIdentity, displayName, knowledgeStats, useDemo, type DemoState } from "@/lib/demo-store";
 import { categoryLabel } from "@/lib/config/categories";
+import { typicalMessageCents } from "@/features/billing/pricing";
 import { cn } from "@/lib/utils";
 import type { Agent } from "@/lib/types";
 
@@ -19,54 +19,36 @@ export function useBuilderAgent(): { s: DemoState; agent: Agent | undefined; isO
 }
 
 export function sourcesFor(s: DemoState, agentId: string) {
-  return (s.snapshot?.identityId === s.identityId ? s.snapshot.sources : []).filter(x => x.agentId === agentId);
+  return (s.snapshot?.sources ?? []).filter((x) => x.agentId === agentId);
 }
 
+/** Answers captured so far: the seeded count plus anything answered in this session. */
 export function answerCount(s: DemoState, agentId: string) {
-  if (!s.snapshot || s.snapshot.identityId !== s.identityId) return 0;
-  return s.interviews[agentId]?.answers.length ?? 0;
+  return knowledgeStats(s, agentId).answers;
 }
 
 /* Fleet builder split: chat column + 480px Configure drawer (D-05). */
 export function BuilderSplit({ agent, thread, children, composer }: { agent: Agent; thread: string; children: ReactNode; composer: ReactNode }) {
-  const [desktopOpen, setDesktopOpen] = useState(true);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const s = useDemo();
-  useEffect(() => {
-    if (s.status !== "ready" || agent.ownerId !== s.identityId) return;
-    void readInterview(agent.id).catch(() => undefined);
-  }, [agent.id, agent.ownerId, s.identityId, s.status]);
-  useEffect(() => {
-    const desktop = window.matchMedia("(min-width: 1024px)");
-    const closeOnDesktop = () => { if (desktop.matches) setMobileOpen(false); };
-    desktop.addEventListener("change", closeOnDesktop);
-    return () => desktop.removeEventListener("change", closeOnDesktop);
-  }, []);
+  const [drawer, setDrawer] = useState(true);
   return (
-    <div className="flex min-h-0 min-w-0 flex-1">
+    <div className="flex min-h-0 flex-1">
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-2 px-4 py-1 text-sm font-medium">
-          <span className="min-w-0 flex-1 break-words">
+        <div className="flex h-10 shrink-0 items-center gap-3 px-4 text-sm font-medium">
+          <Menu className="size-4 text-fg-muted" />
+          <span className="truncate">
             {agent.persona.name} <span className="text-xs font-normal text-fg-muted">{thread}</span>
           </span>
           <span className="ml-auto flex items-center gap-2">
-            <button type="button" onClick={() => setDesktopOpen(!desktopOpen)} aria-expanded={desktopOpen} aria-controls="builder-config-desktop" className={cn(buttonClass("secondary", "lg"), "hidden lg:inline-flex")}>
+            <button onClick={() => setDrawer(!drawer)} className={buttonClass("secondary")}>
               <Settings2 />
               Configure
             </button>
-            <button type="button" onClick={() => setMobileOpen(true)} aria-haspopup="dialog" className={cn(buttonClass("secondary", "lg"), "lg:hidden")}><Settings2 /> Configure</button>
           </span>
         </div>
         {children}
         {composer}
       </div>
-      {desktopOpen && <aside id="builder-config-desktop" className="hidden w-[480px] shrink-0 flex-col overflow-y-auto border-l border-line-faint bg-surface-1 lg:flex"><ConfigureDrawer agent={agent} onClose={() => setDesktopOpen(false)} /></aside>}
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="right" showCloseButton={false} className="w-[min(100vw,480px)] max-w-none gap-0 overflow-y-auto border-line-faint bg-surface-1 p-0 lg:hidden">
-          <SheetHeader className="sr-only"><SheetTitle>Configure {agent.persona.name}</SheetTitle><SheetDescription>Agent settings and knowledge summary</SheetDescription></SheetHeader>
-          <ConfigureDrawer agent={agent} onClose={() => setMobileOpen(false)} />
-        </SheetContent>
-      </Sheet>
+      {drawer && <ConfigureDrawer agent={agent} onClose={() => setDrawer(false)} />}
     </div>
   );
 }
@@ -74,11 +56,11 @@ export function BuilderSplit({ agent, thread, children, composer }: { agent: Age
 function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   const { s } = useBuilderAgent();
   const base = `/build/${agent.id}`;
-  const sources = sourcesFor(s, agent.id).filter(source => source.kind !== "interview" && source.origin === "live");
+  const sources = sourcesFor(s, agent.id);
   const answers = answerCount(s, agent.id);
   return (
-    <div className="flex min-w-0 flex-col">
-      <div className="flex flex-wrap items-center gap-3 border-b border-line-muted px-4 py-3">
+    <aside className="hidden w-[480px] shrink-0 flex-col overflow-y-auto border-l border-line-faint bg-surface-1 lg:flex">
+      <div className="flex items-center gap-3 border-b border-line-muted px-4 py-3">
         <AgentTile icon={agent.icon} />
         <div className="min-w-0">
           <div className="truncate text-base font-semibold">{agent.persona.name}</div>
@@ -89,7 +71,7 @@ function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void
             <Eye />
             View
           </Link>
-          <button type="button" onClick={onClose} aria-label="Close configuration" className="grid size-11 place-items-center rounded text-fg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-brand-border">
+          <button onClick={onClose} aria-label="Close" className="text-fg-muted hover:text-foreground">
             <X className="size-4" />
           </button>
         </span>
@@ -103,11 +85,12 @@ function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void
         <DrawerRow href={`${base}/persona`} title="Advanced: system prompt" sub={agent.systemPromptOverride ? "Edited by hand" : "Generated from the form · editable"} />
       </DrawerSection>
 
-      <DrawerSection icon={BookOpen} title="Knowledge" count={answers + sources.length}>
-        <DrawerRow href={`${base}/knowledge`} icon={BookOpen} title="Interview answers" sub={`${answers} saved answers`} />
+      <DrawerSection icon={BookOpen} title="Knowledge" count={answers + sources.filter((x) => x.kind !== "interview").reduce((n, x) => n + x.chunkCount, 0)}>
+        <DrawerRow href={`${base}/interview`} icon={Mic} title="Interview answers" sub={`${answers} answers · re-embedded on edit`} />
         {sources
+          .filter((x) => x.kind !== "interview")
           .map((x) => (
-            <DrawerRow key={x.id} href={`${base}/knowledge`} icon={FileText} title={x.name} sub={`${x.status === "ready" ? "Ready" : x.status === "failed" ? "Failed" : x.status === "queued" ? "Queued" : "Processing"} · ${x.chunkCount} chunks${x.pageCount != null ? ` · ${x.pageCount} pages` : ""}`} />
+            <DrawerRow key={x.id} href={`${base}/knowledge`} icon={FileText} title={x.name} sub={x.status === "ready" ? `Ready · ${x.chunkCount} chunks${x.pageCount ? ` · ${x.pageCount} pages` : ""}` : "Processing…"} menu />
           ))}
         <Link href={`${base}/knowledge`} className="mx-3 mt-2 mb-3 flex h-9 items-center justify-center gap-1.5 rounded-lg border border-dashed border-line-default text-[13px] text-selected-fg">
           <Plus className="size-3.5" />
@@ -116,7 +99,7 @@ function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void
       </DrawerSection>
 
       <DrawerSection icon={Rocket} title="Publishing">
-        <DrawerRow href={`${base}/publish`} title="Rate multiplier" sub={`${agent.rateMultiplier}×`} />
+        <DrawerRow href={`${base}/publish`} title="Rate multiplier" sub={`${agent.rateMultiplier}× · about ${typicalMessageCents(agent.rateMultiplier)} credits per message`} />
         <DrawerRow href={`${base}/publish`} title="Content consent" sub={agent.consentAcceptedAt ? `Accepted ${agent.consentAcceptedAt.slice(0, 10)}` : "Not accepted yet"} />
         <div className="flex flex-col gap-2 px-3 pt-2 pb-3">
           <StatusPill status={agent.status} />
@@ -126,9 +109,10 @@ function ConfigureDrawer({ agent, onClose }: { agent: Agent; onClose: () => void
         </div>
       </DrawerSection>
       <div className="mx-4 mb-4">
+        <PlaceholderNote feature="interview and persona drafting" phase={2} />
         <p className="mt-1 text-xs text-fg-muted">Owner: {displayName(s, agent.ownerId)}</p>
       </div>
-    </div>
+    </aside>
   );
 }
 
@@ -136,7 +120,7 @@ function DrawerSection({ icon: Icon, title, count, children }: { icon: typeof Bo
   const [open, setOpen] = useState(true);
   return (
     <div className="mx-4 mt-3 shrink-0 overflow-hidden rounded-xl border border-line-muted bg-surface-2">
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex min-h-11 w-full items-center gap-2 p-3 text-sm font-semibold">
+      <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 p-3 text-sm font-semibold">
         <Icon className="size-[18px] text-fg-tertiary" />
         {title}
         {count !== undefined && <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs font-medium text-fg-tertiary">{count}</span>}
@@ -147,19 +131,19 @@ function DrawerSection({ icon: Icon, title, count, children }: { icon: typeof Bo
   );
 }
 
-function DrawerRow({ href, title, sub, icon: Icon }: { href: string; title: string; sub: string; icon?: typeof BookOpen }) {
+function DrawerRow({ href, title, sub, icon: Icon, menu }: { href: string; title: string; sub: string; icon?: typeof BookOpen; menu?: boolean }) {
   return (
-    <Link href={href} className="flex min-h-[60px] min-w-0 items-center gap-3 border-t border-line-muted p-3 hover:bg-surface-3">
+    <Link href={href} className="flex h-[60px] items-center gap-3 border-t border-line-muted p-3 hover:bg-surface-3">
       {Icon && (
         <span className="grid size-6 place-items-center rounded-md bg-surface-3">
           <Icon className="size-[13px] text-fg-tertiary" />
         </span>
       )}
       <div className="min-w-0">
-        <div className="break-words text-[13px] font-medium">{title}</div>
-        <div className="break-words text-xs text-fg-muted">{sub}</div>
+        <div className="truncate text-[13px] font-medium">{title}</div>
+        <div className="truncate text-xs text-fg-muted">{sub}</div>
       </div>
-      <ChevronRight className="ml-auto size-3.5 shrink-0 text-fg-muted" />
+      {menu ? <Ellipsis className="ml-auto size-3.5 text-fg-muted" /> : <ChevronRight className="ml-auto size-3.5 text-fg-muted" />}
     </Link>
   );
 }

@@ -8,7 +8,7 @@ Deliver one interview-first BUILD → PUBLISH → HIRE → USE loop in four week
 
 - [x] **Phase 1: Shell, Wallet & Shared Contracts** - The local app opens straight into a LangSmith-style shell with every loop route stubbed, two seeded identities, a funded credit wallet, and typed frontend service contracts. The database schema is Phase 2 work.
 - [ ] **Phase 2: Interview-First Agent Building** - Experts can create knowledge through an adaptive interview, add documents, edit their agent, and test cited answers and the online fallback at real build cost.
-- [ ] **Phase 3: Publish, Discover & Use** - An expert can publish an agent; another account can find it, chat safely with citations, and pay credits that generate expert earnings.
+- [ ] **Phase 3: Publish, Discover & Use** - An expert can publish an agent; another account can find it, chat safely with citations, and pay credits that generate expert earnings. The Phase 3 UI landed on main as a local browser demo; integrated server acceptance is pending.
 - [ ] **Phase 4: Trust, Insights & Launch Readiness** - Hirers control feedback and transcript sharing; experts see earnings and insights; admins handle flags; the full loop is verified.
 
 ## Delivery Checkpoints
@@ -110,15 +110,16 @@ Before parallel implementation, record the four owners in the project board and 
 ### Phase 3: Publish, Discover & Use
 **Goal**: An expert's agent can be published and found, and a hirer can use it safely while both sides see the credit effect.
 **Depends on**: Phase 1 to start; Phase 2 to complete the end-to-end acceptance gate
-**Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, MKT-02, MKT-03, MKT-04, CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-06, CHAT-07, CHAT-10, CHAT-11, CHAT-12, CRED-04
+**Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, MKT-02, MKT-03, MKT-04, CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-07, CHAT-10, CHAT-11, CHAT-12, CRED-04 (CHAT-06 moved to Phase 4 on 2026-09-26)
 **Success Criteria** (what must be TRUE):
   1. An expert accepts content consent, sets a 1x–5x rate, publishes an eligible agent instantly, sees its generated listing, and can unpublish it immediately.
   2. A hirer can browse and search published agents, compare profiles and typical message cost, and start a conversation from a listing or example question.
   3. A hirer can stream a reply, return later, and see valid expert or labeled external citations, web tool steps, a knowledge-gap note when online fallback runs, and the cost of each answer. If neither expert nor online evidence supports an answer, the agent says so rather than guessing.
-  4. A hirer can supply one conversation file as untrusted context; regulated-category disclaimers persist, emergency or self-harm patterns receive a fixed resource reply, and long conversations continue with windowed history.
+  4. A hirer can supply one conversation file as untrusted context; regulated-category disclaimers persist, and long conversations continue with windowed history. (The emergency and self-harm resource reply moved to Phase 4.)
   5. A local walkthrough that switches between the seeded hirer and expert charges the hirer by actual cost × expert multiplier and atomically records platform cost recovery, margin share, and expert wallet credit; mock funding is the only money-in path.
-**Plans**: TBD
+**Plans**: None — Phase 3 presentation UI was built directly on 2026-09-26 (Phase 3 D-14), initially with canned answers and Phase 1 keyword retrieval (D-01, D-02). PR #39 integrates the Phase 2 server pipeline, SQL publishing, and transactional chat billing. Integrated live-service acceptance remains pending.
 **UI hint**: yes
+**Context**: `.planning/phases/03-publish-discover-use/03-CONTEXT.md`
 
 ### Phase 4: Trust, Insights & Launch Readiness
 **Goal**: Hirers, experts, and admins can review outcomes and exercise privacy and moderation controls; the full loop holds up under outside and adversarial use.
@@ -148,5 +149,5 @@ Before parallel implementation, record the four owners in the project board and 
 |-------|----------------|--------|-----------|
 | 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Complete for local demo | 2026-09-26 |
 | 2. Interview-First Agent Building | 17/18 | In Progress|  |
-| 3. Publish, Discover & Use | 0/TBD | Not started | - |
+| 3. Publish, Discover & Use | n/a (UI built directly) | Integrated implementation in review; live gate pending | - |
 | 4. Trust, Insights & Launch Readiness | 0/TBD | Not started | - |

@@ -49,7 +49,8 @@ function parseOperation(data: unknown): Operation {
     agentId: String(row.agent_id), purpose: row.purpose as Operation["purpose"], state: row.state as Operation["state"],
     estimateUnits: parseMoney(row.estimate_units), heldUnits: parseMoney(row.held_units),
     actualUnits: row.actual_units == null ? null : parseMoney(row.actual_units), priceVersion: String(row.price_version),
-    payloadHash: String(row.payload_hash), createdAt: String(row.created_at) };
+    payloadHash: String(row.payload_hash), createdAt: String(row.created_at),
+    chatRateMultiplier: row.chat_rate_multiplier == null ? null : Number(row.chat_rate_multiplier) };
 }
 function parseAttempt(data: unknown): ProviderAttempt {
   if (!data || typeof data !== "object") throw new Error("Missing attempt");

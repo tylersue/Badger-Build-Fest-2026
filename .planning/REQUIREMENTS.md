@@ -68,9 +68,9 @@ Requirements for the working MVP loop (BUILD → PUBLISH → HIRE → USE). Each
 - [ ] **CHAT-01**: Hirer sends a message and sees the agent's answer stream in
 - [ ] **CHAT-02**: Answers cite their evidence inline, distinguishing expert interview/document sources from external web sources; citation details show the source name, page or question, or external link
 - [ ] **CHAT-03**: When expert knowledge is insufficient, the shared pipeline searches online, answers from cited sources, notes what expert material did not cover, and shows expandable search/page-read steps. External findings are not saved as expert knowledge; if no usable source is found, the agent says it cannot answer rather than guessing
-- [ ] **CHAT-04**: Hirer can upload one file (PDF, DOCX, or TXT) into a conversation; its text is extracted and included in that conversation's prompt as untrusted content
+- [ ] **CHAT-04**: Hirer can upload one file (PDF, DOCX, TXT, or MD) into a conversation; its text is extracted and included in that conversation's prompt as untrusted content
 - [ ] **CHAT-05**: Agents in regulated categories (health, tax/finance, legal, mental health) show a fixed disclaimer in the first reply, and the disclaimer rule is present in the system prompt on every turn
-- [ ] **CHAT-06**: Messages matching emergency or self-harm patterns get a fixed resource reply instead of an agent answer, and the conversation is flagged
+- [ ] **CHAT-06**: Messages matching emergency or self-harm patterns get a fixed resource reply instead of an agent answer, and the conversation is flagged *(moved to Phase 4 on 2026-09-26)*
 - [ ] **CHAT-07**: Conversation history is windowed to recent turns so long conversations keep working
 - [ ] **CHAT-08**: Hirer can thumbs up or down any answer
 - [ ] **CHAT-09**: Hirer can opt in, per conversation, to share the transcript with the expert; the default is off
@@ -187,7 +187,7 @@ Which phases cover which requirements. Each v1 requirement maps to exactly one p
 | CHAT-03 | Phase 3 | Pending |
 | CHAT-04 | Phase 3 | Pending |
 | CHAT-05 | Phase 3 | Pending |
-| CHAT-06 | Phase 3 | Pending |
+| CHAT-06 | Phase 4 | Pending |
 | CHAT-07 | Phase 3 | Pending |
 | CHAT-08 | Phase 4 | Pending |
 | CHAT-09 | Phase 4 | Pending |

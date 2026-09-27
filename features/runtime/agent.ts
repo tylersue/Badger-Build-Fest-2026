@@ -17,7 +17,9 @@ import { createPersonaService, createSqlPersonaStore } from "@/features/builder/
 import { requireServiceDb } from "@/lib/server/db";
 
 type EventData = ChatStreamEvent extends infer E ? E extends { type: string } ? Omit<E, "eventId" | "operationId" | "sequence"> : never : never;
-export type AnswerContext = { category: Category; persona: PersonaForm; customPrompt: string | null; firstTurn: boolean };
+export type AnswerContext = { category: Category; persona: PersonaForm; customPrompt: string | null; firstTurn: boolean;
+  attachment?: { name: string; content: string } | null;
+  history?: { role: "user" | "assistant"; content: string }[] };
 export interface AnswerStore {
   context(input: RunAnswerInput): Promise<ServiceResult<AnswerContext>>;
   replay(operationId: string): Promise<ChatStreamEvent[]>;
@@ -51,21 +53,27 @@ export function createSqlAnswerStore(): AnswerStore {
   };
   return {
     async context(input) {
-      const [conversation, agent, prior] = await Promise.all([
+      const [conversation, agent, prior, attachment, history] = await Promise.all([
         db().from("conversations").select("id,agent_id,hirer_id,mode").eq("id", input.conversationId).maybeSingle(),
         db().from("agents").select("id,owner_id,category,status").eq("id", input.agentId).is("deleted_at", null).maybeSingle(),
         db().from("messages").select("id").eq("conversation_id", input.conversationId).eq("role", "assistant").limit(1),
+        db().from("conversation_attachments").select("name,content").eq("conversation_id", input.conversationId).maybeSingle(),
+        db().from("messages").select("role,content").eq("conversation_id", input.conversationId)
+          .order("created_at", { ascending: false }).limit(10),
       ]);
-      if (conversation.error || agent.error || prior.error) throw new Error("Context lookup failed");
+      if (conversation.error || agent.error || prior.error || attachment.error || history.error) throw new Error("Context lookup failed");
       const c = conversation.data, a = agent.data;
       if (!c || !a || c.agent_id !== input.agentId || c.hirer_id !== input.actorId || c.mode !== input.mode ||
-        (input.mode === "sandbox" ? a.owner_id !== input.actorId || input.conversationId !== `sandbox:${input.agentId}` : a.status !== "published"))
+        (input.mode === "sandbox" ? a.owner_id !== input.actorId || input.conversationId !== `sandbox:${input.agentId}` : false))
         return { ok: false, error: fail("not_owner", "Conversation is unavailable.") };
       const state = await createPersonaService(createSqlPersonaStore()).read(input.agentId);
       if (!state) return { ok: false, error: fail("not_owner", "Agent is unavailable.") };
       const persona = Object.fromEntries(Object.entries(state.fields).map(([key, field]) => [key, field.value])) as PersonaForm;
       return { ok: true, data: { category: a.category as Category, persona,
-        customPrompt: state.promptMode === "custom" ? state.customPrompt : null, firstTurn: !(prior.data?.length) } };
+        customPrompt: state.promptMode === "custom" ? state.customPrompt : null, firstTurn: !(prior.data?.length),
+        attachment: input.mode === "chat" ? attachment.data : null,
+        history: input.mode === "chat" ? (history.data ?? []).reverse().map(item => ({
+          role: item.role as "user" | "assistant", content: item.content.slice(0, 1000) })) : [] } };
     },
     async replay(operationId) {
       const rows = unwrap(await db().from("message_events").select("payload").eq("operation_id", operationId).order("sequence"));
@@ -171,11 +179,12 @@ export async function* runAnswer(input: RunAnswerInput, supplied?: Partial<Answe
       else {
         const prompt = buildPrompt({ question: input.text, persona: context.data.persona,
           customPrompt: context.data.customPrompt, category: context.data.category,
-          expert, web, gap, firstTurn: context.data.firstTurn });
+          expert, web, gap, firstTurn: context.data.firstTurn, attachment: context.data.attachment,
+          history: context.data.history });
         const result = await deps.synthesize({ operation, stageKey: "answer:synthesis", model: modelForCategory(context.data.category),
           instructions: prompt.instructions, input: prompt.prompt, schema: answerSchema,
-          limits: { maxInputChars: 45000, maxHistoryMessages: 0, maxOutputTokens: 1600,
-            timeoutMs: 30000, maxContextTokens: 50000, maxContinuations: 0 } }, { settle: false });
+          limits: { maxInputChars: 100000, maxHistoryMessages: 10, maxOutputTokens: 1600,
+            timeoutMs: 30000, maxContextTokens: 120000, maxContinuations: 0 } }, { settle: false });
         if (!result.ok) throw result.error;
         const output = result.data.value;
         const valid = validateCitations(output.citationIds, allowed);

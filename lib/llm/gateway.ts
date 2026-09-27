@@ -40,7 +40,9 @@ export type StageOutput<T> = { value: T; usage: Counts | null; providerRequestId
 /** A prepared and dispatched attempt is durable before any provider bytes leave this process. */
 export async function runMeteredStage<T>(input: StageInput, dispatch: () => Promise<StageOutput<T>>,
   deps: GatewayDependencies = {}): Promise<ServiceResult<MeteredResult<T>>> {
-  const { operation, stageKey, model, provider, holdUnits } = input;
+  const { operation, stageKey, model, provider } = input;
+  const halfSteps = operation.purpose === "chat" ? BigInt(Math.round((operation.chatRateMultiplier ?? 1) * 2)) : BigInt(2);
+  const holdUnits = (input.holdUnits * halfSteps + BigInt(1)) / BigInt(2);
   if (!/^op_[0-9a-f-]{36}$/.test(operation.id) || operation.priceVersion !== PRICE_VERSION ||
     operation.state === "settled" || operation.state === "cancelled" || !stageKey || stageKey.length > 120 ||
     !validCount(input.inputChars) || !validCount(input.maxOutputTokens) || holdUnits <= BigInt(0) || holdUnits > BigInt("9223372036854775807"))

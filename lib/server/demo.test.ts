@@ -132,6 +132,31 @@ describe("server demo continuity", () => {
     await expect(getDemoSnapshot("dev", fake.db)).rejects.toMatchObject({ code: "invalid_input" });
   });
 
+  it("shows an expert chat financial split without sharing the hirer's private transcript or identity", async () => {
+    const fake = fakeDatabase();
+    await bootstrapDemoSeed(fake.db);
+    fake.rows("operations").push({ id: "op-private", agent_id: "maria-chen-physical-therapy", purpose: "chat" });
+    fake.rows("ledger").push(
+      { id: "hirer-debit", identity_id: "sam", operation_id: "op-private", kind: "debit",
+        amount_units: -12000, balance_after_units: null, ref_type: "conversation", ref_id: "private-chat", created_at: "2026-09-27" },
+      { id: "expert-earnings", identity_id: "maria", operation_id: "op-private", kind: "earnings",
+        amount_units: 5100, balance_after_units: null, ref_type: "conversation", ref_id: "private-chat", created_at: "2026-09-27" },
+      { id: "platform-cost", identity_id: null, operation_id: "op-private", kind: "platform_cost",
+        amount_units: 6000, balance_after_units: null, ref_type: "conversation", ref_id: "private-chat", created_at: "2026-09-27" },
+      { id: "platform-margin", identity_id: null, operation_id: "op-private", kind: "platform_margin",
+        amount_units: 900, balance_after_units: null, ref_type: "conversation", ref_id: "private-chat", created_at: "2026-09-27" },
+    );
+    const expert = await getDemoSnapshot("maria", fake.db);
+    const financial = expert.ledger.filter((row) => row.refId === "private-chat");
+    expect(financial).toHaveLength(4);
+    expect(financial.find((row) => row.kind === "debit")?.identityId).toBeNull();
+    expect(expert.earningAgents["private-chat"]).toBe("maria-chen-physical-therapy");
+    expect(expert.conversations.some((row) => row.id === "private-chat")).toBe(false);
+    expect(expert.messages.some((row) => row.conversationId === "private-chat")).toBe(false);
+    const hirer = await getDemoSnapshot("sam", fake.db);
+    expect(hirer.ledger.filter((row) => row.refId === "private-chat").map((row) => row.kind)).toEqual(["debit"]);
+  });
+
   it("resets fixtures without touching live ledger, usage or the real balance", async () => {
     const fake = fakeDatabase();
     await bootstrapDemoSeed(fake.db);

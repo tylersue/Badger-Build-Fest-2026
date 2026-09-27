@@ -1,17 +1,18 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { AGENTS, CONVERSATIONS, IDENTITIES, INTERVIEW_TURNS, MARIA, MESSAGES, PROFILES } from "@/lib/data/seed";
+import { IDENTITIES, INTERVIEW_TURNS, MARIA, PROFILES } from "@/lib/data/seed";
 import type { Category } from "@/lib/config/categories";
 import type { Agent, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile } from "@/lib/types";
 import type { DemoSnapshot } from "@/lib/server/demo";
 import type { InterviewView } from "@/features/builder/interview";
-import { api, ApiClientError, newRequestKey, streamSandbox } from "./api-client";
+import { api, ApiClientError, newRequestKey, streamChat, streamSandbox } from "./api-client";
+import type { ChatStreamEvent } from "@/features/runtime/events";
 
 const STORAGE_KEY = "bx-demo-bridge-v2";
 const LEGACY_KEY = "bx-demo-v1";
-type DraftKind = "interview" | "interview-control" | "grant" | "persona" | "source" | "sandbox" | "profile";
-type Draft = { value: string; requestKey: string; dirty: true };
+type DraftKind = "interview" | "interview-control" | "grant" | "persona" | "source" | "sandbox" | "profile" | "chat";
+type Draft = { value: string; requestKey: string; dirty: true; operationId?: string };
 type Drafts = Record<string, Draft>;
 export type DemoState = { v: 2; identityId: string; snapshot: DemoSnapshot | null;
   drafts: Drafts; interviews: Record<string, InterviewView>; status: "loading" | "ready" | "error";
@@ -100,7 +101,9 @@ export function getDraft(kind: DraftKind, ownerId: string): Draft | null { retur
 export function saveDraft(kind: DraftKind, ownerId: string, value: string, requestKey?: string): Draft {
   const key = draftKey(kind, ownerId);
   const prior = getSnapshot().drafts[key];
-  const draft = { value, requestKey: requestKey ?? (prior?.value === value ? prior.requestKey : newRequestKey()), dirty: true as const };
+  const sameValue = prior?.value === value;
+  const draft = { value, requestKey: requestKey ?? (sameValue ? prior.requestKey : newRequestKey()),
+    dirty: true as const, operationId: sameValue ? prior.operationId : undefined };
   setState(s => ({ ...s, drafts: { ...s.drafts, [key]: draft } }));
   return draft;
 }
@@ -110,6 +113,13 @@ export function clearDraft(kind: DraftKind, ownerId: string, acknowledged?: Draf
     if (acknowledged && s.drafts[key] !== acknowledged) return s;
     const drafts = { ...s.drafts }; delete drafts[key]; return { ...s, drafts };
   });
+}
+function recordDraftOperation(conversationId: string, draft: Draft, operationId: string): Draft {
+  const updated = { ...draft, operationId };
+  const key = draftKey("chat", conversationId);
+  setState(s => s.drafts[key]?.requestKey === draft.requestKey
+    ? { ...s, drafts: { ...s.drafts, [key]: updated } } : s);
+  return updated;
 }
 
 export const switchableIdentities = (): Identity[] => IDENTITIES.filter(i => i.isSwitchable);
@@ -121,7 +131,7 @@ export function profileFor(s: DemoState, identityId: string): Profile {
       contactUrl: "", bio: "", location: "" };
 }
 export function displayName(s: DemoState, identityId: string): string { return profileFor(s, identityId).displayName || identityById(identityId).displayName; }
-export function allAgents(s: DemoState): Agent[] { return live(s)?.agents ?? AGENTS; }
+export function allAgents(s: DemoState): Agent[] { return live(s)?.agents ?? []; }
 export function agentById(s: DemoState, id: string): Agent | undefined { return allAgents(s).find(a => a.id === id || a.slug === id); }
 export function ledgerFor(s: DemoState, identityId: string): LedgerEntry[] { return live(s)?.ledger.filter(r => r.identityId === identityId) ?? []; }
 export function allLedger(s: DemoState): LedgerEntry[] { return live(s)?.ledger ?? []; }
@@ -129,9 +139,9 @@ export function balanceOf(s: DemoState, identityId: string): number {
   const snapshot = live(s);
   return identityId === s.identityId && snapshot ? cents(snapshot.wallet.balanceUnits) : 0;
 }
-export function allConversations(s: DemoState): Conversation[] { return live(s)?.conversations ?? CONVERSATIONS; }
+export function allConversations(s: DemoState): Conversation[] { return live(s)?.conversations ?? []; }
 export function messagesFor(s: DemoState, conversationId: string): Message[] {
-  return (live(s)?.messages ?? MESSAGES).filter(m => m.conversationId === conversationId)
+  return (live(s)?.messages ?? []).filter(m => m.conversationId === conversationId)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 export function conversationStats(s: DemoState, conversationId: string) {
@@ -140,7 +150,15 @@ export function conversationStats(s: DemoState, conversationId: string) {
     lastMessageAt: messages.at(-1)?.createdAt ?? null };
 }
 export function interviewTurnsFor(s: DemoState, agentId: string): InterviewTurn[] {
-  return (live(s)?.interviewTurns ?? INTERVIEW_TURNS).filter(t => t.agentId === agentId).sort((a, b) => a.position - b.position);
+  return (live(s)?.interviewTurns ?? []).filter(t => t.agentId === agentId).sort((a, b) => a.position - b.position);
+}
+export type KnowledgeStats = { answers: number; docChunks: number; total: number; lastUpdatedAt: string };
+export function knowledgeStats(s: DemoState, agentId: string): KnowledgeStats {
+  const answers = interviewTurnsFor(s, agentId).filter(turn => turn.answer !== null).length;
+  const sources = (live(s)?.sources ?? []).filter(source => source.agentId === agentId && source.status === "ready" && source.kind !== "interview");
+  const docChunks = sources.reduce((sum, source) => sum + source.chunkCount, 0);
+  return { answers, docChunks, total: answers + docChunks,
+    lastUpdatedAt: sources.map(source => source.createdAt).sort().at(-1) ?? agentById(s, agentId)?.updatedAt ?? new Date(0).toISOString() };
 }
 export function pendingInterviewQuestion(s: DemoState, agentId: string): { turnId: string | null; question: string } {
   const pending = s.interviews[agentId]?.pendingQuestion;
@@ -283,8 +301,62 @@ export async function importLegacyDrafts(): Promise<{ imported: number; remainin
   return { imported, remaining: records.length - imported + unhandled };
 }
 
-/** Phase 3 owns hirer mutations; an absent live route must never create local paid history. */
-const chatUnavailable = (): never => { throw new ApiClientError({ code: "configuration", message: "Live hirer chat is unavailable in this build.", retryable: false }, 503); };
-export function startConversation(agentId: string, title: string): string { void agentId; void title; return chatUnavailable(); }
-export async function sendChatMessage(conversationId: string, text: string): Promise<{ ok: true; chargedCents: number } | Refusal> { void conversationId; void text; return chatUnavailable(); }
-export function updateAgent(agentId: string, patch: Partial<Agent>): void { void agentId; void patch; chatUnavailable(); }
+const freshMessages = new Set<string>();
+export const isFreshMessage = (messageId: string) => freshMessages.has(messageId);
+export const markStreamed = (messageId: string) => { freshMessages.delete(messageId); };
+
+export async function startConversation(agentId: string, title: string): Promise<string> {
+  requireLive();
+  const conversation = await api.createConversation(agentId, title);
+  await refreshDemo();
+  return conversation.id;
+}
+
+export async function sendChatMessage(conversationId: string, text: string, onEvent?: (event: ChatStreamEvent) => void): Promise<{ ok: true; chargedCents: number; messageId: string } | Refusal> {
+  const snapshot = requireLive();
+  const conversation = snapshot.conversations.find(item => item.id === conversationId && item.hirerId === snapshot.identityId);
+  if (!conversation) throw new ApiClientError({ code: "not_owner", message: "Conversation is unavailable.", retryable: false }, 404);
+  let draft = saveDraft("chat", conversationId, text);
+  let chargedUnits: string | null = null;
+  let messageId: string | null = null;
+  let operationId: string | null = draft.operationId ?? null;
+  try {
+    if (!operationId) {
+      for await (const event of streamChat(conversationId, text, draft.requestKey)) {
+        onEvent?.(event);
+        operationId = event.operationId;
+        if (draft.operationId !== operationId) draft = recordDraftOperation(conversationId, draft, operationId);
+        if (event.type === "cost") chargedUnits = event.chargedUnits;
+        if (event.type === "done") messageId = event.messageId;
+      }
+    }
+    if (!messageId && operationId) {
+      const replay = await api.chatReplay(conversationId, operationId);
+      replay.events.forEach(event => onEvent?.(event));
+      const cost = replay.events.findLast(event => event.type === "cost");
+      const done = replay.events.findLast(event => event.type === "done");
+      if (cost?.type === "cost") chargedUnits = cost.chargedUnits;
+      if (done?.type === "done") messageId = done.messageId;
+    }
+    if (!messageId) throw new ApiClientError({ code: "provider", message: "Answer is still running. Retry the saved message to replay it.", retryable: true, operationId: operationId ?? undefined }, 0);
+    await refreshDemo(); clearDraft("chat", conversationId, draft);
+    freshMessages.add(messageId);
+    return { ok: true, chargedCents: chargedUnits ? cents(chargedUnits) : 0, messageId };
+  } catch (error) { const refusal = creditRefusal(error); if (refusal) return refusal; throw error; }
+}
+
+export async function setRateMultiplier(agentId: string, multiplier: number): Promise<void> {
+  requireLive();
+  await api.rate(agentId, multiplier);
+  await refreshDemo();
+}
+export async function publishAgent(agentId: string, opts: { acceptConsent?: boolean } = {}): Promise<void> {
+  requireLive();
+  await api.publish(agentId, true, opts.acceptConsent ?? false);
+  await refreshDemo();
+}
+export async function unpublishAgent(agentId: string): Promise<void> {
+  requireLive();
+  await api.publish(agentId, false);
+  await refreshDemo();
+}

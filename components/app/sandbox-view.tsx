@@ -5,6 +5,7 @@ import { FlaskConical } from "lucide-react";
 import { BuilderSplit } from "@/components/app/builder";
 import { AssistantMessage, Composer, NotEnoughCredits, RetrievedSources, StreamCostCaption, UserMessage } from "@/components/app/chat";
 import { ToolSteps } from "@/components/app/tool-steps";
+import { AgentTurn } from "@/components/app/voice";
 import { EmptyState, PageHeader } from "@/components/app/ui";
 import { api, apiRequest, ApiClientError, newRequestKey, streamSandbox } from "@/lib/api-client";
 import { clearDraft, getDraft, refreshDemo, saveDraft, useDemo } from "@/lib/demo-store";
@@ -182,7 +183,7 @@ export function SandboxView({ agent, isOwner }: { agent: Agent; isOwner: boolean
         {demo.status !== "ready" && <p role="status" className="mb-4 text-sm text-warning">{demo.error ?? "Connecting to live services…"}</p>}
         {rows.length === 0 && !pendingText && <EmptyState icon={FlaskConical} heading="Test your agent" body="Ask a question to inspect its answer and sources." />}
         {rows.map(row => row.role === "user" ? <UserMessage key={row.id} content={row.content} /> :
-          <div key={row.id}>
+          <AgentTurn key={row.id} name={agent.persona.name} phase="done">
             <ToolSteps steps={answers[row.operationId ?? ""]?.steps ?? row.steps} />
             <RetrievedSources items={answers[row.operationId ?? ""]?.sources ?? row.sources} />
             <AssistantMessage content={answers[row.operationId ?? ""]?.done && answers[row.operationId ?? ""]?.error
@@ -191,16 +192,17 @@ export function SandboxView({ agent, isOwner }: { agent: Agent; isOwner: boolean
               gap={answers[row.operationId ?? ""]?.gap ?? row.gap}
               caption={answers[row.operationId ?? ""]?.cost ? <StreamCostCaption cost={answers[row.operationId ?? ""].cost} /> :
                 row.chargedUnits !== null ? `Charged ${formatCreditUnits(row.chargedUnits)}` : "Charge pending"} />
-          </div>)}
+          </AgentTurn>)}
         {pendingText && !liveIdInRows && <>
           <UserMessage content={pendingText} />
-          {operationId && <div>
+          {operationId && <AgentTurn name={agent.persona.name} phase={answers[operationId]?.text ? "typing" : "thinking"}
+            label={answers[operationId]?.text ? "Typing…" : "Searching knowledge…"}>
             <ToolSteps steps={answers[operationId]?.steps ?? []} />
             {answers[operationId]?.sources && <RetrievedSources items={answers[operationId].sources} />}
             <AssistantMessage content={answers[operationId]?.text ?? ""} citations={displayCitations(answers[operationId]?.citations ?? [])}
               gap={answers[operationId]?.gap} caption={<StreamCostCaption cost={answers[operationId]?.cost}
                 estimateUnits={answers[operationId]?.cost?.estimateUnits ?? null} />} />
-          </div>}
+          </AgentTurn>}
         </>}
         {recovering && <p role="status" className="mb-4 text-sm text-fg-muted">Checking the previous operation before another send. Any charge remains visible when confirmed.</p>}
         {error && <div role="alert" className="mb-4 rounded-lg border border-danger/40 p-3 text-sm">

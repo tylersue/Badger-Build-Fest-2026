@@ -20,7 +20,7 @@ export type OperationState = "reserved" | "running" | "completed" | "failed" | "
 export type Operation = {
   id: string; requestKey: string; identityId: string; agentId: string; purpose: OperationPurpose;
   state: OperationState; estimateUnits: MoneyAmount; heldUnits: MoneyAmount; actualUnits: MoneyAmount | null;
-  priceVersion: string; payloadHash: string; createdAt: string;
+  priceVersion: string; payloadHash: string; createdAt: string; chatRateMultiplier?: number | null;
 };
 export type AttemptState = "prepared" | "dispatched" | "completed" | "failed" | "unknown" | "settled";
 export type ProviderAttempt = {

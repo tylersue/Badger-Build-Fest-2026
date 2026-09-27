@@ -2,7 +2,7 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { CATEGORIES } from "@/lib/config/categories";
-import type { Agent, Citation, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile, Source } from "@/lib/types";
+import type { Agent, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile, Source } from "@/lib/types";
 import type { MoneyAmount, PersonaState } from "@/lib/contracts/phase2";
 import { DatabaseFailure, requireServiceDb, type ServiceDb } from "./db";
 import { ApiRequestError } from "./request";
@@ -84,6 +84,7 @@ export type DemoSnapshot = {
   conversations: Conversation[];
   messages: Message[];
   ledger: LedgerEntry[];
+  earningAgents: Record<string, string>;
   wallet: { balanceUnits: MoneyAmount; heldUnits: MoneyAmount; balanceCents: number | null };
   backend: {
     configured: true;
@@ -109,12 +110,40 @@ export async function getDemoSnapshot(identityId: string, db: ServiceDb = requir
   ]);
   const identityRows = value(identities) ?? [];
   const profileRow = value(profile);
-  const agentRows = value(agents) ?? [];
+  let agentRows = value(agents) ?? [];
   const walletRow = value(wallet);
   if (!profileRow || !walletRow) throw new DatabaseFailure("Demo identity is not seeded.", false, "configuration");
-  const ledgerRows = value(ledger) ?? [];
+  let ledgerRows = value(ledger) ?? [];
   const selectedConversationRows = value(conversations) ?? [];
+  const knownAgentIds = new Set(agentRows.map(agent => agent.id));
+  const hiddenConversationAgentIds = [...new Set(selectedConversationRows.map(row => row.agent_id))].filter(id => !knownAgentIds.has(id));
+  if (hiddenConversationAgentIds.length) {
+    const hidden = value(await db.from("agents").select("*").in("id", hiddenConversationAgentIds).is("deleted_at", null)) ?? [];
+    agentRows = [...agentRows, ...hidden];
+  }
+  const publicOwnerIds = [...new Set(agentRows.map(agent => agent.owner_id))].filter(id => id !== identityId);
+  const publicProfileRows = publicOwnerIds.length
+    ? value(await db.from("profiles").select("*").in("identity_id", publicOwnerIds)) ?? [] : [];
   const ownedIds = agentRows.filter((agent) => agent.owner_id === identityId).map((agent) => agent.id);
+  const earningAgents: Record<string, string> = {};
+  if (ownedIds.length) {
+    // Experts can inspect the economics of their agents without receiving private chats or hirer identities.
+    const billedOperations = value(await db.from("operations").select("id,agent_id")
+      .in("agent_id", ownedIds).eq("purpose", "chat")) ?? [];
+    if (billedOperations.length) {
+      const financialRows = value(await db.from("ledger").select("*")
+        .in("operation_id", billedOperations.map((operation) => operation.id))
+        .in("kind", ["debit", "platform_cost", "platform_margin"])) ?? [];
+      const agentByOperation = new Map(billedOperations.map((operation) => [operation.id, operation.agent_id]));
+      for (const row of financialRows) {
+        if (row.ref_type === "conversation" && row.ref_id && row.operation_id) {
+          const agentId = agentByOperation.get(row.operation_id);
+          if (agentId) earningAgents[row.ref_id] = agentId;
+        }
+      }
+      ledgerRows = [...new Map([...ledgerRows, ...financialRows].map((row) => [row.id, row])).values()];
+    }
+  }
   const allIds = agentRows.map((agent) => agent.id);
   const sharedRows = ownedIds.length ? value(await db.from("conversations").select("*")
     .in("agent_id", ownedIds).eq("share_transcript", true)) ?? [] : [];
@@ -185,20 +214,32 @@ export async function getDemoSnapshot(identityId: string, db: ServiceDb = requir
     identityId,
     identities: identityRows.map((row) => ({ id: row.id, kind: row.kind, displayName: row.display_name,
       avatarInitial: row.avatar_initial, avatarColor: row.avatar_color, isSwitchable: row.is_switchable, origin: row.origin })),
-    profiles: [selectedProfile], agents: convertedAgents, sources: convertedSources,
+    profiles: [selectedProfile, ...publicProfileRows.map((row): Profile => ({
+      identityId: row.identity_id, displayName: row.display_name, photoUrl: row.photo_url ?? undefined,
+      field: row.field, credentials: row.credentials, yearsExperience: row.years_experience,
+      contactUrl: row.contact_url, bio: row.bio, location: row.location, origin: row.origin,
+    }))], agents: convertedAgents, sources: convertedSources,
     interviewTurns: convertedTurns,
     conversations: conversationRows.map((row) => ({ id: row.id, agentId: row.agent_id,
       hirerId: row.hirer_id, title: row.title, shareTranscript: row.share_transcript,
       createdAt: row.created_at, origin: row.origin })),
     messages: messageRows.map((row) => ({ id: row.id, conversationId: row.conversation_id,
       role: row.role as Message["role"], content: row.content,
-      citations: row.citations as Citation[], feedback: row.feedback as Message["feedback"],
+      citations: row.citations as Message["citations"], feedback: row.feedback as Message["feedback"],
+      retrieved: row.retrieved && typeof row.retrieved === "object" && !Array.isArray(row.retrieved) &&
+        Array.isArray((row.retrieved as Record<string, unknown>).chunks)
+        ? (row.retrieved as { chunks: Message["retrieved"] }).chunks : [],
+      gap: row.retrieved && typeof row.retrieved === "object" && !Array.isArray(row.retrieved)
+        ? (row.retrieved as { gap?: string | null }).gap ?? null : null,
+      steps: Array.isArray(row.tool_steps) ? row.tool_steps as Message["steps"] : [],
       costCents: displayCents(row.charged_units), createdAt: row.created_at, origin: row.origin })),
-    ledger: ledgerRows.map((row) => ({ id: row.id, identityId: row.identity_id,
+    ledger: ledgerRows.map((row) => ({ id: row.id,
+      identityId: row.identity_id === identityId ? identityId : null,
       kind: row.kind as LedgerEntry["kind"], amountCents: displayCents(row.amount_units) ?? 0,
       balanceAfter: displayCents(row.balance_after_units), purpose: row.purpose as LedgerEntry["purpose"],
       refType: row.ref_type as LedgerEntry["refType"], refId: row.ref_id,
       note: row.note, createdAt: row.created_at, origin: row.origin })),
+    earningAgents,
     wallet: { balanceUnits: units(walletRow.balance_units), heldUnits: units(walletRow.held_units),
       balanceCents: displayCents(walletRow.balance_units) },
     backend: { configured: true, profileVersion: profileRow.version,

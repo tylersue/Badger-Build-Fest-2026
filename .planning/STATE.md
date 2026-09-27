@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 2 plan 18 service-access checkpoint; 17 of 18 plans complete
-last_updated: "2026-09-27T04:35:19.918407+00:00"
+status: Integrated implementation in review; Phase 2 plan 02-18 and Phase 3 live gate await service access
+stopped_at: "PR #39 integration and live-service checkpoint; 17 of 18 Phase 2 plans complete"
+last_updated: "2026-09-27T05:27:42.240Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 4
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-26)
 
 **Core value:** An expert with no audience or technical skill can turn their knowledge into a cited agent and earn when others use it.
-**Current focus:** Phase 2 — Interview-First Agent Building
+**Current focus:** Phase 2 and Phase 3 integration on PR #39
 
 ## Current Position
 
 Phase: 2 (Interview-First Agent Building) — EXECUTING
 Plan: 18 of 18
-Status: Awaiting service access for plan 02-18
+Status: Integrated implementation in review; Phase 2 plan 02-18 and Phase 3 live gate await service access
 Last activity: 2026-09-27
 
 Progress: [██▌░░░░░░░░] 25%
@@ -50,11 +50,17 @@ Progress: [██▌░░░░░░░░] 25%
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- Phase 3 edited: Preserved Phase 3 UI history and recorded the Phase 2 integration gate
+
 ### Decisions
 
 Decisions are logged in .planning/PROJECT.md. Current scope is interview-first, a single credit wallet, real metering, mock funding and cash-out, and no Stripe integration in v1. As of 2026-09-26 the MVP is a presentation build: no auth or RLS, two seeded identities with a sidebar switcher, placeholder seed content, UI copied from LangSmith. Phase 1 decisions: .planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md.
 
 Phase 1 landed on `main`; the team can use separate branches or worktrees for Phase 2. GSD branching_strategy stays `none`.
+
+Phase 3 presentation history: main received the tabbed builder, publish and marketplace pages, and the thinking-orb voice UI after PR #38. Its local browser demo used canned answers and local credit state. PR #39 integrates those screens with Phase 2 server-owned knowledge, conversations and billing; the original Phase 3 discussion and context remain in `.planning/phases/03-publish-discover-use/`. The integrated loop is still a draft until SQL, provider and browser acceptance pass.
 
 Phase 1 pivot (2026-09-26): during `/gsd-plan-phase 1` the user redirected the planner to skip GSD plans and build Phase 1 directly as a **frontend-only** app — no backend, no Supabase, all state in the browser (localStorage) on top of placeholder data in `lib/data/seed.ts`. Credit mechanics (hire debit/credit with multiplier, interview and test charges, pre-call hard stop at zero, mock Subscribe and Buy pack with ledger rows) are real; chat and interview answers are canned. Shared contracts (`searchKnowledge`, `personaToSystemPrompt`, `buildPrompt`, chat stream event type, billing math) live in `features/` and return canned data; the regulated-category list is `lib/config/categories.ts`. Settings has a "Reset demo data" button. Known deviation from 01-UI-SPEC.md: Earnings stays visible (muted) when viewing as the hirer. The six unfinished GSD plan drafts and the dropped Supabase schema/wallet migrations and seed SQL are preserved under `.planning/phases/01-shell-wallet-shared-contracts/drafts/` for Phase 2, which will need a real backend.
 
@@ -86,6 +92,6 @@ Applied AI & Automation is confirmed. Badgers Building for Badgers and Art of th
 
 ## Session Continuity
 
-Last session: 2026-09-27T00:30:56Z
-Stopped at: Phase 2 plan 18 service-access checkpoint; 17 of 18 plans complete
+Last session: 2026-09-27
+Stopped at: PR #39 integration and live-service checkpoint; 17 of 18 Phase 2 plans complete
 Resume file: .planning/phases/02-interview-first-agent-building/02-LIVE-EVIDENCE.md

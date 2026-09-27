@@ -1,6 +1,6 @@
 import type { Category } from "@/lib/config/categories";
 import type { MeteredPurpose } from "@/lib/config/credits";
-import type { RecordOrigin } from "@/lib/contracts/phase2";
+import type { EvidenceCitation, RecordOrigin, RetrievedChunk, ToolStep } from "@/lib/contracts/phase2";
 export type { MoneyAmount, Operation, ProviderAttempt, AnswerRevision, PersonaFieldState, PersonaState, SourceEstimate, RetrievedChunk, EvidenceCitation, ToolStep, ServiceResult, KnowledgeSource, KnowledgeChunk } from "@/lib/contracts/phase2";
 
 /** Optional only for the Phase 1 display bridge; live service records require origin. */
@@ -109,6 +109,10 @@ export type Conversation = OriginBridge & {
   hirerId: string;
   title: string;
   shareTranscript: boolean;
+  /** One hirer file per conversation, extracted to text and treated as untrusted context (CHAT-04). */
+  fileName?: string | null;
+  fileText?: string | null;
+  fileChars?: number | null;
   createdAt: string;
 };
 
@@ -117,10 +121,14 @@ export type Message = OriginBridge & {
   conversationId: string;
   role: "user" | "assistant";
   content: string;
-  citations: Citation[];
+  citations: Citation[] | EvidenceCitation[];
   feedback: "up" | "down" | null;
   costCents: number | null;
-  retrieved?: { sourceName: string; score: number; page: number | null; question: string | null }[];
+  /** Fixed weak-retrieval reply: no model call, no charge (CHAT-03). */
+  refusal?: boolean;
+  retrieved?: { sourceName: string; score: number; page: number | null; question: string | null }[] | RetrievedChunk[];
+  gap?: string | null;
+  steps?: ToolStep[];
   createdAt: string;
 };
 

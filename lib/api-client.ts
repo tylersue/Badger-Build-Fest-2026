@@ -88,6 +88,21 @@ export const api = {
   sourceDelete: (agentId: string, sourceId: string) => apiRequest<unknown>(`/api/agents/${encodeURIComponent(agentId)}/sources/${encodeURIComponent(sourceId)}`, { method: "DELETE" }),
   sandboxTranscript: (agentId: string) => apiRequest<{ messages: unknown[] }>(`/api/agents/${encodeURIComponent(agentId)}/sandbox`),
   sandboxReplay: (agentId: string, operationId: string) => apiRequest<{ events: ChatStreamEvent[] }>(`/api/agents/${encodeURIComponent(agentId)}/sandbox?operationId=${encodeURIComponent(operationId)}`),
+  publish: (agentId: string, publish: boolean, acceptConsent = false) =>
+    apiRequest<{ status: string; consentAcceptedAt: string | null; activeChunks?: number }>(`/api/agents/${encodeURIComponent(agentId)}/publish`,
+      { method: "POST", body: { publish, acceptConsent } }),
+  publishStatus: (agentId: string) => apiRequest<{ activeChunks: number }>(`/api/agents/${encodeURIComponent(agentId)}/publish`),
+  publicStats: (agentId: string) => apiRequest<{ answers: number; documents: number; activeChunks: number; lastUpdatedAt: string }>(
+    `/api/agents/${encodeURIComponent(agentId)}/stats`),
+  rate: (agentId: string, multiplier: number) => apiRequest<{ multiplier: number }>(`/api/agents/${encodeURIComponent(agentId)}/rate`,
+    { method: "PATCH", body: { multiplier } }),
+  createConversation: (agentId: string, title: string) => apiRequest<{ id: string }>("/api/conversations",
+    { method: "POST", body: { agentId, title } }),
+  chatTranscript: (conversationId: string) => apiRequest<{ messages: unknown[] }>(`/api/conversations/${encodeURIComponent(conversationId)}/messages`),
+  chatReplay: (conversationId: string, operationId: string) => apiRequest<{ events: ChatStreamEvent[] }>(
+    `/api/conversations/${encodeURIComponent(conversationId)}/messages?operationId=${encodeURIComponent(operationId)}`),
+  attachment: (conversationId: string) => apiRequest<{ name: string; chars: number } | null>(`/api/conversations/${encodeURIComponent(conversationId)}/attachment`),
+  removeAttachment: (conversationId: string) => apiRequest<{ removed: true }>(`/api/conversations/${encodeURIComponent(conversationId)}/attachment`, { method: "DELETE" }),
 };
 
 /** One decoder handles fragmented UTF-8, split lines, replay duplicates, and explicit cancellation. */
@@ -129,6 +144,24 @@ export async function* decodeNdjson(stream: ReadableStream<Uint8Array>, signal?:
 export async function* streamSandbox(agentId: string, text: string, requestKey: string, signal?: AbortSignal): AsyncGenerator<ChatStreamEvent> {
   let response: Response;
   try { response = await fetch(`/api/agents/${encodeURIComponent(agentId)}/sandbox`, {
+    method: "POST", credentials: "same-origin", cache: "no-store", signal,
+    headers: { "Content-Type": "application/json", "Idempotency-Key": requestKey },
+    body: JSON.stringify({ text, requestKey }) }); }
+  catch (error) { if (signal?.aborted) throw error;
+    throw new ApiClientError({ ...fallback, message: "Connection lost. Replay with the same request key before sending again." }, 0); }
+  if (!response.ok || !response.headers.get("content-type")?.includes("application/x-ndjson")) {
+    await checked<never>(response); throw new ApiClientError(fallback, response.status);
+  }
+  if (!response.body) throw new ApiClientError({ ...fallback, message: "Answer stream is unavailable." }, 502);
+  for await (const event of decodeNdjson(response.body, signal)) {
+    yield event;
+    if (event.type === "refusal" || event.type === "error") throw new ApiClientError(event.error, response.status);
+  }
+}
+
+export async function* streamChat(conversationId: string, text: string, requestKey: string, signal?: AbortSignal): AsyncGenerator<ChatStreamEvent> {
+  let response: Response;
+  try { response = await fetch(`/api/conversations/${encodeURIComponent(conversationId)}/messages`, {
     method: "POST", credentials: "same-origin", cache: "no-store", signal,
     headers: { "Content-Type": "application/json", "Idempotency-Key": requestKey },
     body: JSON.stringify({ text, requestKey }) }); }
