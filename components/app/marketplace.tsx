@@ -38,8 +38,10 @@ export function MarketplaceView() {
             .includes(q),
       )
       .sort((a, b) =>
-        sort === "rating" ? b.ratingAvg - a.ratingAvg || b.ratingCount - a.ratingCount
-          : sort === "used" ? buyerCount(b, false) - buyerCount(a, false) : b.createdAt.localeCompare(a.createdAt),
+        // Just-published agents lead every sort, newest first, so an expert sees theirs go live.
+        Number(isNewAgent(b)) - Number(isNewAgent(a)) || (isNewAgent(a) ? b.updatedAt.localeCompare(a.updatedAt) : 0) ||
+        (sort === "rating" ? b.ratingAvg - a.ratingAvg || b.ratingCount - a.ratingCount
+          : sort === "used" ? buyerCount(b, false) - buyerCount(a, false) : b.createdAt.localeCompare(a.createdAt)),
       );
   }, [s, query, category, sort]);
 
@@ -125,6 +127,9 @@ export function MarketplaceView() {
   );
 }
 
+/** Published but not rated yet: the expert just put it live. */
+const isNewAgent = (a: Agent) => a.status === "published" && a.ratingCount === 0;
+
 /* The card leads with the expert (DESIGN.md): who they are, what the agent helps with, then category and price. */
 function AgentCard({ agent: a }: { agent: Agent }) {
   const s = useDemo();
@@ -142,7 +147,10 @@ function AgentCard({ agent: a }: { agent: Agent }) {
       <div className="flex items-center gap-3">
         <IdentityLogo identityId={a.ownerId} size={44} />
         <div className="min-w-0">
-          <h2 className="truncate text-[16px] leading-tight font-semibold">{title}</h2>
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="truncate text-[16px] leading-tight font-semibold">{title}</h2>
+            {isNewAgent(a) && <Pill className="shrink-0 bg-success-surface text-success">New</Pill>}
+          </div>
           <p className="mt-1 truncate text-[13px] leading-tight">
             <span className="text-fg-secondary">{displayName(s, a.ownerId)}</span>
             {company && <span className="text-fg-muted"> · {company}</span>}
@@ -154,12 +162,12 @@ function AgentCard({ agent: a }: { agent: Agent }) {
       <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-fg-muted">{a.persona.description}</p>
       <div className="mt-auto flex items-center gap-3 pt-4 text-xs text-fg-muted tabular-nums">
         <BenchmarkScoreBadge agent={a} />
-        <span className="inline-flex items-center gap-1" title={`${a.ratingAvg.toFixed(1)} stars from ${ratingTotal(a).toLocaleString()} ratings`}>
+        {a.ratingCount > 0 && <span className="inline-flex items-center gap-1" title={`${a.ratingAvg.toFixed(1)} stars from ${ratingTotal(a).toLocaleString()} ratings`}>
           <Star className="size-3.5 fill-warning text-warning" aria-hidden />
-          <span className="font-medium text-fg-secondary">{a.ratingCount ? a.ratingAvg.toFixed(1) : "New"}</span>
-          {a.ratingCount > 0 && <span>({compactNumber(ratingTotal(a))})</span>}
-        </span>
-        <span className="inline-flex items-center gap-1" title={`${buyerCount(a, bought).toLocaleString()} founders hired this agent`}><BriefcaseBusiness className="size-3.5" aria-hidden />{compactNumber(buyerCount(a, bought))} hired</span>
+          <span className="font-medium text-fg-secondary">{a.ratingAvg.toFixed(1)}</span>
+          <span>({compactNumber(ratingTotal(a))})</span>
+        </span>}
+        {buyerCount(a, bought) > 0 && <span className="inline-flex items-center gap-1" title={`${buyerCount(a, bought).toLocaleString()} founders hired this agent`}><BriefcaseBusiness className="size-3.5" aria-hidden />{compactNumber(buyerCount(a, bought))} hired</span>}
       </div>
       <div className="mt-3 flex items-center gap-2 border-t border-line-subtle pt-3">
         <Pill>{categoryLabel(a.persona.category)}</Pill>

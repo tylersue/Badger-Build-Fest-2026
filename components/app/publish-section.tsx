@@ -139,6 +139,7 @@ export function PublishSection({ agent, isOwner }: { agent: Agent; isOwner: bool
               <Link href={`/agents/${agent.slug}`} className={buttonClass("secondary", "lg")}>
                 {published ? "View listing" : "Preview listing"}
               </Link>
+              {published && <Link href="/marketplace" data-testid="view-in-marketplace" className={buttonClass("primary", "lg")}>View in marketplace</Link>}
               {published ? (
                 <button data-testid="unpublish" onClick={() => setConfirmUnpublish(true)} disabled={!isOwner || busy} className={buttonClass("destructive", "lg")}>
                   Unpublish

@@ -97,7 +97,7 @@ hmm, I don't love that it just quotes me word for word. talk like me, keep it sh
 
 1. Click the **Publish** tab at the top.
 2. Drag **Price** to **25 tokens**, tick the **Content consent** box, and click **Publish agent**.
-3. Click **Benchmarks** in the sidebar. **Your agents** shows the new agent scored next to Cynthia's established one (4.9 stars from 12.8K ratings, 480K hired).
+3. Click **View in marketplace**. The new agent is the first card, marked **New**, at 25 tokens.
 
 **Say:**
 > Set your price, publish, and founders start hiring you. That's Proxier.
@@ -115,6 +115,7 @@ Other screens worth showing:
 
 - **Wallet** has the hire.
 - **Earnings** (as Cynthia) has the sale.
+- **Benchmarks** → **Your agents** scores the new agent next to Cynthia's established one (4.9 stars from 12.8K ratings, 480K hired).
 - Answers cite Cynthia's own essay. Click its blue number in the answer to open it.
 
 ## If something goes wrong
