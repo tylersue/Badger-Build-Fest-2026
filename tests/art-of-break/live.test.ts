@@ -34,7 +34,8 @@ describe("Art of the Break live, fixed retrieval, metered", () => {
     if (!url || !["localhost", "127.0.0.1", "::1"].includes(new URL(url).hostname))
       throw new Error("Use the local disposable Supabase project only.");
     const fixturePath = process.env.BREAK_FIXTURE_PATH ?? "tests/art-of-break/fixtures.v1.json";
-    if (!["tests/art-of-break/fixtures.v1.json", "tests/art-of-break/unseen.v1.json"].includes(fixturePath))
+    if (!["tests/art-of-break/fixtures.v1.json", "tests/art-of-break/unseen.v1.json",
+      "tests/art-of-break/adaptive.v2.json"].includes(fixturePath))
       throw new Error("Only versioned synthetic fixtures may be run.");
     const fixture = JSON.parse(await readFile(resolve(fixturePath), "utf8")) as Fixture;
     const buildCommit = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
