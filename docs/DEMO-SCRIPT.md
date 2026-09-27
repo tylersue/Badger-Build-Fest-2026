@@ -26,7 +26,7 @@ Everything in this demo is hardcoded and runs in the browser. The lines below pr
 
 ## 0:08–0:25 · Hire an expert (Austin)
 
-1. Click the **Cynthia Pham · Idea stress test** card.
+1. Click the **Idea stress test** card (Cynthia Pham · Sequoia, top left).
 2. Top right, click **Buy · 2,000 credits**, then **Buy now**. You'll see **Added to My agents**, and the agent appears in the sidebar under **My agents**.
 3. Click **Start using it**.
 4. Click **Write your message…**, paste this line, and press Enter:
