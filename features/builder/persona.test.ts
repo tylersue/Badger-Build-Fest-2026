@@ -14,6 +14,7 @@ function fixture() {
       const current = snapshot.fields[field];
       if ((current?.version ?? 0) !== expected) return false;
       snapshot.fields[field] = { ...structuredClone(next), version: expected + 1 };
+      if (field === "category") { snapshot.agent.category = next.value as PersonaSnapshot["agent"]["category"]; snapshot.agent.version++; }
       return true;
     },
     async casPrompt(_agent, expected, mode, text) {
@@ -24,7 +25,6 @@ function fixture() {
       return true;
     },
     async activeRevisionIds(_agent, ids) { return new Set(ids.filter((id) => active.has(id))); },
-    async setCategory(_agent, category) { snapshot.agent.category = category; snapshot.agent.version++; },
   };
   return { service: createPersonaService(store), snapshot, active, store };
 }
@@ -71,6 +71,15 @@ describe("persona ownership", () => {
     const result = await service.savePersonaFields("a", { headline: "Unsaved typing" }, { headline: 0 });
     expect(result).toMatchObject({ ok: false, error: { code: "conflict", conflictFieldIds: ["headline"],
       submittedPatch: { headline: "Unsaved typing" }, current: { fields: { headline: { value: "Saved" } } } } });
+  });
+
+  it("keeps category metadata aligned with the versioned category field", async () => {
+    const { service, snapshot } = fixture();
+    const saved = await service.savePersonaFields("a", { category: "tax_finance" }, { category: 0 });
+    expect(saved.ok).toBe(true);
+    expect(snapshot.agent.category).toBe("tax_finance");
+    expect(snapshot.fields.category).toMatchObject({ value: "tax_finance", origin: "expert", version: 1 });
+    expect(personaView((await service.read("a"))!).model).toBe("claude-sonnet-5");
   });
 
   it("clears interview copy after source deletion and flags unsupported expert copy for review", async () => {

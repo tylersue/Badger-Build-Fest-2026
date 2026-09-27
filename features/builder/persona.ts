@@ -21,7 +21,6 @@ export interface PersonaStore {
   casField(agentId: string, field: PersonaFieldName, expectedVersion: number, next: FieldWrite): Promise<boolean>;
   casPrompt(agentId: string, expectedVersion: number, mode: PersonaState["promptMode"], text: string | null): Promise<boolean>;
   activeRevisionIds(agentId: string, ids: string[]): Promise<Set<string>>;
-  setCategory(agentId: string, category: PersonaForm["category"]): Promise<void>;
 }
 export type PersonaFailure = { ok: false; error: ServiceError & {
   conflictFieldIds?: PersonaFieldName[]; current?: PersonaState; submittedPatch?: Partial<PersonaForm>;
@@ -59,16 +58,9 @@ export function createSqlPersonaStore(): PersonaStore {
         promptMode: agent.prompt_mode, customPrompt: agent.custom_prompt, promptVersion: agent.prompt_version }, fields };
     },
     async casField(agentId, field, expectedVersion, next) {
-      if (expectedVersion === 0) {
-        const row = checked(await db().from("persona_fields").upsert({ agent_id: agentId, field, value: next.value,
-          origin: next.origin, evidence_revision_ids: next.evidenceRevisionIds,
-          pending_suggestion: next.pendingSuggestion, version: 1 }, { onConflict: "agent_id,field", ignoreDuplicates: true }).select("field").maybeSingle());
-        return row !== null;
-      }
-      const row = checked(await db().from("persona_fields").update({ value: next.value, origin: next.origin,
-        evidence_revision_ids: next.evidenceRevisionIds, pending_suggestion: next.pendingSuggestion })
-        .eq("agent_id", agentId).eq("field", field).eq("version", expectedVersion).select("field").maybeSingle());
-      return row !== null;
+      return checked(await db().rpc("persona_cas_field", { p_agent_id: agentId, p_field: field,
+        p_expected_version: expectedVersion, p_value: next.value, p_origin: next.origin,
+        p_evidence_revision_ids: next.evidenceRevisionIds, p_pending_suggestion: next.pendingSuggestion })) === true;
     },
     async casPrompt(agentId, expectedVersion, mode, text) {
       const row = checked(await db().from("agents").update({ prompt_mode: mode, custom_prompt: text,
@@ -81,9 +73,6 @@ export function createSqlPersonaStore(): PersonaStore {
       const rows = checked(await db().from("answers").select("current_revision_id").eq("agent_id", agentId)
         .is("deleted_at", null).in("current_revision_id", ids));
       return new Set((rows ?? []).map((row) => row.current_revision_id).filter((id): id is string => !!id));
-    },
-    async setCategory(agentId, category) {
-      checked(await db().from("agents").update({ category }).eq("id", agentId).is("deleted_at", null));
     },
   };
 }
@@ -107,9 +96,7 @@ export function createPersonaService(store: PersonaStore) {
     return state;
   }
   async function writeField(agentId: string, name: PersonaFieldName, expected: number, next: FieldWrite): Promise<boolean> {
-    const wrote = await store.casField(agentId, name, expected, next);
-    if (wrote && name === "category") await store.setCategory(agentId, next.value as PersonaForm["category"]);
-    return wrote;
+    return store.casField(agentId, name, expected, next);
   }
   async function evidenceValid(agentId: string, ids: string[]): Promise<boolean> {
     if (!ids.length || ids.length > 50 || new Set(ids).size !== ids.length) return false;
@@ -119,7 +106,6 @@ export function createPersonaService(store: PersonaStore) {
   async function applyPersonaSuggestions(agentId: string, patches: PersonaPatch[], observedVersions: PersonaVersions): Promise<PersonaResult> {
     if (patches.length > FIELDS.length) return invalid("Too many persona suggestions.");
     await required(agentId);
-    const conflicts: PersonaFieldName[] = [];
     const seen = new Set<PersonaFieldName>();
     for (const raw of patches) {
       const parsed = personaPatchSchema.safeParse(raw);
@@ -127,6 +113,9 @@ export function createPersonaService(store: PersonaStore) {
         return invalid("Invalid persona suggestion.");
       seen.add(raw.field);
       if (!(await evidenceValid(agentId, raw.evidenceRevisionIds))) return invalid("Suggestion evidence is not active for this agent.");
+    }
+    const conflicts: PersonaFieldName[] = [];
+    for (const raw of patches) {
       const current = (await required(agentId)).fields[raw.field] as Field;
       const observed = observedVersions[raw.field]!;
       if (current.pendingSuggestion && current.pendingSuggestion.observedVersion > observed) { conflicts.push(raw.field); continue; }
