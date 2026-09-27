@@ -268,7 +268,7 @@ begin
   if v_unknown then
     update public.operations set state='unknown' where id=p_operation_id returning * into v_op;
   elsif v_op.held_units=0 then
-    update public.operations set state='settled' where id=p_operation_id returning * into v_op;
+    update public.operations set state='settled',actual_units=coalesce(actual_units,0) where id=p_operation_id returning * into v_op;
   end if;
   return public.billing_operation_json(v_op);
 end $$;

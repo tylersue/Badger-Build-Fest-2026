@@ -22,8 +22,9 @@ Apply the migrations in this exact order. Every file is required, including seed
 6. `20260927000400_phase2_index.sql`
 7. `20260927000500_phase2_intake.sql`
 8. `20260927000600_phase2_interview.sql`
+9. `20260927000650_phase2_answer_recovery.sql`
 
-For a fresh disposable **local** project, run `supabase start`, inspect `supabase migration list --local`, then `supabase db reset` to apply the full chain. Inspect `supabase migration list --local` again and require all eight versions. For a hosted project already linked to the correct Supabase project, inspect `supabase migration list --linked`, run `supabase db push --dry-run`, review the SQL/version list, then run `supabase db push` and verify with `supabase migration list --linked`. Do not use `db reset` on hosted data. Review the target project before applying migrations.
+For a fresh disposable **local** project, run `supabase start` to apply the full chain. Inspect `supabase migration list --local` and require all nine versions. For a hosted project already linked to the correct Supabase project, inspect `supabase migration list --linked`, run `supabase db push --dry-run`, review the SQL/version list, then run `supabase db push` and verify with `supabase migration list --linked`. Do not use `db reset` on hosted data. Review the target project before applying migrations.
 
 The knowledge migration creates the private `expert-sources` Storage bucket. Verify that it exists and `public=false`. Generate database types after applying migrations: `supabase gen types typescript --local > /tmp/phase2-db.types.ts` (or `--linked` for hosted), compare that file with `lib/server/db.types.ts`, and merge intentional changes. Seed presentation fixtures with `node --env-file=.env.local --experimental-strip-types scripts/seed.ts`. The seed is idempotent and its opening grant uses a locked SQL RPC; run it only after all migrations.
 

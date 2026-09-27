@@ -62,8 +62,12 @@ describe(`billing RPC (${liveLabel})`, () => {
     expect(BigInt(String(wallet.data!.held_units))).toBe(BigInt(0));
 
     const orphan = await required(rpc(db, "reserve_operation", reserveArgs(identity, agent)));
-    expect((await required(rpc(db, "settle_operation", { p_operation_id: (orphan.data as { id: string }).id }))).data)
-      .toMatchObject({ state: "settled" });
+    const orphanId = (orphan.data as { id: string }).id;
+    const zeroUsage = await required(rpc(db, "settle_operation", { p_operation_id: orphanId }));
+    expect(zeroUsage.data).toMatchObject({ state: "settled" });
+    expect(String((zeroUsage.data as { actual_units: unknown }).actual_units)).toBe("0");
+    expect(String((zeroUsage.data as { held_units: unknown }).held_units)).toBe("0");
+    expect((await required(rpc(db, "settle_operation", { p_operation_id: orphanId }))).data).toEqual(zeroUsage.data);
     const uncertain = await required(rpc(db, "reserve_operation", reserveArgs(identity, agent)));
     const uncertainId = (uncertain.data as { id: string }).id, uncertainAttempt = id("att");
     await required(rpc(db, "record_provider_attempt", { p_attempt: transition(uncertainId, uncertainAttempt, "prepared"), p_cap_units: cap }));
