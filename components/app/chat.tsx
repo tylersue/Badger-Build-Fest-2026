@@ -37,7 +37,7 @@ export function AssistantMessage({
     }, REVEAL_TICK_MS);
     return () => window.clearInterval(id);
   }, [stream, tokens.length]);
-  const done = revealed >= tokens.length;
+  const done = !stream || revealed >= tokens.length;
   useEffect(() => {
     if (stream && done) onStreamed?.();
   }, [stream, done, onStreamed]);
@@ -121,9 +121,11 @@ export type Attachment = { name: string; chars: number };
 
 /* Composer: 96px min height, 12px radius, surface-2 (UI-SPEC). Enter sends, Shift+Enter breaks a line.
    onSend returns false when the call was refused, so the typed text is kept.
-   With onAttach set, the footer offers one file per conversation (CHAT-04). */
+   With onAttach set, the footer offers one file per conversation (CHAT-04).
+   onFocusChange lets the voice stage show listening while the field is active.
+   A non-streamed message always shows its whole current content, so a caller may grow it word by word. */
 export function Composer({
-  placeholder, onSend, disabled, hint, attachment, onAttach, onRemoveAttachment, attaching, attachError,
+  placeholder, onSend, disabled, hint, attachment, onAttach, onRemoveAttachment, attaching, attachError, onFocusChange,
 }: {
   placeholder: string;
   onSend: (text: string) => Promise<boolean> | boolean;
@@ -134,6 +136,7 @@ export function Composer({
   onRemoveAttachment?: () => void;
   attaching?: boolean;
   attachError?: string | null;
+  onFocusChange?: (focused: boolean) => void;
 }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -155,6 +158,8 @@ export function Composer({
           data-testid="composer-input"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onFocus={() => onFocusChange?.(true)}
+          onBlur={() => onFocusChange?.(false)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();

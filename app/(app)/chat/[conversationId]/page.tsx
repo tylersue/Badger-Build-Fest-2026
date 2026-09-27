@@ -7,6 +7,7 @@ import { Flag, MessageSquareOff, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { AssistantMessage, ChatColumn, Composer, CostCaption, NotEnoughCredits, UserMessage } from "@/components/app/chat";
 import { AgentTile, Breadcrumbs, EmptyState, Pill, buttonClass } from "@/components/app/ui";
+import { AgentTurn, turnPhase, useVoice, type Utterance } from "@/components/app/voice";
 import {
   agentById, allConversations, attachConversationFile, balanceOf, currentIdentity, displayName, isFreshMessage, markStreamed, messagesFor, profileFor,
   removeConversationFile, sendChatMessage, useDemo, type Refusal,
@@ -16,21 +17,37 @@ import { formatCredits, formatNumber } from "@/lib/format";
 
 type ExtractResponse = { name: string; text: string; chars: number; pages: number | null; truncated: boolean } | { error: string };
 
-/* Hirer chat (runtime lane). Answers are canned and revealed word by word (Phase 3 D-01); the wallet math is real. */
+/* Hirer chat (runtime lane). Each reply types out under a small orb that freezes when it is done (Phase 3 D-01);
+   answers are canned, the wallet math is real, and one hirer file per conversation rides along as untrusted context (CHAT-04). */
 export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const s = useDemo();
   const [refusal, setRefusal] = useState<Refusal | null>(null);
+  const [busy, setBusy] = useState(false);
   const [attaching, setAttaching] = useState(false);
   const [attachError, setAttachError] = useState<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const conversation = allConversations(s).find((c) => c.id === conversationId);
   const agent = conversation && agentById(s, conversation.agentId);
   const messages = conversation ? messagesFor(s, conversation.id) : [];
+  const latest = messages.findLast((m) => m.role === "assistant") ?? null;
+  const latestId = latest?.id ?? null;
+  // Only a reply created in this session and not shown yet types out; older replies render at once.
+  const utterance: Utterance | null = !agent
+    ? null
+    : latest
+      ? { id: latest.id, text: latest.content, speak: isFreshMessage(latest.id), leadMs: 900 }
+      : { id: "greeting", text: agent.persona.greeting || `Hi, I'm ${agent.persona.name}. Ask me anything.`, speak: true, leadMs: 400 };
+  const voice = useVoice(utterance, { busy });
+  const phase = turnPhase(voice);
+
+  useEffect(() => {
+    if (latestId && voice.done && isFreshMessage(latestId)) markStreamed(latestId);
+  }, [latestId, voice.done]);
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "end" });
-  }, [messages.length, refusal]);
+  }, [messages.length, refusal, voice.spoken]);
 
   if (!conversation || !agent) {
     return (
@@ -46,12 +63,18 @@ export default function ChatPage() {
   const expert = profileFor(s, agent.ownerId);
   const expertFirst = displayName(s, agent.ownerId).split(" ")[0];
   const disclaimer = disclaimerFor(agent.persona.category);
+  const turnLabel = phase === "thinking" ? `Searching ${expertFirst}'s answers…` : "Typing…";
 
   const send = async (text: string) => {
     setRefusal(null);
-    const r = await sendChatMessage(conversation.id, text);
-    if (!r.ok) setRefusal(r);
-    return r.ok;
+    setBusy(true);
+    try {
+      const r = await sendChatMessage(conversation.id, text);
+      if (!r.ok) setRefusal(r);
+      return r.ok;
+    } finally {
+      setBusy(false);
+    }
   };
 
   const attach = async (file: File) => {
@@ -78,6 +101,9 @@ export default function ChatPage() {
       setAttaching(false);
     }
   };
+
+  const captionFor = (m: (typeof messages)[number]) =>
+    m.refusal ? <span data-testid="no-charge">No charge · not in {expertFirst}&apos;s knowledge</span> : <CostCaption message={m} />;
 
   return (
     <div className="flex h-svh flex-col">
@@ -111,24 +137,24 @@ export default function ChatPage() {
 
       <ChatColumn>
         {messages.length === 0 && (
-          <div className="py-12 text-center">
-            <div className="text-base font-semibold">{agent.persona.name}</div>
-            <p className="mt-2 text-[13px] text-fg-muted">{agent.persona.greeting}</p>
-            {disclaimer && <p className="mt-2 text-xs text-fg-muted">{disclaimer}</p>}
-          </div>
+          <>
+            <AgentTurn name={agent.persona.name} phase={phase} label={turnLabel} onSkip={voice.skip}>
+              {voice.spoken ? <AssistantMessage content={voice.spoken} /> : null}
+            </AgentTurn>
+            {disclaimer && <p className="mb-5 text-xs text-fg-muted">{disclaimer}</p>}
+          </>
         )}
         {messages.map((m) =>
           m.role === "user" ? (
             <UserMessage key={m.id} content={m.content} />
+          ) : m.id === latest?.id && !voice.done ? (
+            <AgentTurn key={m.id} name={agent.persona.name} phase={phase} label={turnLabel} onSkip={voice.skip}>
+              {voice.spoken ? <AssistantMessage content={voice.spoken} citations={m.citations} /> : null}
+            </AgentTurn>
           ) : (
-            <AssistantMessage
-              key={m.id}
-              content={m.content}
-              citations={m.citations}
-              stream={isFreshMessage(m.id)}
-              onStreamed={() => markStreamed(m.id)}
-              caption={m.refusal ? <span data-testid="no-charge">No charge · not in {expertFirst}&apos;s knowledge</span> : <CostCaption message={m} />}
-            />
+            <AgentTurn key={m.id} name={agent.persona.name} phase="done">
+              <AssistantMessage content={m.content} citations={m.citations} caption={captionFor(m)} />
+            </AgentTurn>
           ),
         )}
         {refusal && <NotEnoughCredits needed={refusal.neededCents} available={refusal.availableCents} onDismiss={() => setRefusal(null)} />}

@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 complete for the local demo against the Phase 1 stubs (merged to main in #38 on 2026-09-27). Next - Phase 2 (real interview, embeddings, retrieval) so the Phase 3 acceptance gate can pass with real knowledge.
-last_updated: "2026-09-27T00:30:00.000Z"
-last_activity: 2026-09-26 — Phase 3 built directly: publish gate and controls, listing from the store, word-by-word canned chat, zero-cost weak-retrieval refusal, hirer file upload via /api/extract, windowed history; lint, typecheck, 19 unit tests and a production build pass.
+stopped_at: Voice orbs (interview orb stage, typed chat replies, tabbed builder routes) landed on main on top of Phase 3 (#38). Next - Phase 2 (real interview, embeddings, retrieval) so the Phase 3 acceptance gate can pass with real knowledge.
+last_updated: "2026-09-27T00:49:18.000Z"
+last_activity: 2026-09-27 — Thinking-orb voice stage (interview) and typed replies (hirer and test chat) landed on main after Phase 3 (#38), with the tabbed builder routes replacing the generic section stopgap; lint, typecheck, 36 unit tests and production build pass.
 progress:
   total_phases: 4
   completed_phases: 2
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 Phase: 2 of 4 (Interview-First Agent Building); Phase 3 complete for the local demo
 Plan: not yet written — Phases 1 and 3 were built directly without PLAN.md files
 Status: Phases 1 and 3 complete for the local demo; Phase 2 ready for team discussion and planning
-Last activity: 2026-09-27 — Phase 3 merged to main (#38, squash) after a review round; lint, typecheck, 20 unit tests, and production build pass.
+Last activity: 2026-09-27 — Voice orbs landed on main after Phase 3 (#38); lint, typecheck, 36 unit tests, and production build pass.
 
 Progress: [█████░░░░░] 50%
 
@@ -55,6 +55,8 @@ Progress: [█████░░░░░] 50%
 Decisions are logged in .planning/PROJECT.md. Current scope is interview-first, a single credit wallet, real metering, mock funding and cash-out, and no Stripe integration in v1. As of 2026-09-26 the MVP is a presentation build: no auth or RLS, two seeded identities with a sidebar switcher, placeholder seed content, UI copied from LangSmith. Phase 1 decisions: .planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md.
 
 Phase 1 landed on `main`; the team can use separate branches or worktrees for Phase 2. GSD branching_strategy stays `none`.
+
+Voice UI (2026-09-26, user direction): every AI conversation uses github.com/Jakubantalik/thinking-orbs in its spherical Rubik's cube ("solving") state. The interview keeps a stage orb in the middle with the question captioned under it; hirer chat and test chat show a small orb inline that loads while searching, animates while the reply types out, and freezes when it is done (the Phase 3 word-by-word reveal now runs through `useVoice`). The tabbed builder routes (layout + interview, test, persona, knowledge, publish, insights pages) replaced the generic `[section]` stopgap on main; the publish tab renders Phase 3's PublishSection. Shared pieces: `components/app/voice.tsx`, `components/app/orb.tsx`, `features/runtime/speech.ts`.
 
 Phase 1 pivot (2026-09-26): during `/gsd-plan-phase 1` the user redirected the planner to skip GSD plans and build Phase 1 directly as a **frontend-only** app — no backend, no Supabase, all state in the browser (localStorage) on top of placeholder data in `lib/data/seed.ts`. Credit mechanics (hire debit/credit with multiplier, interview and test charges, pre-call hard stop at zero, mock Subscribe and Buy pack with ledger rows) are real; chat and interview answers are canned. Shared contracts (`searchKnowledge`, `personaToSystemPrompt`, `buildPrompt`, chat stream event type, billing math) live in `features/` and return canned data; the regulated-category list is `lib/config/categories.ts`. Settings has a "Reset demo data" button. Known deviation from 01-UI-SPEC.md: Earnings stays visible (muted) when viewing as the hirer. The six unfinished GSD plan drafts and the dropped Supabase schema/wallet migrations and seed SQL are preserved under `.planning/phases/01-shell-wallet-shared-contracts/drafts/` for Phase 2, which will need a real backend.
 
@@ -88,6 +90,6 @@ Applied AI & Automation is confirmed. Badgers Building for Badgers and Art of th
 
 ## Session Continuity
 
-Last session: 2026-09-27T00:30:00.000Z
-Stopped at: Phase 3 merged to main (#38). A teammate added an online-fallback idea to the Phase 3 criteria on main; it is not built. Next: discuss and plan Phase 2 (backend returns in Phase 2; see drafts/unused-supabase).
+Last session: 2026-09-27T00:49:18.000Z
+Stopped at: Voice orbs landed on main on top of Phase 3 (#38). A teammate added an online-fallback idea to the Phase 3 criteria on main; it is not built. Next: discuss and plan Phase 2 (backend returns in Phase 2; see drafts/unused-supabase).
 Resume file: README.md ("Run the MVP" section), .planning/phases/03-publish-discover-use/03-CONTEXT.md and .planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md
