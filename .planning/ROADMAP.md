@@ -79,7 +79,7 @@ Before parallel implementation, record the four owners in the project board and 
 - [x] 02-08-PLAN.md — Preserve persona ownership and custom prompt mode.
 
 **Wave 4 (after Wave 3)**
-- [ ] 02-05-PLAN.md — Build metered Anthropic and Voyage provider gateway.
+- [x] 02-05-PLAN.md — Build metered Anthropic and Voyage provider gateway.
 
 **Wave 5 (after Wave 4)**
 - [ ] 02-07-PLAN.md — Activate revision-safe indexes and scoped retrieval.
@@ -147,6 +147,6 @@ Before parallel implementation, record the four owners in the project board and 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Shell, Wallet & Shared Contracts | n/a (built directly) | Complete for local demo | 2026-09-26 |
-| 2. Interview-First Agent Building | 6/18 | In Progress|  |
+| 2. Interview-First Agent Building | 7/18 | In Progress|  |
 | 3. Publish, Discover & Use | 0/TBD | Not started | - |
 | 4. Trust, Insights & Launch Readiness | 0/TBD | Not started | - |
