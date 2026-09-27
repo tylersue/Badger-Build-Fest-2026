@@ -3,84 +3,94 @@
 import { TrendingUp } from "lucide-react";
 import { CashoutButton } from "@/components/earnings/cashout-dialog";
 import { Breadcrumbs, DataTable, EmptyState, Num, NumberPill, PageBody, PageHeader, StatTile, Toolbar } from "@/components/app/ui";
-import { agentById, allConversations, allLedger, conversationStats, currentIdentity, ledgerFor, payoutsFor, useDemo } from "@/lib/demo-store";
 import { cashoutSummary } from "@/features/billing/cashout";
-import { formatCredits, formatRelative, formatUsd, isoDaysAgo } from "@/lib/format";
+import { earningsByConversation, earningsTotals, LEDGER_KIND_LABELS } from "@/features/billing/earnings";
+import { currentIdentity, ledgerFor, payoutsFor, useDemo } from "@/lib/demo-store";
+import { PURPOSE_LABELS } from "@/lib/config/credits";
+import { formatCredits, formatNumber, formatRelative, formatSignedCredits, formatUsd, isoDaysAgo } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
-/* Earnings: per conversation gross, platform share, net, from ledger rows (CRED-08 lands fully in Phase 4). */
+/* Earnings: per-conversation revenue and full wallet history (CRED-08). */
 export default function EarningsPage() {
   const s = useDemo();
   const me = currentIdentity(s);
-  const ledger = allLedger(s);
-  const mine = ledgerFor(s, me.id);
-  const earningsRefs = [...new Set(mine.filter((r) => r.kind === "earnings" && r.refType === "conversation").map((r) => r.refId!))];
-  const rows = earningsRefs.map((refId) => {
-    const conv = allConversations(s).find((c) => c.id === refId);
-    const sum = (pred: (r: (typeof ledger)[number]) => boolean) => ledger.filter((r) => r.refId === refId && pred(r)).reduce((n, r) => n + r.amountCents, 0);
-    return {
-      id: refId,
-      title: conv?.title ?? "Conversation",
-      agent: conv ? agentById(s, conv.agentId)?.persona.name ?? "" : "",
-      messages: conv ? conversationStats(s, conv.id).messageCount : 0,
-      gross: -sum((r) => r.kind === "debit"),
-      platform: sum((r) => r.kind === "platform_cost" || r.kind === "platform_margin"),
-      net: sum((r) => r.kind === "earnings" && r.identityId === me.id),
-    };
-  });
-  const monthAgo = isoDaysAgo(30);
-  const net = mine.filter((r) => r.kind === "earnings" && r.createdAt > monthAgo).reduce((n, r) => n + r.amountCents, 0);
-  const gross = rows.reduce((n, r) => n + r.gross, 0);
-  const platform = rows.reduce((n, r) => n + r.platform, 0);
-  const summary = cashoutSummary(s, me.id);
+  const conversationRows = earningsByConversation(s, me.id);
+  const totals = earningsTotals(conversationRows);
+  const history = ledgerFor(s, me.id);
   const payouts = payoutsFor(s, me.id);
+  const cashout = cashoutSummary(s, me.id);
+  const monthAgo = isoDaysAgo(30);
+  const netThisMonth = history.filter((row) => row.kind === "earnings" && row.createdAt > monthAgo).reduce((total, row) => total + row.amountCents, 0);
 
   return (
     <>
       <Breadcrumbs items={[{ label: "Earnings" }]} />
       <PageBody>
         <PageHeader title="Earnings" subtitle="Per conversation: gross, what the platform keeps, what you get. Real ledger rows, no estimates." />
-        {rows.length === 0 ? (
+        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatTile label="Net this month" value={formatCredits(netThisMonth)} caption={formatUsd(netThisMonth)} tone="success" testId="earnings-net" />
+          <StatTile label="Gross" value={formatCredits(totals.grossCents)} caption="Raw cost × your multiplier" />
+          <StatTile label="Platform share" value={formatCredits(totals.platformCents)} caption="Raw cost + 15% of margin" />
+          <StatTile label="Cash-out" value={formatCredits(cashout.lifetimeCashoutCents)} caption={`${payouts.length} requested · ${formatCredits(cashout.availableCents)} available`} />
+        </div>
+        <Toolbar>
+          <CashoutButton />
+        </Toolbar>
+
+        {conversationRows.length === 0 ? (
           <EmptyState icon={TrendingUp} heading="Nothing earned yet" body="Publish an agent. You're credited each time someone uses it." action={{ label: "Publish agent", href: "/build" }} />
         ) : (
-          <>
-            <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <StatTile label="Net this month" value={formatCredits(net)} caption={formatUsd(net)} tone="success" testId="earnings-net" />
-              <StatTile label="Gross" value={formatCredits(gross)} caption="Raw cost × your multiplier" />
-              <StatTile label="Platform share" value={formatCredits(platform)} caption="Raw cost + 15% of margin" />
-              <StatTile label="Cash-out" value={formatCredits(summary.lifetimeCashoutCents)} caption={`${payouts.length} requested · ${formatCredits(summary.availableCents)} available`} />
-            </div>
-              <Toolbar>
-              <CashoutButton />
-            </Toolbar>
-            <DataTable head={[{ label: "Conversation" }, { label: "Agent" }, { label: "Messages", numeric: true }, { label: "Gross", numeric: true }, { label: "Platform", numeric: true }, { label: "Net to you", numeric: true }]}>
-              {rows.map((r) => (
-                <tr key={r.id} data-testid="earnings-row">
-                  <td>{r.title}</td>
-                  <td className="text-fg-tertiary">{r.agent}</td>
-                  <Num><NumberPill value={r.messages} /></Num>
-                  <Num>{r.gross}</Num>
-                  <Num className="text-fg-muted">{r.platform}</Num>
-                  <Num className="text-success">+{r.net}</Num>
+          <DataTable head={[{ label: "Conversation" }, { label: "Agent" }, { label: "Messages", numeric: true }, { label: "Gross", numeric: true }, { label: "Platform", numeric: true }, { label: "Net to you", numeric: true }]}>
+            {conversationRows.map((row) => (
+              <tr key={row.conversationId} data-testid="earnings-row">
+                <td>{row.title}</td>
+                <td className="text-fg-tertiary">{row.agentName}</td>
+                <Num><NumberPill value={row.messages} /></Num>
+                <Num>{row.grossCents}</Num>
+                <Num className="text-fg-muted">{row.platformCents}</Num>
+                <Num className="text-success">+{row.netCents}</Num>
+              </tr>
+            ))}
+          </DataTable>
+        )}
+
+        {payouts.length > 0 && (
+          <section className="mt-8">
+            <h2 className="mb-3 text-base font-medium">Payouts</h2>
+            <DataTable head={[{ label: "Requested" }, { label: "Credits", numeric: true }, { label: "Amount", numeric: true }, { label: "Status" }]}>
+              {payouts.map((payout) => (
+                <tr key={payout.id} data-testid="payout-row">
+                  <td className="text-fg-muted">{formatRelative(payout.createdAt)}</td>
+                  <Num>{formatCredits(payout.credits)}</Num>
+                  <Num>{formatUsd(payout.amountUsdCents)}</Num>
+                  <td>Requested</td>
                 </tr>
               ))}
             </DataTable>
-            {payouts.length > 0 && (
-              <section className="mb-6">
-                <h2 className="mb-3 text-base font-medium">Payouts</h2>
-                <DataTable head={[{ label: "Requested" }, { label: "Credits", numeric: true }, { label: "Amount", numeric: true }, { label: "Status" }]}>
-                  {payouts.map((payout) => (
-                    <tr key={payout.id} data-testid="payout-row">
-                      <td className="text-fg-muted">{formatRelative(payout.createdAt)}</td>
-                      <Num>{formatCredits(payout.credits)}</Num>
-                      <Num>{formatUsd(payout.amountUsdCents)}</Num>
-                      <td>Requested</td>
-                    </tr>
-                  ))}
-                </DataTable>
-              </section>
-            )}
-          </>
+          </section>
         )}
+
+        <section className="mt-8">
+          <div className="mb-3">
+            <h2 className="text-base font-medium">Wallet history</h2>
+            <p className="mt-1 text-sm text-fg-muted">Every debit and credit, including cash-outs.</p>
+          </div>
+          {history.length === 0 ? (
+            <EmptyState icon={TrendingUp} heading="No activity yet" body="Credits appear here when you build, chat, or add credits." />
+          ) : (
+            <DataTable head={[{ label: "When" }, { label: "Type" }, { label: "Detail" }, { label: "Credits", numeric: true }, { label: "Balance", numeric: true }]}>
+              {history.map((row) => (
+                <tr key={row.id} data-testid="earnings-history-row">
+                  <td className="text-fg-muted">{formatRelative(row.createdAt)}</td>
+                  <td>{row.purpose ? PURPOSE_LABELS[row.purpose] : LEDGER_KIND_LABELS[row.kind]}</td>
+                  <td className="text-fg-tertiary">{row.note}</td>
+                  <Num className={cn(row.amountCents < 0 ? "text-danger" : "text-success")}>{formatSignedCredits(row.amountCents)}</Num>
+                  <Num>{row.balanceAfter === null ? "—" : formatNumber(row.balanceAfter)}</Num>
+                </tr>
+              ))}
+            </DataTable>
+          )}
+        </section>
       </PageBody>
     </>
   );

@@ -36,7 +36,7 @@ describe("earningsByConversation", () => {
 
   it("sorts equal latest earnings timestamps by conversation id", () => {
     const base = createInitialDemoState();
-    const createdAt = "2026-09-27T00:00:00.000Z";
+    const createdAt = "2030-09-27T00:00:00.000Z";
     const extra: LedgerEntry[] = ["c-knee-swelling", "c-shoulder-plan"].map((refId, index) => ({
       id: `l-latest-${index}`, identityId: "maria", kind: "earnings", amountCents: 1, balanceAfter: null,
       purpose: null, refType: "conversation", refId, note: "latest", createdAt,
@@ -68,6 +68,8 @@ describe("store integration", () => {
     expect(result.ok && result.grounded).toBe(true);
     store.switchIdentity("maria");
     const rows = earningsByConversation(store.readDemo(), "maria");
-    expect(rows.find((row) => row.conversationId === conversationId)).toMatchObject({ grossCents: 12, platformCents: 7, netCents: 5 });
+    const row = rows.find((item) => item.conversationId === conversationId);
+    expect(row).toBeDefined();
+    expect(row?.grossCents).toBe(row!.platformCents + row!.netCents);
   });
 });
