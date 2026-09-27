@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 1 complete for the local hackathon demo. Next - discuss and plan Phase 2 with the four owners.
-last_updated: "2026-09-26T22:49:13.000Z"
-last_activity: 2026-09-26 — Completed missing builder and insights routes, verified local build and checks, and removed Vercel as a hackathon gate.
+status: planning
+stopped_at: Phase 2 UI-SPEC approved; ready to resume phase planning
+last_updated: "2026-09-27T00:31:29.558Z"
+last_activity: 2026-09-26 — Missing builder and insights routes added; lint, typecheck, 8 unit tests, and production build pass.
 progress:
   total_phases: 4
   completed_phases: 1
@@ -84,6 +84,6 @@ Applied AI & Automation is confirmed. Badgers Building for Badgers and Art of th
 
 ## Session Continuity
 
-Last session: 2026-09-26T22:49:13.000Z
-Stopped at: Phase 1 complete for local demo. Next: discuss and plan Phase 2 (backend returns in Phase 2; see drafts/unused-supabase).
-Resume file: README.md ("Run the MVP" section) and .planning/phases/01-shell-wallet-shared-contracts/01-CONTEXT.md
+Last session: 2026-09-27T00:30:56Z
+Stopped at: Phase 2 UI-SPEC approved; ready to resume phase planning
+Resume file: .planning/phases/02-interview-first-agent-building/02-UI-SPEC.md
