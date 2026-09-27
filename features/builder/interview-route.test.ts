@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
-import { createInterviewHandlers } from "@/app/api/agents/[agentId]/interview/route";
-import { createAnswerHandlers } from "@/app/api/agents/[agentId]/answers/[answerId]/route";
+import { createInterviewHandlers } from "@/app/api/agents/[agentId]/interview/handlers";
+import { createAnswerHandlers } from "@/app/api/agents/[agentId]/answers/[answerId]/handlers";
 import { interviewRig } from "./interview-test-fixture";
 
 const origin = "https://local.example";

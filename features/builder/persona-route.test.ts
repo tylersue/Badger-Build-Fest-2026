@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { createPersonaService, type PersonaSnapshot, type PersonaStore } from "./persona";
-import { createPersonaHandlers } from "@/app/api/agents/[agentId]/persona/route";
+import { createPersonaHandlers } from "@/app/api/agents/[agentId]/persona/handlers";
 
 const url = "https://local.example/api/agents/agent-a/persona";
 const ctx = { params: Promise.resolve({ agentId: "agent-a" }) };

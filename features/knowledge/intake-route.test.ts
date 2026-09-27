@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import type { ConfirmSourceInput, ServiceResult, SourceEstimate, SourceInput } from "@/lib/contracts/phase2";
-import { createSourceHandlers } from "@/app/api/agents/[agentId]/sources/route";
-import { createSourceItemHandlers } from "@/app/api/agents/[agentId]/sources/[sourceId]/route";
+import { createSourceHandlers } from "@/app/api/agents/[agentId]/sources/handlers";
+import { createSourceItemHandlers } from "@/app/api/agents/[agentId]/sources/[sourceId]/handlers";
 
 const url = "https://local.example/api/agents/agent-a/sources";
 const ctx = { params: Promise.resolve({ agentId: "agent-a" }) };
