@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import type { ServiceDb } from "./db";
+import { IDENTITIES } from "@/lib/data/seed";
 import { bootstrapDemoSeed } from "@/scripts/seed";
 import { createAgent, getDemoSnapshot, importLegacyDraft, resetPresentationFixtures, saveProfile } from "./demo";
 
@@ -105,7 +106,7 @@ describe("server demo continuity", () => {
       .map((table) => [table, fake.rows(table).length]));
     await bootstrapDemoSeed(fake.db);
     expect(Object.fromEntries(Object.keys(first).map((table) => [table, fake.rows(table).length]))).toEqual(first);
-    expect(fake.rows("wallets")).toHaveLength(9);
+    expect(fake.rows("wallets")).toHaveLength(IDENTITIES.length);
     expect(fake.rows("wallets").every((wallet) => wallet.balance_units === 50_000_000_000)).toBe(true);
     expect(fake.rows("chunks")).toHaveLength(0);
     expect(fake.rows("answers").every((answer) => answer.indexed_revision_id == null)).toBe(true);

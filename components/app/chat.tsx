@@ -1,15 +1,16 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { ArrowUp, ChevronDown, ChevronRight, Database, FileText, Paperclip, Plus, Search, ThumbsDown, ThumbsUp, X, type LucideIcon } from "lucide-react";
+import { ArrowUp, ChevronDown, ChevronRight, Database, FileText, Paperclip, Plus, Search, X, type LucideIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddCreditsButton } from "@/components/app/add-credits";
+import { AnswerFeedback } from "@/components/trust/answer-feedback";
 import { FlowWords } from "@/components/app/flow";
 import { formatCredits, formatNumber } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { Citation, Message } from "@/lib/types";
 import type { EvidenceCitation, RetrievedChunk } from "@/lib/contracts/phase2";
 import { formatCreditUnits } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { evidenceGroups, retainDraftOnResult, type StreamCost } from "./chat-state";
 
 export function safeExternalUrl(value: string): string | null {
@@ -104,8 +105,7 @@ export function CostCaption({ message }: { message: Message }) {
   return (
     <>
       <span data-testid="message-cost">{message.costCents === null ? "Charge pending" : `Charged ${formatCredits(message.costCents)}`}</span>
-      <ThumbsUp className={cn("size-3", message.feedback === "up" && "text-success")} />
-      <ThumbsDown className={cn("size-3", message.feedback === "down" && "text-danger")} />
+      <AnswerFeedback message={message} />
     </>
   );
 }

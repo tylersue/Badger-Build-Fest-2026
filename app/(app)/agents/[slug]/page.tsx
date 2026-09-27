@@ -10,6 +10,7 @@ import { agentById, currentIdentity, displayName, identityById, knowledgeStats, 
 import { categoryLabel, disclaimerFor } from "@/lib/config/categories";
 import { typicalMessageCents } from "@/features/billing/pricing";
 import { formatRelative } from "@/lib/format";
+import { AgentListingExtras } from "@/components/trust/listing-extras";
 import { api } from "@/lib/api-client";
 
 /* Listing page (PUB-04, MKT-03, MKT-04): generated from persona + profile, Fleet template-detail pattern (UI-SPEC). */
@@ -156,6 +157,7 @@ export default function ListingPage() {
               </p>
             )}
           </Card>
+          <AgentListingExtras agent={agent} />
         </div>
       </PageBody>
     </>

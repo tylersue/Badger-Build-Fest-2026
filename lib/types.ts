@@ -142,7 +142,7 @@ export type LedgerEntry = OriginBridge & {
   amountCents: number;
   balanceAfter: number | null;
   purpose: MeteredPurpose | null;
-  refType: "conversation" | "agent" | "source" | "interview" | null;
+  refType: "conversation" | "agent" | "source" | "interview" | "payout" | null;
   refId: string | null;
   note: string;
   createdAt: string;
@@ -155,5 +155,42 @@ export type Flag = OriginBridge & {
   conversationId: string | null;
   reason: string;
   status: "open" | "resolved";
+  createdAt: string;
+  /** Who reported it, if known (ADMN-01). */
+  reporterId?: string | null;
+  resolvedAt?: string | null;
+  resolutionNote?: string | null;
+};
+
+export type ReviewStars = 1 | 2 | 3 | 4 | 5;
+
+export type Review = {
+  id: string;
+  agentId: string;
+  reviewerId: string;
+  stars: ReviewStars;
+  comment: string | null;
+  createdAt: string;
+};
+
+export type PayoutStatus = "requested";
+
+/** Mock cash-out record (CRED-09): 1 credit = 1 cent. */
+export type Payout = {
+  id: string;
+  identityId: string;
+  credits: number;
+  amountUsdCents: number;
+  status: PayoutStatus;
+  ledgerEntryId: string;
+  createdAt: string;
+};
+
+export type ModerationAction = {
+  id: string;
+  kind: "unpublish";
+  agentId: string;
+  note: string;
+  flagIds: string[];
   createdAt: string;
 };

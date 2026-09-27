@@ -1,24 +1,50 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { IDENTITIES, INTERVIEW_TURNS, MARIA, PROFILES } from "@/lib/data/seed";
+import { FLAGS, IDENTITIES, INTERVIEW_TURNS, MARIA, PROFILES, REVIEWS } from "@/lib/data/seed";
 import type { Category } from "@/lib/config/categories";
-import type { Agent, Conversation, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile } from "@/lib/types";
+import type { Agent, Conversation, Flag, Identity, InterviewTurn, LedgerEntry, Message, ModerationAction, Payout, PersonaForm, Profile, Review } from "@/lib/types";
 import type { DemoSnapshot } from "@/lib/server/demo";
 import type { InterviewView } from "@/features/builder/interview";
 import { api, ApiClientError, newRequestKey, streamChat, streamSandbox } from "./api-client";
 import type { ChatStreamEvent } from "@/features/runtime/events";
 
-const STORAGE_KEY = "bx-demo-bridge-v2";
+export const STORAGE_KEY = "bx-demo-bridge-v2";
 const LEGACY_KEY = "bx-demo-v1";
-type DraftKind = "interview" | "interview-control" | "grant" | "persona" | "source" | "sandbox" | "profile" | "chat";
-type Draft = { value: string; requestKey: string; dirty: true; operationId?: string };
-type Drafts = Record<string, Draft>;
-export type DemoState = { v: 2; identityId: string; snapshot: DemoSnapshot | null;
-  drafts: Drafts; interviews: Record<string, InterviewView>; status: "loading" | "ready" | "error";
-  error: string | null };
+import type { DemoState, Draft, DraftKind } from "./demo-state";
+export type { DemoState, FlagEdit } from "./demo-state";
+
 const initialState = (): DemoState => ({ v: 2, identityId: MARIA, snapshot: null, drafts: {},
-  interviews: {}, status: "loading", error: null });
+  interviews: {}, status: "loading", error: null,
+  ledger: [], profileEdits: {}, agentEdits: {}, newAgents: [], conversations: [], conversationEdits: {},
+  messages: [], interviewTurns: [], answeredTurns: {}, knowledgeTouchedAt: {},
+  reviews: [], flags: [], flagEdits: {}, messageFeedback: {}, payouts: [], moderationActions: [] });
+
+/** Reviews, moderation and mock payouts remain local; the server owns chats, sharing, feedback and money. */
+function phase4State(s: DemoState) {
+  return { agentEdits: s.agentEdits,
+    reviews: s.reviews, flags: s.flags, flagEdits: s.flagEdits,
+    payouts: s.payouts, moderationActions: s.moderationActions,
+    ledger: s.ledger.filter(row => row.kind === "cashout" && row.refType === "payout") };
+}
+export function normalizeDemoState(raw: unknown): DemoState | null {
+  if (!raw || typeof raw !== "object" || (raw as { v?: unknown }).v !== 2) return null;
+  const parsed = raw as Partial<DemoState> & { phase4?: Partial<DemoState> };
+  const result = initialState();
+  result.identityId = parsed.identityId === "sam" ? "sam" : MARIA;
+  const record = (value: unknown) => !!value && typeof value === "object" && !Array.isArray(value);
+  if (record(parsed.drafts)) result.drafts = parsed.drafts!;
+  const local = parsed.phase4 ?? {};
+  for (const key of ["agentEdits", "flagEdits"] as const) {
+    if (record(local[key])) Object.assign(result, { [key]: local[key] });
+  }
+  for (const key of ["reviews", "flags", "payouts", "moderationActions"] as const) {
+    if (Array.isArray(local[key])) Object.assign(result, { [key]: local[key] });
+  }
+  if (Array.isArray(local.ledger)) result.ledger = local.ledger.filter(row => row?.kind === "cashout" && row.refType === "payout");
+  return result;
+}
+export const createInitialDemoState = (): DemoState => initialState();
 const serverFallback = initialState();
 let state: DemoState | null = null;
 let started = false;
@@ -35,11 +61,7 @@ function load(): DemoState {
   if (typeof window === "undefined") return serverFallback;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<DemoState>;
-      if (parsed.v === 2) return { ...initialState(), identityId: parsed.identityId === "sam" ? "sam" : MARIA,
-        drafts: parsed.drafts && typeof parsed.drafts === "object" ? parsed.drafts : {} };
-    }
+    if (raw) return normalizeDemoState(JSON.parse(raw)) ?? initialState();
   } catch { /* In-memory drafts still work when storage is unavailable. */ }
   return initialState();
 }
@@ -49,9 +71,14 @@ function getSnapshot(): DemoState {
   return state;
 }
 export const readDemoState = (): DemoState => getSnapshot();
+export const readDemo = readDemoState;
+export function commitDemo(update: (current: DemoState) => DemoState): DemoState {
+  setState(update);
+  return getSnapshot();
+}
 function setState(update: (current: DemoState) => DemoState) {
   state = update(getSnapshot());
-  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: 2, identityId: state.identityId, drafts: state.drafts })); }
+  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: 2, identityId: state.identityId, drafts: state.drafts, phase4: phase4State(state) })); }
   catch { /* Keep in memory. */ }
   listeners.forEach(listener => listener());
 }
@@ -131,10 +158,12 @@ export function profileFor(s: DemoState, identityId: string): Profile {
       contactUrl: "", bio: "", location: "" };
 }
 export function displayName(s: DemoState, identityId: string): string { return profileFor(s, identityId).displayName || identityById(identityId).displayName; }
-export function allAgents(s: DemoState): Agent[] { return live(s)?.agents ?? []; }
+export function allAgents(s: DemoState): Agent[] {
+  return (live(s)?.agents ?? []).map(agent => ({ ...agent, ...s.agentEdits[agent.id] }));
+}
 export function agentById(s: DemoState, id: string): Agent | undefined { return allAgents(s).find(a => a.id === id || a.slug === id); }
-export function ledgerFor(s: DemoState, identityId: string): LedgerEntry[] { return live(s)?.ledger.filter(r => r.identityId === identityId) ?? []; }
-export function allLedger(s: DemoState): LedgerEntry[] { return live(s)?.ledger ?? []; }
+export function ledgerFor(s: DemoState, identityId: string): LedgerEntry[] { return allLedger(s).filter(r => r.identityId === identityId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); }
+export function allLedger(s: DemoState): LedgerEntry[] { return live(s) ? [...live(s)!.ledger, ...s.ledger.filter(row => row.identityId === s.identityId && row.kind === "cashout" && row.refType === "payout")] : []; }
 export function balanceOf(s: DemoState, identityId: string): number {
   const snapshot = live(s);
   return identityId === s.identityId && snapshot ? cents(snapshot.wallet.balanceUnits) : 0;
@@ -144,6 +173,47 @@ export function messagesFor(s: DemoState, conversationId: string): Message[] {
   return (live(s)?.messages ?? []).filter(m => m.conversationId === conversationId)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
+/** Only messages returned for the selected identity can be rated or displayed. */
+export function messageById(s: DemoState, messageId: string): Message | undefined {
+  const found = (live(s)?.messages ?? []).find((m) => m.id === messageId);
+  return found;
+}
+
+export function allReviews(s: DemoState): Review[] {
+  const ids = new Set(allAgents(s).map(agent => agent.id));
+  return [...REVIEWS, ...(s.reviews ?? [])].filter(review => ids.has(review.agentId));
+}
+
+export function reviewsFor(s: DemoState, agentId: string): Review[] {
+  return allReviews(s)
+    .filter((r) => r.agentId === agentId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function allFlags(s: DemoState): Flag[] {
+  return [...FLAGS, ...(s.flags ?? [])].map((f) => ({ ...f, ...s.flagEdits?.[f.id] }));
+}
+
+export function allPayouts(s: DemoState): Payout[] {
+  return s.payouts ?? [];
+}
+
+export function payoutsFor(s: DemoState, identityId: string): Payout[] {
+  return allPayouts(s)
+    .filter((p) => p.identityId === identityId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function allModerationActions(s: DemoState): ModerationAction[] {
+  return s.moderationActions ?? [];
+}
+
+export function moderationActionsFor(s: DemoState, agentId: string): ModerationAction[] {
+  return allModerationActions(s)
+    .filter((m) => m.agentId === agentId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
 export function conversationStats(s: DemoState, conversationId: string) {
   const messages = messagesFor(s, conversationId);
   return { messageCount: messages.length, spentCents: messages.reduce((sum, m) => sum + (m.role === "assistant" ? m.costCents ?? 0 : 0), 0),
@@ -266,7 +336,7 @@ export async function createAgent(input: { name: string; category: Category }): 
 export async function resetDemo(): Promise<void> {
   requireLive();
   const snapshot = await api.reset();
-  setState(s => ({ ...s, snapshot, drafts: {}, interviews: {}, status: "ready", error: null }));
+  setState(s => ({ ...initialState(), identityId: s.identityId, snapshot, status: "ready" }));
 }
 
 /** Legacy money rows are excluded. Original v1 data stays until every record is acknowledged. */
@@ -276,7 +346,8 @@ export async function importLegacyDrafts(): Promise<{ imported: number; remainin
   if (!raw) return { imported: 0, remaining: 0 };
   const legacy = JSON.parse(raw) as { profileEdits?: Record<string, Partial<Profile>>;
     agentEdits?: Record<string, Partial<Agent>>; answeredTurns?: Record<string, string>;
-    newAgents?: Agent[]; messages?: Message[] };
+    newAgents?: Agent[]; messages?: Message[]; reviews?: Review[]; flags?: Flag[]; payouts?: Payout[];
+    moderationActions?: ModerationAction[]; conversationEdits?: Record<string, Partial<Conversation>> };
   const records: unknown[] = [];
   const identityId = getSnapshot().identityId;
   if (legacy.profileEdits?.[identityId]) {
@@ -290,7 +361,9 @@ export async function importLegacyDrafts(): Promise<{ imported: number; remainin
     const turn = INTERVIEW_TURNS.find(t => t.id === turnId);
     if (turn && answer.trim()) records.push({ key: `answer:${turnId}`, kind: "answer", agentId: turn.agentId, question: turn.question, text: answer });
   }
-  const unhandled = (legacy.newAgents?.length ?? 0) + (legacy.messages?.length ?? 0) +
+  const unhandled = (legacy.reviews?.length ?? 0) + (legacy.flags?.length ?? 0) +
+    (legacy.payouts?.length ?? 0) + (legacy.moderationActions?.length ?? 0) +
+    Object.keys(legacy.conversationEdits ?? {}).length + (legacy.newAgents?.length ?? 0) + (legacy.messages?.length ?? 0) +
     Object.keys(legacy.profileEdits ?? {}).filter(id => id !== identityId).length +
     Object.values(legacy.agentEdits ?? {}).filter(edit => edit.systemPromptOverride !== undefined).length;
   if (!records.length) return { imported: 0, remaining: unhandled };

@@ -98,6 +98,9 @@ export const api = {
     { method: "PATCH", body: { multiplier } }),
   createConversation: (agentId: string, title: string) => apiRequest<{ id: string }>("/api/conversations",
     { method: "POST", body: { agentId, title } }),
+  conversationControls: (conversationId: string, input: { action: "share"; shareTranscript: boolean } | { action: "feedback"; messageId: string; feedback: "up" | "down" | null }) =>
+    apiRequest<{ shareTranscript?: boolean; feedback?: "up" | "down" | null }>(`/api/conversations/${encodeURIComponent(conversationId)}/controls`,
+      { method: "PATCH", body: input }),
   chatTranscript: (conversationId: string) => apiRequest<{ messages: unknown[] }>(`/api/conversations/${encodeURIComponent(conversationId)}/messages`),
   chatReplay: (conversationId: string, operationId: string) => apiRequest<{ events: ChatStreamEvent[] }>(
     `/api/conversations/${encodeURIComponent(conversationId)}/messages?operationId=${encodeURIComponent(operationId)}`),

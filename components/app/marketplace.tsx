@@ -6,6 +6,7 @@ import { ArrowDownUp, Plus, Search, Store, X } from "lucide-react";
 import { Breadcrumbs, EmptyState, IdentityAvatar, PageBody, PageHeader, Pill, buttonClass } from "@/components/app/ui";
 import { allAgents, currentIdentity, displayName, identityById, profileFor, useDemo } from "@/lib/demo-store";
 import { CATEGORIES, categoryLabel, type Category } from "@/lib/config/categories";
+import { BenchmarkScoreBadge } from "@/components/benchmark/benchmark-ui";
 import { typicalMessageCents } from "@/features/billing/pricing";
 import { cn } from "@/lib/utils";
 import type { Agent } from "@/lib/types";
@@ -143,6 +144,7 @@ function AgentCard({ agent: a }: { agent: Agent }) {
       <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-fg-muted">{a.persona.description}</p>
       <div className="mt-auto flex items-center gap-2 pt-4">
         <Pill>{categoryLabel(a.persona.category)}</Pill>
+        <BenchmarkScoreBadge agent={a} />
         <span className="ml-auto text-xs text-fg-muted tabular-nums">{typicalMessageCents(a.rateMultiplier)} credits / msg</span>
       </div>
     </Link>

@@ -6,7 +6,7 @@
  * - per conversation, hirer debit = platform cost + platform margin + expert earnings.
  * Timestamps are relative to page load so the history always looks recent.
  */
-import type { Agent, Chunk, Citation, Conversation, Flag, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile, Source } from "@/lib/types";
+import type { Agent, Chunk, Citation, Conversation, Flag, Identity, InterviewTurn, LedgerEntry, Message, PersonaForm, Profile, Review, Source } from "@/lib/types";
 
 const MIN = 60_000;
 const loadedAt = Date.now();
@@ -26,6 +26,10 @@ export const IDENTITIES: Identity[] = [
   { id: "tom", kind: "expert", displayName: "Tom Reyes", avatarInitial: "T", avatarColor: "#079455", isSwitchable: false },
   { id: "jordan", kind: "hirer", displayName: "Jordan Lee", avatarInitial: "J", avatarColor: "#5a3a36", isSwitchable: false },
   { id: "alex", kind: "hirer", displayName: "Alex Rivera", avatarInitial: "A", avatarColor: "#36475a", isSwitchable: false },
+  // Reviewer-only hirers (Phase 4 MKT-05/MKT-V2-03): never the switchable hirer, never seeded with a ledger or profile.
+  { id: "riley", kind: "hirer", displayName: "Riley Brooks", avatarInitial: "R", avatarColor: "#1566b8", isSwitchable: false },
+  { id: "morgan", kind: "hirer", displayName: "Morgan Diaz", avatarInitial: "M", avatarColor: "#6244a0", isSwitchable: false },
+  { id: "casey", kind: "hirer", displayName: "Casey Nguyen", avatarInitial: "C", avatarColor: "#079455", isSwitchable: false },
 ];
 
 export const PROFILES: Profile[] = [
@@ -304,9 +308,56 @@ export const LEDGER: LedgerEntry[] = [
   row(null, "platform_cost", 2, null, 2 * DAY, "Raw LLM cost", chat("c-shin-splints")),
 ];
 
-export const FLAGS: Flag[] = [];
+export const FLAGS: Flag[] = [
+  {
+    id: "f-seed-1", targetType: "agent", agentId: "luis-ortega-strength-coaching", conversationId: null,
+    reason: "Inaccurate or unsafe advice: Told me to keep squatting on a sore knee", reporterId: "alex", status: "open", createdAt: ago(2 * DAY),
+  },
+  {
+    id: "f-seed-2", targetType: "conversation", agentId: "maria-chen-physical-therapy", conversationId: "c-shin-splints",
+    reason: "Something else: The answer skipped my question about shin pain", reporterId: "alex", status: "open", createdAt: ago(1 * DAY),
+  },
+  {
+    id: "f-seed-3", targetType: "agent", agentId: "hannah-kim-first-job-finances", conversationId: null,
+    reason: "Spam or advertising: Kept mentioning one credit card", reporterId: "riley", status: "resolved",
+    createdAt: ago(5 * DAY), resolvedAt: ago(4 * DAY), resolutionNote: "Reviewed: general guidance, no product placement.",
+  },
+];
 
-// Presentation history is explicitly marked and can never qualify as live evidence.
+/**
+ * Seeded reviews are the written subset of each agent's seeded ratingCount.
+ * They are placeholder content (Phase 1 D-03) that predates the 5-message
+ * rule (D-07), so ratingAvg and ratingCount stay the seeded values above —
+ * these rows only make the listing and reviews list look lived-in.
+ */
+export const REVIEWS: Review[] = [
+  // maria-chen-physical-therapy (owner maria, ratingAvg 4.8)
+  { id: "r-seed-1", agentId: "maria-chen-physical-therapy", reviewerId: "jordan", stars: 5, comment: "Maria's plan for my shoulder was so much more specific than anything I found online. I followed the band routine and could sleep on that side again within two weeks.", createdAt: ago(18 * DAY) },
+  { id: "r-seed-2", agentId: "maria-chen-physical-therapy", reviewerId: "alex", stars: 5, comment: null, createdAt: ago(9 * DAY) },
+  { id: "r-seed-3", agentId: "maria-chen-physical-therapy", reviewerId: "riley", stars: 4, comment: "Answers cite the source every time, which made me trust the running advice enough to actually follow it.", createdAt: ago(2 * DAY) },
+  // dev-patel-tax-for-freelancers (owner dev, ratingAvg 4.6)
+  { id: "r-seed-4", agentId: "dev-patel-tax-for-freelancers", reviewerId: "riley", stars: 5, comment: "Finally an estimate calculator that explains the safe-harbor rule instead of just spitting out a number.", createdAt: ago(15 * DAY) },
+  { id: "r-seed-5", agentId: "dev-patel-tax-for-freelancers", reviewerId: "morgan", stars: 4, comment: null, createdAt: ago(7 * DAY) },
+  { id: "r-seed-6", agentId: "dev-patel-tax-for-freelancers", reviewerId: "casey", stars: 5, comment: "Told me exactly which form to check instead of guessing at my situation.", createdAt: ago(1 * DAY) },
+  // priya-nair-college-admissions (owner priya, ratingAvg 4.9)
+  { id: "r-seed-7", agentId: "priya-nair-college-admissions", reviewerId: "alex", stars: 5, comment: "Rewrote my opening line into something that actually sounded like me.", createdAt: ago(12 * DAY) },
+  { id: "r-seed-8", agentId: "priya-nair-college-admissions", reviewerId: "morgan", stars: 5, comment: null, createdAt: ago(6 * DAY) },
+  { id: "r-seed-9", agentId: "priya-nair-college-admissions", reviewerId: "casey", stars: 4, comment: "Helped me trim my school list down from twelve to a sane number.", createdAt: ago(3 * DAY) },
+  // luis-ortega-strength-coaching (owner luis, ratingAvg 4.7)
+  { id: "r-seed-10", agentId: "luis-ortega-strength-coaching", reviewerId: "jordan", stars: 5, comment: "Gave me a regression for every lift so I could keep training around my knee.", createdAt: ago(10 * DAY) },
+  { id: "r-seed-11", agentId: "luis-ortega-strength-coaching", reviewerId: "morgan", stars: 4, comment: null, createdAt: ago(5 * DAY) },
+  { id: "r-seed-12", agentId: "luis-ortega-strength-coaching", reviewerId: "casey", stars: 5, comment: "The deload week advice alone was worth it.", createdAt: ago(2 * DAY) },
+  // hannah-kim-first-job-finances (owner hannah, ratingAvg 4.5)
+  { id: "r-seed-13", agentId: "hannah-kim-first-job-finances", reviewerId: "alex", stars: 4, comment: "Walked me through the 401(k) match math with actual numbers, not just \"contribute as much as you can\".", createdAt: ago(8 * DAY) },
+  { id: "r-seed-14", agentId: "hannah-kim-first-job-finances", reviewerId: "riley", stars: 5, comment: null, createdAt: ago(4 * DAY) },
+  { id: "r-seed-15", agentId: "hannah-kim-first-job-finances", reviewerId: "casey", stars: 4, comment: "Straightforward on the emergency fund question, no fluff.", createdAt: ago(1 * DAY) },
+  // tom-reyes-resume-interviews (owner tom, ratingAvg 4.8)
+  { id: "r-seed-16", agentId: "tom-reyes-resume-interviews", reviewerId: "jordan", stars: 5, comment: "Rewrote one of my bullets live and it was night and day.", createdAt: ago(6 * DAY) },
+  { id: "r-seed-17", agentId: "tom-reyes-resume-interviews", reviewerId: "riley", stars: 5, comment: null, createdAt: ago(3 * DAY) },
+  { id: "r-seed-18", agentId: "tom-reyes-resume-interviews", reviewerId: "morgan", stars: 4, comment: "Good on the \"tell me about a conflict\" answer, didn't sound scripted.", createdAt: ago(1 * DAY) },
+];
+
+// Presentation fixtures never qualify as live evidence.
 for (const records of [IDENTITIES, PROFILES, AGENTS, SOURCES, CHUNKS, INTERVIEW_TURNS, CONVERSATIONS, MESSAGES, LEDGER, FLAGS]) {
   for (const record of records) record.origin = "fixture";
 }
