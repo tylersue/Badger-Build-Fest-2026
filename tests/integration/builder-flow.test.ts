@@ -159,14 +159,15 @@ describe("offline builder handoff (injected adapters; no SQL or paid calls)", ()
     const webCitation = { evidenceId: "web:observed", ordinal: 1, excerpt: "Public evidence",
       sourceName: "Public guide", sourceType: "web" as const, title: "Public guide",
       url: "https://example.org/guide", retrievedAt: new Date().toISOString() };
-    const answer = async (missing: string[], online: boolean) => {
+    const answer = async (missing: string[], online: boolean, empty = false) => {
       const result: ChatStreamEvent[] = [];
       for await (const event of runAnswer({ agentId: "agent-a", actorId: "maria", conversationId: "sandbox:agent-a",
         requestKey: online ? "web" : "expert", text: "How do I ask about goals?", mode: "sandbox" }, {
         store, reserve: vi.fn(async () => ok({ ...operation, id: `op_${crypto.randomUUID()}` })) as never,
         settle: vi.fn(async () => ok({ ...operation, state: "settled", actualUnits: "7", heldUnits: "0" })) as never,
-        search: vi.fn(async () => ok([chunk])) as never,
-        assess: vi.fn(async () => ok({ supportedIds: [chunk.id], missingParts: missing, sufficient: !missing.length })) as never,
+        search: vi.fn(async () => ok(empty ? [] : [chunk])) as never,
+        assess: vi.fn(async () => ok({ supportedIds: empty ? [] : [chunk.id], missingParts: missing,
+          sufficient: !missing.length })) as never,
         web: vi.fn(async (_request, onStep) => {
           if (online) await onStep("tool-result", { id: "step", operationId: operation.id, sequence: 1,
             kind: "search", status: "complete", query: "goals", title: "Public guide", url: "https://example.org/guide" });
@@ -190,9 +191,12 @@ describe("offline builder handoff (injected adapters; no SQL or paid calls)", ()
     expect(persisted).toMatchObject({ chargedUnits: "7" });
     expect((await listSources("agent-a", intake.deps)).ok).toBe(true);
     expect(intake.sources.size).toBe(1); // Web research did not write a source.
+    events.length = 0;
+    const unsupported = await answer(["private missing detail"], false, true);
+    expect(unsupported.find(event => event.type === "text-delta")).toMatchObject({ delta: UNKNOWN_ANSWER });
+    expect(unsupported.some(event => event.type === "citations")).toBe(false);
     expect((await deleteSource("agent-a", chunk.sourceId, intake.deps)).ok).toBe(true);
     const afterDelete = await listSources("agent-a", intake.deps);
     expect(afterDelete.ok && afterDelete.data.sources).toHaveLength(0);
-    expect(UNKNOWN_ANSWER).toContain("verified");
   });
 });
