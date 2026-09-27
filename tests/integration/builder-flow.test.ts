@@ -6,6 +6,7 @@ import { createPersonaService, type PersonaSnapshot, type PersonaStore } from "@
 import { confirmSource, deleteSource, listSources, preflightSource, type IntakeDependencies,
   type SourceListItem } from "@/features/knowledge/intake";
 import { runAnswer, UNKNOWN_ANSWER, type AnswerStore } from "@/features/runtime/agent";
+import { PRICE_VERSION } from "@/features/billing/pricing";
 import type { ChatStreamEvent, KnowledgeSource, Operation, ServiceResult } from "@/lib/contracts/phase2";
 
 const ok = <T>(data: T): ServiceResult<T> => ({ ok: true, data });
@@ -140,7 +141,7 @@ describe("offline builder handoff (injected adapters; no SQL or paid calls)", ()
     const operation = { id: `op_${crypto.randomUUID()}`, identityId: "maria", agentId: "agent-a", purpose: "sandbox",
       requestKey: "sandbox-1", payloadHash: createHash("sha256").update("sandbox").digest("hex"),
       estimateUnits: "20", heldUnits: "20", actualUnits: null, state: "reserved",
-      priceVersion: "2026-09-26-standard-v1", createdAt: new Date().toISOString() } as Operation;
+      priceVersion: PRICE_VERSION, createdAt: new Date().toISOString() } as Operation;
     const events: ChatStreamEvent[] = [];
     let persisted: unknown;
     const store: AnswerStore = {
@@ -177,6 +178,7 @@ describe("offline builder handoff (injected adapters; no SQL or paid calls)", ()
         synthesize: vi.fn(async () => ok({ value: { text: online
           ? "Ask about goals [expert:chunk-1]. Public guide [web:observed]." : "Ask about goals [expert:chunk-1].",
           citationIds: online ? ["expert:chunk-1", "web:observed"] : ["expert:chunk-1"] } })) as never,
+        review: vi.fn(async () => ok({ supported: true, unsupportedClaims: [] })) as never,
       })) result.push(event);
       return result;
     };

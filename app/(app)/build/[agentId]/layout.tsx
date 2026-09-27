@@ -34,7 +34,7 @@ export default function BuilderLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-svh flex-col">
       <Breadcrumbs items={[{ label: "My agents", href: "/build" }, { label: agent.persona.name }]} actions={<StatusPill status={agent.status} />} />
-      <nav className="flex shrink-0 gap-1 border-b border-line-muted px-4" aria-label="Agent sections">
+      <nav className="flex max-w-full min-w-0 shrink-0 gap-1 overflow-x-auto border-b border-line-muted px-4" aria-label="Agent sections">
         {TABS.map((t) => {
           const href = `/build/${agent.id}/${t.key}`;
           const active = pathname === href;
@@ -43,7 +43,7 @@ export default function BuilderLayout({ children }: { children: ReactNode }) {
               key={t.key}
               href={href}
               data-testid={`tab-${t.key}`}
-              className={cn("-mb-px border-b-2 px-2.5 py-2 text-[13px] font-medium", active ? "border-brand-border text-foreground" : "border-transparent text-fg-muted hover:text-foreground")}
+              className={cn("-mb-px shrink-0 border-b-2 px-2.5 py-2 text-[13px] font-medium", active ? "border-brand-border text-foreground" : "border-transparent text-fg-muted hover:text-foreground")}
             >
               {t.label}
             </Link>

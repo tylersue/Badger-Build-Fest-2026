@@ -1,5 +1,4 @@
 import { Worker } from "node:worker_threads";
-import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import type { ServiceResult, SourceInput, SourceLimits, TextSegment } from "../../lib/contracts/phase2";
 import { PARSER_WORKER_SOURCE } from "./parse-worker";
@@ -38,9 +37,19 @@ export async function parseSource(input: ParseInput, limits: SourceLimits): Prom
     try { const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(text)) return fail("Text files must contain plain UTF-8 text."); } catch { return fail("The source is not valid UTF-8 text."); }
   }
   try {
-    // Resolve installed Node packages explicitly; the worker never needs a TS loader or network/CDN.
-    const resolve = createRequire(`${process.cwd()}/package.json`).resolve;
-    const packages = { pdf: pathToFileURL(resolve("pdfjs-dist/legacy/build/pdf.mjs")).href, pdfWorker: pathToFileURL(resolve("pdfjs-dist/legacy/build/pdf.worker.mjs")).href, mammoth: resolve("mammoth") };
+    // Resolve packages at runtime. Webpack can erase a statically imported
+    // createRequire call in a route bundle, leaving its `.resolve` undefined.
+    // Plain text needs no parser package at all.
+    const packages = { pdf: "", pdfWorker: "", mammoth: "" };
+    if (extension === "pdf" || extension === "docx") {
+      const nodeModule = process.getBuiltinModule("module");
+      if (!nodeModule) return fail("The document parser could not start.");
+      const resolvePackage = nodeModule.createRequire(`${process.cwd()}/package.json`).resolve;
+      if (extension === "pdf") {
+        packages.pdf = pathToFileURL(resolvePackage("pdfjs-dist/legacy/build/pdf.mjs")).href;
+        packages.pdfWorker = pathToFileURL(resolvePackage("pdfjs-dist/legacy/build/pdf.worker.mjs")).href;
+      } else packages.mammoth = resolvePackage("mammoth");
+    }
     return await new Promise(resolveResult => {
       const worker = new Worker(PARSER_WORKER_SOURCE, { eval: true, workerData: { bytes, kind: extension, limits: bounded, packages }, resourceLimits: { maxOldGenerationSizeMb: bounded.parserHeapMb, maxYoungGenerationSizeMb: Math.min(16, bounded.parserHeapMb), stackSizeMb: 4 }, stdout: true, stderr: true });
       // Drain diagnostics without reflecting document content or parser errors to clients/logs.

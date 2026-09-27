@@ -13,6 +13,7 @@ import { researchWeb, type WebEvidence } from "./web";
 import { meteredStructured } from "@/lib/llm/gateway";
 import { modelForCategory } from "@/lib/config/models";
 import { buildPrompt, validateCitations } from "./policy";
+import { reviewGrounding } from "./grounding";
 import { createPersonaService, createSqlPersonaStore } from "@/features/builder/persona";
 import { requireServiceDb } from "@/lib/server/db";
 
@@ -31,7 +32,8 @@ export interface AnswerStore {
   wallet(actorId: string): Promise<{ balanceUnits: string; heldUnits: string }>;
 }
 export type AnswerDependencies = { store: AnswerStore; reserve: typeof reserveOperation; settle: typeof settleOperation;
-  search: typeof searchKnowledge; assess: typeof assessSufficiency; web: typeof researchWeb; synthesize: typeof meteredStructured };
+  search: typeof searchKnowledge; assess: typeof assessSufficiency; web: typeof researchWeb; synthesize: typeof meteredStructured;
+  review: typeof reviewGrounding };
 export class AnswerFailure extends Error {
   constructor(readonly detail: ServiceError) { super(detail.message); this.name = "AnswerFailure"; }
 }
@@ -111,7 +113,8 @@ export function createSqlAnswerStore(): AnswerStore {
 const answerSchema = z.object({ text: z.string().min(1).max(12000), citationIds: z.array(z.string()).max(20) });
 export const UNKNOWN_ANSWER = "I don't have enough verified information to answer that yet.";
 const defaultDeps = (): AnswerDependencies => ({ store: createSqlAnswerStore(), reserve: reserveOperation,
-  settle: settleOperation, search: searchKnowledge, assess: assessSufficiency, web: researchWeb, synthesize: meteredStructured });
+  settle: settleOperation, search: searchKnowledge, assess: assessSufficiency, web: researchWeb, synthesize: meteredStructured,
+  review: reviewGrounding });
 
 /** Persist-before-emit producer continues settlement even if the client disconnects. */
 export async function* runAnswer(input: RunAnswerInput, supplied?: Partial<AnswerDependencies>): AsyncIterable<ChatStreamEvent> {
@@ -191,7 +194,13 @@ export async function* runAnswer(input: RunAnswerInput, supplied?: Partial<Answe
         const inlineIds = [...output.text.matchAll(/\[(?:expert|web):[^\]\s]+\]/g)].map(match => match[0].slice(1, -1));
         if (!valid?.length || output.citationIds.some(id => !output.text.includes(`[${id}]`)) ||
           inlineIds.some(id => !valid.some(citation => citation.evidenceId === id))) text = UNKNOWN_ANSWER;
-        else { text = output.text; citations = valid; }
+        else {
+          const review = await deps.review({ operation, question: input.text, answer: output.text, citations: valid,
+            expert, web, attachment: context.data.attachment });
+          if (!review.ok) throw review.error;
+          if (review.data.supported) { text = output.text; citations = valid; }
+          else text = UNKNOWN_ANSWER;
+        }
       }
       if (text) await emit({ type: "text-delta", delta: text });
       if (citations.length) await emit({ type: "citations", citations });

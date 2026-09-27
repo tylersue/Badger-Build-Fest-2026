@@ -3,7 +3,9 @@ import { PLATFORM_MARGIN_SHARE, TYPICAL_CALL_CENTS, type MeteredPurpose } from "
 import type { ModelId } from "@/lib/config/models";
 
 /** Cents per million tokens (claude-api pricing, 2026). */
-export const PRICING_CENTS_PER_MTOK: Record<ModelId | "voyage-4-lite", { input: number; output: number; cacheRead: number }> = {
+export const PRICING_CENTS_PER_MTOK: Record<ModelId | "voyage-4-lite" | "claude-sonnet-5" | "claude-opus-5-5" | "claude-haiku-4-5", { input: number; output: number; cacheRead: number }> = {
+  "gpt-6-luna": { input: 10, output: 50, cacheRead: 1 },
+  "gpt-4.1": { input: 200, output: 800, cacheRead: 50 },
   "claude-sonnet-5": { input: 200, output: 1000, cacheRead: 10 },
   "claude-opus-5-5": { input: 400, output: 2000, cacheRead: 20 },
   "claude-haiku-4-5": { input: 100, output: 500, cacheRead: 5 },

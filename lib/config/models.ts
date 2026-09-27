@@ -2,9 +2,9 @@ import type { Category } from "./categories";
 
 /** The platform sets the model per category (PERS-03); experts never pick one. */
 export const MODELS = {
-  default: "gpt-4.1-mini",
+  default: "gpt-6-luna",
   quality: "gpt-4.1",
-  utility: "gpt-4.1-mini",
+  utility: "gpt-6-luna",
 } as const;
 
 export type ModelId = (typeof MODELS)[keyof typeof MODELS];

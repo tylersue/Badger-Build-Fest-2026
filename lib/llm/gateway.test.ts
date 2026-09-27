@@ -147,4 +147,22 @@ describe("metered provider gateway", () => {
     expect(log).toEqual(["record_provider_attempt", "record_provider_attempt", "openai",
       "record_provider_attempt", "settle_operation"]);
   });
+  it("reserves Luna's long-context upper bound before dispatch", async () => {
+    let preparedHold: string | undefined;
+    const fallback = billing([]);
+    const rpc: BillingRpc = async (name, args) => {
+      if (name === "record_provider_attempt" && (args.p_attempt as { state: string }).state === "prepared")
+        preparedHold = String((args.p_attempt as { heldUnits: string }).heldUnits);
+      return fallback(name, args);
+    };
+    const openai: AnthropicAdapter = { structured: vi.fn(), stream: async () => ({ value: "ok",
+      steps: [{ inputTokens: 10, outputTokens: 5,
+        inputTokenDetails: { noCacheTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 } }],
+      providerRequestId: "resp-luna", successfulSearchCount: 0 }) };
+    const result = await meteredStream({ operation: op, stageKey: "luna-long", model: "gpt-6-luna",
+      instructions: "rules", input: "question", limits: { ...limits, maxContextTokens: 300_000 } },
+      {}, { billing: rpc, openai });
+    expect(result.ok).toBe(true);
+    expect(preparedHold).toBe("75075000");
+  });
 });
