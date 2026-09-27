@@ -45,6 +45,7 @@ export type IntakeDependencies = {
   upload(path: string, bytes: Uint8Array, mime: string): Promise<boolean>;
   download(path: string): Promise<Uint8Array | null>;
   remove(path: string): Promise<boolean>;
+  cleanup(agentId: string, targetSourceId?: string): Promise<boolean>;
   failUpload(revisionId: string): Promise<void>;
   claim(revisionId: string, lease: string): Promise<ServiceResult<Claim>>;
   finish(revisionId: string, lease: string, state: "indexed" | "failed", pages: number | null,
@@ -138,6 +139,25 @@ function dbDependencies(): ServiceResult<IntakeDependencies> {
       return bytes.length <= LIMITS.maxFileBytes ? bytes : null;
     },
     async remove(path) { const { error } = await db.storage.from("expert-sources").remove([path]); return !error; },
+    async cleanup(agentId, targetSourceId) {
+      const query = db.from("source_cleanup_jobs").select("source_id,storage_path,attempts")
+        .eq("agent_id", agentId).eq("state", "pending").order("created_at").limit(3);
+      const { data, error } = await query;
+      if (error) throw new Error("cleanup lookup failed");
+      for (const job of data ?? []) {
+        const removed = await db.storage.from("expert-sources").remove([job.storage_path]);
+        const { error: updateError } = await db.from("source_cleanup_jobs").update({
+          state: removed.error ? "pending" : "done", attempts: job.attempts + 1,
+          updated_at: new Date().toISOString() })
+          .eq("source_id", job.source_id).eq("agent_id", agentId).eq("state", "pending");
+        if (updateError) throw new Error("cleanup state update failed");
+      }
+      if (!targetSourceId) return true;
+      const { data: pending, error: pendingError } = await db.from("source_cleanup_jobs")
+        .select("state").eq("source_id", targetSourceId).eq("agent_id", agentId).maybeSingle();
+      if (pendingError) throw new Error("cleanup status failed");
+      return pending?.state !== "pending";
+    },
     async failUpload(revisionId) { const result = await invoke<boolean>("fail_source_upload", { p_revision_id: revisionId }); if (!result.ok) throw new Error("upload failure state failed"); },
     claim: (revisionId, lease) => invoke<Claim>("claim_source_processing", { p_revision_id: revisionId, p_lease_owner: lease }),
     finish: (revisionId, lease, state, pages, code) => invoke<boolean>("finish_source_parsing", {
@@ -168,9 +188,8 @@ function dbDependencies(): ServiceResult<IntakeDependencies> {
       if (error) throw new Error("source list failed");
       const rows = data ?? [];
       if (!rows.length) return [];
-      const revisions = rows.map(row => row.current_revision_id).filter((id): id is string => !!id);
       const { data: runs, error: runError } = await db.from("source_intake_runs").select("*")
-        .in("revision_id", revisions);
+        .in("source_id", rows.map(row => row.id));
       if (runError) throw new Error("source run list failed");
       const operations = (runs ?? []).map(run => run.operation_id);
       const jobs = (runs ?? []).map(run => run.job_id);
@@ -184,13 +203,18 @@ function dbDependencies(): ServiceResult<IntakeDependencies> {
       return rows.map(row => {
         const run = (runs ?? []).find(item => item.revision_id === row.current_revision_id);
         const operation = (operationRows.data ?? []).find(item => item.id === run?.operation_id);
+        const sourceOperationIds = new Set((runs ?? []).filter(item => item.source_id === row.id)
+          .map(item => item.operation_id));
+        const allOperations = (operationRows.data ?? []).filter(item => sourceOperationIds.has(item.id));
         const job = (jobRows.data ?? []).find(item => item.id === run?.job_id);
         const { storagePath: _privatePath, ...safe } = sourceRow(row);
         void _privatePath;
         return { ...safe, jobId: run?.job_id ?? null, operationId: run?.operation_id ?? null,
           estimatedUnits: operation ? String(operation.estimate_units) : null,
-          chargedUnits: operation?.actual_units == null ? null : String(operation.actual_units),
-          pendingUnits: operation ? String(operation.held_units) : null,
+          chargedUnits: allOperations.length ? allOperations.reduce((sum, item) =>
+            sum + BigInt(String(item.actual_units ?? 0)), BigInt(0)).toString() : null,
+          pendingUnits: allOperations.length ? allOperations.reduce((sum, item) =>
+            sum + BigInt(String(item.held_units)), BigInt(0)).toString() : null,
           progress: job ? { completedBatches: job.completed_batches, totalBatches: job.total_batches,
             indexedChunks: job.indexed_chunks } : null };
       });
@@ -286,7 +310,7 @@ export async function preflightSourceRetry(agentId: string, sourceId: string, in
   const deps = configured.data;
   try {
     const source = await deps.source(agentId, sourceId);
-    if (!source) return err("not_owner", "Source is unavailable.");
+    if (!source || source.deletedAt) return err("not_owner", "Source is unavailable.");
     if (source.error?.code === "unknown_usage") return { ok: false, error: { code: "unknown_usage",
       message: "Source usage must be reconciled before retry.", retryable: false } };
     if (source.state !== "failed" || !source.storagePath) return err("conflict", "Source is not ready for retry.");
@@ -351,6 +375,7 @@ async function confirm(input: ConfirmSourceInput, deps: IntakeDependencies, retr
   const checked = await inspect(input); if (!checked.ok) return checked.error.code === "invalid_input"
     ? err("stale_estimate", "Source changed; get a fresh estimate.") : checked;
   const s = checked.data;
+  let unassignedOperationId: string | null = null;
   try {
     const tokenHash = digest(new TextEncoder().encode(input.estimateToken));
     const estimate = await deps.loadEstimate(tokenHash, input.agentId);
@@ -383,6 +408,7 @@ async function confirm(input: ConfirmSourceInput, deps: IntakeDependencies, retr
     const billed = await deps.reserveBilling({ identityId: snapshot.identityId, agentId: input.agentId,
       requestKey: input.requestKey, hash: s.hash, estimate: price.estimate, max: price.max });
     if (!billed.ok) return billed;
+    unassignedOperationId = billed.data.id;
     const sourceId = retrySourceId ?? `src_${randomUUID()}`;
     const revisionId = `srev_${randomUUID()}`;
     const jobId = `job_${randomUUID()}`;
@@ -394,18 +420,22 @@ async function confirm(input: ConfirmSourceInput, deps: IntakeDependencies, retr
       p_content_hash: s.hash, p_byte_count: s.byteCount, p_price_version: PRICE_VERSION,
       p_max_sources: LIMITS.maxSources, p_max_agent_bytes: LIMITS.maxAgentBytes,
       p_retry_source_id: retrySourceId });
-    if (!reserved.ok) { await deps.settle(billed.data.id); return reserved; }
+    if (!reserved.ok) { await deps.settle(billed.data.id); unassignedOperationId = null; return reserved; }
+    unassignedOperationId = null;
     if (!reserved.data.replayed && !retrySourceId) {
       if (!await deps.upload(reserved.data.storagePath, s.bytes, s.mime)) {
-        await deps.failUpload(reserved.data.revisionId);
-        await deps.settle(reserved.data.operationId);
+        await Promise.allSettled([deps.failUpload(reserved.data.revisionId),
+          deps.settle(reserved.data.operationId)]);
         return err("indexing", "Source could not be stored; retry the upload.", true);
       }
     }
     if (reserved.data.replayed) return { ok: true, data: { state: "pending", jobId: reserved.data.jobId,
       progress: { completedBatches: 0, totalBatches: 0, indexedChunks: 0 } } };
     return process(reserved.data, input.agentId, deps);
-  } catch { return err("indexing", "Source confirmation could not complete.", true); }
+  } catch {
+    if (unassignedOperationId) await deps.settle(unassignedOperationId).catch(() => undefined);
+    return err("indexing", "Source confirmation could not complete.", true);
+  }
 }
 export async function confirmSource(input: ConfirmSourceInput, injected?: IntakeDependencies): Promise<ServiceResult<IndexResult>> {
   const configured = dependencies(injected); return configured.ok ? confirm(input, configured.data, null) : configured;
@@ -416,8 +446,10 @@ export async function retrySource(input: { agentId: string; sourceId: string; es
   const deps = configured.data;
   try {
     const source = await deps.source(input.agentId, input.sourceId);
-    if (!source) return err("not_owner", "Source is unavailable.");
-    if (source.state !== "failed" || !source.storagePath) return err("conflict", "Source is not ready for retry.");
+    if (!source || source.deletedAt) return err("not_owner", "Source is unavailable.");
+    const prior = await deps.runByKey(input.agentId, input.requestKey);
+    if ((source.state !== "failed" && !prior) || !source.storagePath)
+      return err("conflict", "Source is not ready for retry.");
     const bytes = await deps.download(source.storagePath);
     if (!bytes || digest(bytes) !== source.contentHash) return err("conflict", "Stored source is unavailable; upload it again.");
     const payload = source.kind === "text" ? new TextDecoder("utf-8", { fatal: true }).decode(bytes)
@@ -430,7 +462,7 @@ export async function resumeSource(agentId: string, sourceId: string, injected?:
   const configured = dependencies(injected); if (!configured.ok) return configured;
   try {
     const source = await configured.data.source(agentId, sourceId);
-    if (!source) return err("not_owner", "Source is unavailable.");
+    if (!source || source.deletedAt) return err("not_owner", "Source is unavailable.");
     if (source.state === "failed") return err("conflict", "Get a fresh retry estimate.");
     const run = await configured.data.run(source.currentRevisionId);
     if (!run || run.sourceId !== sourceId) return err("indexing", "Source processing state is unavailable.", true);
@@ -441,6 +473,7 @@ export async function resumeSource(agentId: string, sourceId: string, injected?:
 export async function listSources(agentId: string, injected?: IntakeDependencies): Promise<ServiceResult<SourceOverview>> {
   const configured = dependencies(injected); if (!configured.ok) return configured;
   try {
+    await configured.data.cleanup(agentId);
     const [sources, snapshot] = await Promise.all([configured.data.list(agentId), configured.data.snapshot(agentId)]);
     return { ok: true, data: { sources, limits: LIMITS,
       remaining: { sources: Math.max(0, LIMITS.maxSources - snapshot.usage.sources),
@@ -458,8 +491,10 @@ export async function deleteSource(agentId: string, sourceId: string, injected?:
     const snapshot = await deps.snapshot(agentId);
     const deleted = await deps.tombstone(agentId, sourceId, snapshot.identityId);
     if (!deleted.ok) return deleted;
-    for (const operationId of deleted.data.operationIds) await deps.settle(operationId);
-    const removed = deleted.data.storagePath ? await deps.remove(deleted.data.storagePath) : true;
+    await Promise.allSettled(deleted.data.operationIds.map(operationId => deps.settle(operationId)));
+    let removed = !deleted.data.storagePath;
+    try { removed = await deps.cleanup(agentId, sourceId); }
+    catch { removed = false; }
     return { ok: true, data: { sourceId, deleted: true, cleanupPending: !removed,
       historicalCitationsRetained: true } };
   } catch { return err("indexing", "Source could not be deleted.", true); }

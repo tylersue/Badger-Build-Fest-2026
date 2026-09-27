@@ -15,11 +15,29 @@ create table public.source_intake_runs (
   state text not null default 'queued' check (state in ('queued','processing','indexed','failed')),
   lease_owner text, lease_expires_at timestamptz,
   error jsonb,
+  version integer not null default 1 check (version>0),
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
   unique(agent_id,request_key),
   foreign key(agent_id,revision_id,source_id) references public.source_revisions(agent_id,id,source_id)
 );
 create index source_intake_runs_lease_idx on public.source_intake_runs(state,lease_expires_at);
+
+create table public.source_cleanup_jobs (
+  source_id text primary key references public.sources(id),
+  agent_id text not null references public.agents(id),
+  storage_path text not null,
+  state text not null default 'pending' check (state in ('pending','done')),
+  attempts integer not null default 0 check (attempts>=0),
+  version integer not null default 1 check (version>0),
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  foreign key(agent_id,source_id) references public.sources(agent_id,id)
+);
+create index source_cleanup_jobs_pending_idx on public.source_cleanup_jobs(agent_id,state,created_at)
+  where state='pending';
+create trigger touch_version before update on public.source_intake_runs
+  for each row execute function public.touch_version();
+create trigger touch_version before update on public.source_cleanup_jobs
+  for each row execute function public.touch_version();
 
 create function public.source_usage(p_agent_id text)
 returns jsonb language sql security definer set search_path=pg_catalog,public as $$
@@ -56,7 +74,7 @@ begin
      p_revision_id !~ '^srev_[0-9a-f-]{36}$' or
      p_job_id !~ '^job_[0-9a-f-]{36}$' or
      p_storage_path !~ ('^'||p_agent_id||'/src_[0-9a-f-]{36}/[0-9a-f-]{36}$') or
-     p_byte_count < 1 or p_max_sources not between 1 and 100 or
+     p_byte_count < 1 or p_byte_count>5242880 or p_max_sources not between 1 and 100 or
      p_max_agent_bytes < p_byte_count then raise exception 'INVALID_INPUT'; end if;
   perform 1 from public.agents where id=p_agent_id and owner_id=p_identity_id
     and deleted_at is null for update;
@@ -80,6 +98,7 @@ begin
   if not exists(select 1 from public.operations where id=p_operation_id and agent_id=p_agent_id
     and identity_id=p_identity_id and purpose='source' and request_key=p_request_key
     and payload_hash=p_content_hash and price_version=p_price_version
+    and estimate_units=e.estimate_units and max_units=e.max_units
     and state in ('reserved','running')) then raise exception 'CONFLICT'; end if;
   select count(*),coalesce(sum(byte_count),0) into v_count,v_bytes
     from public.sources where agent_id=p_agent_id and deleted_at is null
@@ -157,7 +176,8 @@ begin
   select * into r from public.source_intake_runs where revision_id=p_revision_id for update;
   if not found or r.state<>'queued' then raise exception 'CONFLICT'; end if;
   update public.source_intake_runs set state='failed',error='{"code":"storage"}' where revision_id=r.revision_id;
-  update public.sources set state='failed',error='{"code":"storage"}' where id=r.source_id and agent_id=r.agent_id;
+  update public.sources set state='failed',deleted_at=now(),error='{"code":"storage"}'
+    where id=r.source_id and agent_id=r.agent_id;
   update public.quota_holds set state='released' where source_id=r.source_id and state='held' and chunks=0;
   return true;
 end $$;
@@ -203,6 +223,10 @@ begin
     update public.index_jobs set state='failed',error='{"code":"stale"}',
       lease_owner=null,lease_expires_at=null where source_id=s.id and state in ('queued','processing');
     update public.quota_holds set state='released' where source_id=s.id and state='held';
+    if s.storage_path is not null then
+      insert into public.source_cleanup_jobs(source_id,agent_id,storage_path)
+        values(s.id,s.agent_id,s.storage_path) on conflict do nothing;
+    end if;
   end if;
   return jsonb_build_object('sourceId',s.id,'storagePath',s.storage_path,'deleted',true,
     'operationIds',(select coalesce(jsonb_agg(distinct operation_id),'[]'::jsonb)
@@ -211,6 +235,8 @@ end $$;
 
 revoke all on public.source_intake_runs from public,anon,authenticated;
 grant all on public.source_intake_runs to service_role;
+revoke all on public.source_cleanup_jobs from public,anon,authenticated;
+grant all on public.source_cleanup_jobs to service_role;
 revoke execute on function public.source_usage(text) from public,anon,authenticated;
 grant execute on function public.source_usage(text) to service_role;
 revoke execute on function public.reserve_source_quota(text,text,text,text,text,text,text,text,text,text,text,text,text,bigint,text,integer,bigint,text) from public,anon,authenticated;

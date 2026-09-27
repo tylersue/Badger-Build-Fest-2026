@@ -20,6 +20,7 @@ function fixture() {
   let settlements = 0;
   let parseShouldFail = false;
   let deleteWhileParsing = false;
+  let deleteWhileIndexing = false;
   let baseBytes = 0;
   const estimates = new Map<string, Estimate>();
   const sources = new Map<string, Source>();
@@ -77,6 +78,11 @@ function fixture() {
     async upload(path, bytes) { blobs.set(path, bytes); return true; },
     async download(path) { return blobs.get(path) ?? null; },
     async remove(path) { return blobs.delete(path); },
+    async cleanup(_agentId, targetSourceId) {
+      if (!targetSourceId) return true;
+      const source = sources.get(targetSourceId);
+      return source?.storagePath ? blobs.delete(source.storagePath) : true;
+    },
     async failUpload(revisionId) { runs.get(revisionId)!.state = "failed"; },
     async claim(revisionId) {
       const run = runs.get(revisionId)!;
@@ -129,6 +135,12 @@ function fixture() {
       indexes++;
       paid.add(jobId);
       const run = [...runs.values()].find(r => r.jobId === jobId)!;
+      if (deleteWhileIndexing) {
+        sources.get(run.sourceId)!.deletedAt = new Date(now).toISOString();
+        sources.get(run.sourceId)!.state = "failed";
+        return ok({ state: "failed", jobId, progress: { completedBatches: 0,
+          totalBatches: 1, indexedChunks: 0 } });
+      }
       sources.get(run.sourceId)!.state = "ready";
       return ok({ state: "ready", jobId, progress: { completedBatches: 1, totalBatches: 1, indexedChunks: 1 } });
     },
@@ -136,6 +148,7 @@ function fixture() {
   return { deps, sources, blobs, estimates, setNow(value: number) { now = value; },
     setParseFail(value: boolean) { parseShouldFail = value; },
     setDeleteWhileParsing(value: boolean) { deleteWhileParsing = value; },
+    setDeleteWhileIndexing(value: boolean) { deleteWhileIndexing = value; },
     setBaseBytes(value: number) { baseBytes = value; },
     counts: () => ({ parses, indexes, reservations, settlements, paid: paid.size }) };
 }
@@ -199,6 +212,17 @@ describe("confirmed source intake", () => {
     expect(result.result).toMatchObject({ ok: true, data: { state: "ready" } });
   });
 
+  it("rejects unsupported signatures and oversized files without a reservation", async () => {
+    const f = fixture();
+    const png = new File(["PNG contents"], "picture.png", { type: "image/png" });
+    const wrongPdf = new File(["not a PDF"], "paper.pdf", { type: "application/pdf" });
+    const tooLarge = new File(["a".repeat(5 * 1024 * 1024 + 1)], "huge.txt", { type: "text/plain" });
+    for (const file of [png, wrongPdf, tooLarge]) {
+      expect((await preflightSource({ agentId: "a", name: file.name, fileOrText: file }, f.deps)).ok).toBe(false);
+    }
+    expect(f.counts()).toMatchObject({ reservations: 0, parses: 0, indexes: 0 });
+  });
+
   it("retries a failed source using its retained private blob and a fresh estimate", async () => {
     const f = fixture(); f.setParseFail(true);
     const initial = await confirm(f);
@@ -238,5 +262,14 @@ describe("confirmed source intake", () => {
     const deleted = await deleteSource("a", sourceId, f.deps);
     expect(deleted).toMatchObject({ ok: true, data: { historicalCitationsRetained: true } });
     expect(f.sources.get(sourceId)?.deletedAt).not.toBeNull();
+  });
+
+  it("does not activate knowledge deleted during indexing", async () => {
+    const f = fixture(); f.setDeleteWhileIndexing(true);
+    const result = await confirm(f);
+    expect(result.result).toMatchObject({ ok: true, data: { state: "failed" } });
+    expect([...f.sources.values()][0].state).toBe("failed");
+    expect([...f.sources.values()][0].activeRevisionId).toBeNull();
+    expect(f.counts()).toMatchObject({ indexes: 1, settlements: 1 });
   });
 });
