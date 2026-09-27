@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { BookOpen, FlaskConical, Rocket, UserRound } from "lucide-react";
+import { BookOpen, FlaskConical, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { BuilderSplit, NotOwnerNote, sourcesFor, useBuilderAgent } from "@/components/app/builder";
 import { AssistantMessage, Composer, NotEnoughCredits, RetrievedSources, UserMessage } from "@/components/app/chat";
-import { Breadcrumbs, EmptyState, PageBody, PageHeader, PlaceholderNote, StatusPill, buttonClass } from "@/components/app/ui";
+import { PublishSection } from "@/components/app/publish-section";
+import { Breadcrumbs, EmptyState, PageBody, PageHeader, PlaceholderNote } from "@/components/app/ui";
 import { answerInterview, displayName, interviewTurnsFor, messagesFor, pendingInterviewQuestion, sandboxConversationId, sendSandboxMessage } from "@/lib/demo-store";
 import { categoryLabel } from "@/lib/config/categories";
 import { formatCredits } from "@/lib/format";
@@ -31,11 +32,12 @@ export function BuilderSectionView() {
     <>
       <Breadcrumbs items={[{ label: "My agents", href: "/build" }, { label: agent.persona.name, href: `/build/${agent.id}/interview` }, { label: LABELS[active] }]} />
       <nav aria-label="Builder sections" className="flex flex-wrap gap-1 border-b border-line-faint px-6 pb-2">
-        {SECTIONS.map((item) => <Link key={item} href={`/build/${agent.id}/${item}`} aria-current={item === active ? "page" : undefined} className={`rounded px-3 py-1.5 text-[13px] ${item === active ? "bg-selected text-selected-fg" : "text-fg-muted hover:bg-surface-2"}`}>{LABELS[item]}</Link>)}
+        {SECTIONS.map((item) => <Link key={item} href={`/build/${agent.id}/${item}`} data-testid={`builder-tab-${item}`} aria-current={item === active ? "page" : undefined} className={`rounded px-3 py-1.5 text-[13px] ${item === active ? "bg-selected text-selected-fg" : "text-fg-muted hover:bg-surface-2"}`}>{LABELS[item]}</Link>)}
       </nav>
       {!isOwner && <div className="pt-3"><NotOwnerNote ownerName={displayName(s, agent.ownerId)} /></div>}
       {active === "interview" ? <InterviewSection agent={agent} isOwner={isOwner} /> :
         active === "test" ? <TestSection agent={agent} isOwner={isOwner} /> :
+        active === "publish" ? <PublishSection agent={agent} isOwner={isOwner} /> :
         <DetailsSection agent={agent} section={active} />}
     </>
   );
@@ -87,23 +89,17 @@ function TestSection({ agent, isOwner }: { agent: Agent; isOwner: boolean }) {
   );
 }
 
-function DetailsSection({ agent, section }: { agent: Agent; section: "persona" | "knowledge" | "publish" }) {
+function DetailsSection({ agent, section }: { agent: Agent; section: "persona" | "knowledge" }) {
   const base = `/build/${agent.id}`;
   const sources = sourcesFor(agent.id);
-  const icon = section === "persona" ? UserRound : section === "knowledge" ? BookOpen : Rocket;
   return (
     <PageBody>
-      <PageHeader title={LABELS[section]} subtitle={section === "persona" ? "Shape how your agent introduces itself and responds." : section === "knowledge" ? "Interview answers and documents that support your agent's replies." : "Review your agent before sharing it in the marketplace."} />
+      <PageHeader title={LABELS[section]} subtitle={section === "persona" ? "Shape how your agent introduces itself and responds." : "Interview answers and documents that support your agent's replies."} />
       {section === "persona" && <div className="grid max-w-[720px] gap-3 rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm">
         <Detail label="Name" value={agent.persona.name} /><Detail label="Category" value={categoryLabel(agent.persona.category)} /><Detail label="Headline" value={agent.persona.headline} /><Detail label="How I work" value={agent.persona.howIWork} />
         <PlaceholderNote feature="interview-drafted persona editing" phase={2} />
       </div>}
-      {section === "knowledge" && (sources.length ? <div className="grid max-w-[720px] gap-2">{sources.map((source) => <div key={source.id} className="rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm"><div className="font-medium">{source.name}</div><div className="mt-1 text-xs text-fg-muted">{source.status} · {source.chunkCount} chunks</div></div>)}<PlaceholderNote feature="document upload and retrieval" phase={2} /></div> : <><EmptyState icon={icon} heading="No sources yet" body="Interview answers land here automatically. Add documents any time." action={{ label: "Start interview", href: `${base}/interview` }} /><PlaceholderNote feature="document upload and retrieval" phase={2} /></>)}
-      {section === "publish" && <div className="grid max-w-[720px] gap-4 rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm">
-        <Detail label="Rate multiplier" value={`${agent.rateMultiplier}×`} /><Detail label="Content consent" value={agent.consentAcceptedAt ? "Accepted" : "Not accepted yet"} /><div><span className="mr-2 text-fg-muted">Status</span><StatusPill status={agent.status} /></div>
-        <div><Link href={`/agents/${agent.slug}`} className={buttonClass("secondary", "lg")}>Preview listing</Link></div>
-        <PlaceholderNote feature="publishing controls" phase={3} />
-      </div>}
+      {section === "knowledge" && (sources.length ? <div className="grid max-w-[720px] gap-2">{sources.map((source) => <div key={source.id} className="rounded-xl border border-line-subtle bg-surface-1 p-4 text-sm"><div className="font-medium">{source.name}</div><div className="mt-1 text-xs text-fg-muted">{source.status} · {source.chunkCount} chunks</div></div>)}<PlaceholderNote feature="document upload and retrieval" phase={2} /></div> : <><EmptyState icon={UserRound} heading="No sources yet" body="Interview answers land here automatically. Add documents any time." action={{ label: "Start interview", href: `${base}/interview` }} /><PlaceholderNote feature="document upload and retrieval" phase={2} /></>)}
     </PageBody>
   );
 }

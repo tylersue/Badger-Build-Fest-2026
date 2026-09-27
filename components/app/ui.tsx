@@ -146,7 +146,7 @@ export function IdentityAvatar({ initial, color, size = 40, photoUrl }: { initia
   return (
     <span
       className="grid shrink-0 place-items-center font-semibold text-white"
-      style={{ width: size, height: size, background: color, backgroundImage: photo ? `url("${photo.replace(/["\\]/g, "")}")` : undefined, backgroundSize: "cover", backgroundPosition: "center", borderRadius: size >= 40 ? 8 : 6, fontSize: size >= 40 ? 14 : 12 }}
+      style={{ width: size, height: size, backgroundColor: color, backgroundImage: photo ? `url("${photo.replace(/["\\]/g, "")}")` : undefined, backgroundSize: "cover", backgroundPosition: "center", borderRadius: size >= 40 ? 8 : 6, fontSize: size >= 40 ? 14 : 12 }}
     >
       {photo ? null : initial}
     </span>
