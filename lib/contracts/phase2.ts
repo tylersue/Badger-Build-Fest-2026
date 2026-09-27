@@ -91,6 +91,8 @@ export type SourceEstimate = {
   estimateToken: string; version: number; expiresAt: string; byteCount: number;
   projectedUse: SourceUsage; remaining: SourceUsage; limits: SourceLimits;
   estimateUnits: MoneyAmount; maxUnits: MoneyAmount; priceVersion: string;
+  projectedPageCount: number | null; projectedChunkCount: number | null;
+  walletAvailableUnits: MoneyAmount; walletHeldUnits: MoneyAmount;
 };
 export type IndexProgress = { completedBatches: number; totalBatches: number; indexedChunks: number };
 export type IndexResult = { state: "ready" | "pending" | "failed"; jobId: string; progress: IndexProgress };
